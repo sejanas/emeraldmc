@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Phone, Mail, Clock, MapPin } from "lucide-react";
 import { businessInfo } from "@/data/siteData";
+import VisitorTracker from "@/components/VisitorTracker";
 
 const Footer = () => (
   <footer className="border-t border-border bg-muted/50">
@@ -65,8 +66,9 @@ const Footer = () => (
         </div>
       </div>
 
-      <div className="mt-8 border-t border-border pt-6 text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} Emerald Medical Care. All rights reserved. | ISO Certified Lab in Sri Vijaya Puram
+      <div className="mt-8 border-t border-border pt-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
+        <span>© {new Date().getFullYear()} Emerald Medical Care. All rights reserved. | ISO Certified Lab in Sri Vijaya Puram</span>
+        <VisitorTracker />
       </div>
     </div>
   </footer>

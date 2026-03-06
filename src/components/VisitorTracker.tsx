@@ -11,22 +11,16 @@ const VisitorTracker = () => {
       page: window.location.pathname,
       referrer: document.referrer || null,
       user_agent: navigator.userAgent,
-    }).then(() => {});
+    });
 
-    // Get count via edge function or just show a simple approach
-    // Since anon can't read, we use an edge function
+    // Fetch public count via edge function
     const fetchCount = async () => {
-      const { count: c } = await supabase
-        .from("visitors")
-        .select("id", { count: "exact", head: true });
-      // This will return null for anon users due to RLS, so we use a different approach
-      setCount(c);
+      const { data } = await supabase.functions.invoke("visitor-count");
+      if (data?.count != null) setCount(data.count);
     };
     fetchCount();
   }, []);
 
-  // Only show if we have a count (admin is logged in) or show nothing for public
-  // Better approach: use an edge function for public count
   if (count === null) return null;
 
   return (
