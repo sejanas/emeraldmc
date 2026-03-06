@@ -7,18 +7,28 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     const load = async () => {
-      const [c, t, p, d, g, v] = await Promise.all([
-        supabase.from("test_categories").select("id", { count: "exact", head: true }),
-        supabase.from("tests").select("id", { count: "exact", head: true }),
-        supabase.from("packages").select("id", { count: "exact", head: true }),
-        supabase.from("doctors").select("id", { count: "exact", head: true }),
-        supabase.from("gallery").select("id", { count: "exact", head: true }),
-        supabase.from("visitors").select("id", { count: "exact", head: true }),
-      ]);
-      setCounts({
-        categories: c.count ?? 0, tests: t.count ?? 0, packages: p.count ?? 0,
-        doctors: d.count ?? 0, gallery: g.count ?? 0, visitors: v.count ?? 0,
-      });
+      try {
+        const [c, t, p, d, g, v] = await Promise.all([
+          supabase.from("test_categories").select("id", { count: "exact", head: true }),
+          supabase.from("tests").select("id", { count: "exact", head: true }),
+          supabase.from("packages").select("id", { count: "exact", head: true }),
+          supabase.from("doctors").select("id", { count: "exact", head: true }),
+          supabase.from("gallery").select("id", { count: "exact", head: true }),
+          supabase.from("visitors").select("id", { count: "exact", head: true }),
+        ]);
+
+        // Log raw responses for debugging (network may succeed but return errors)
+        // eslint-disable-next-line no-console
+        console.debug("Admin counts responses:", { c, t, p, d, g, v });
+
+        setCounts({
+          categories: c.count ?? 0, tests: t.count ?? 0, packages: p.count ?? 0,
+          doctors: d.count ?? 0, gallery: g.count ?? 0, visitors: v.count ?? 0,
+        });
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.error("Error loading admin counts:", err);
+      }
     };
     load();
   }, []);
