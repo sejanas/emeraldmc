@@ -7,13 +7,24 @@ const LogoutPage = () => {
 
   useEffect(() => {
     const doLogout = async () => {
-      // Sign out from Supabase
-      await supabase.auth.signOut();
+      // Attempt to sign out, but don't let this hang the UI — use a timeout.
+      try {
+        await Promise.race([
+          supabase.auth.signOut(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("signout-timeout")), 3000)),
+        ]);
+      } catch (e) {
+        // ignore errors/timeouts — proceed to clear client state anyway
+      }
 
       // Force-clear all Supabase-related keys from localStorage to fix stuck sessions
-      Object.keys(localStorage)
-        .filter((key) => key.startsWith("sb-"))
-        .forEach((key) => localStorage.removeItem(key));
+      try {
+        Object.keys(localStorage)
+          .filter((key) => key.startsWith("sb-"))
+          .forEach((key) => localStorage.removeItem(key));
+      } catch (e) {
+        // localStorage might be blocked in some environments — ignore
+      }
 
       navigate("/", { replace: true });
     };
