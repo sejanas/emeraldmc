@@ -29,6 +29,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsAdmin(!!data);
   };
 
+  // Safety net: if Supabase auth hangs (e.g. stale token refresh in Chrome),
+  // force loading=false after 8 seconds so the app doesn't spin forever.
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 8000);
+    return () => clearTimeout(timer);
+  }, []);
+
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setSession(session);

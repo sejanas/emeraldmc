@@ -22,6 +22,7 @@ import AdminTests from "./pages/admin/AdminTests";
 import AdminPackages from "./pages/admin/AdminPackages";
 import AdminDoctors from "./pages/admin/AdminDoctors";
 import AdminGallery from "./pages/admin/AdminGallery";
+import LogoutPage from "./pages/LogoutPage";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,8 @@ const App = () => (
               <Route path="/gallery" element={<GalleryPage />} />
               <Route path="/contact" element={<ContactPage />} />
             </Route>
+            <Route path="/logout" element={<LogoutPage />} />
+            <Route path="/admin/logout" element={<LogoutPage />} />
             <Route path="/admin/login" element={<AdminLogin />} />
             <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
               <Route index element={<AdminDashboard />} />
