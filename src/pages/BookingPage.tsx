@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Calendar, Clock, User, Phone, Mail, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -7,17 +7,28 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import SectionHeading from "@/components/SectionHeading";
-import { bookingSlots, tests, healthPackages } from "@/data/siteData";
+import { bookingSlots } from "@/data/siteData";
+import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
 const BookingPage = () => {
   const { toast } = useToast();
   const [submitted, setSubmitted] = useState(false);
-  const [form, setForm] = useState({
-    name: "", phone: "", email: "", date: "", slot: "", testOrPackage: "", notes: "",
-  });
+  const [form, setForm] = useState({ name: "", phone: "", email: "", date: "", slot: "", testOrPackage: "", notes: "" });
+  const [tests, setTests] = useState<{ id: string; name: string; price: number }[]>([]);
+  const [packages, setPackages] = useState<{ id: string; name: string; original_price: number; discounted_price: number | null }[]>([]);
 
   const today = new Date().toISOString().split("T")[0];
+
+  useEffect(() => {
+    Promise.all([
+      supabase.from("tests").select("id, name, price").eq("is_active", true).order("name"),
+      supabase.from("packages").select("id, name, original_price, discounted_price").order("name"),
+    ]).then(([{ data: t }, { data: p }]) => {
+      if (t) setTests(t);
+      if (p) setPackages(p);
+    });
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -32,21 +43,14 @@ const BookingPage = () => {
   if (submitted) {
     return (
       <div className="container flex min-h-[60vh] items-center justify-center py-12">
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="max-w-md rounded-2xl border border-border bg-card p-10 text-center card-shadow"
-        >
+        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
+          className="max-w-md rounded-2xl border border-border bg-card p-10 text-center card-shadow">
           <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-accent">
             <CheckCircle className="h-8 w-8 text-primary" />
           </div>
           <h2 className="font-display text-2xl font-bold text-foreground">Booking Submitted!</h2>
-          <p className="mt-2 text-muted-foreground">
-            Your appointment request is pending admin approval. We'll contact you at <strong>{form.phone}</strong> to confirm.
-          </p>
-          <Button className="mt-6" onClick={() => { setSubmitted(false); setForm({ name: "", phone: "", email: "", date: "", slot: "", testOrPackage: "", notes: "" }); }}>
-            Book Another
-          </Button>
+          <p className="mt-2 text-muted-foreground">Your appointment request is pending admin approval. We'll contact you at <strong>{form.phone}</strong> to confirm.</p>
+          <Button className="mt-6" onClick={() => { setSubmitted(false); setForm({ name: "", phone: "", email: "", date: "", slot: "", testOrPackage: "", notes: "" }); }}>Book Another</Button>
         </motion.div>
       </div>
     );
@@ -78,13 +82,9 @@ const BookingPage = () => {
           <div>
             <Label htmlFor="slot" className="flex items-center gap-1.5 mb-1.5"><Clock className="h-3.5 w-3.5" /> Time Slot *</Label>
             <Select value={form.slot} onValueChange={(v) => setForm({ ...form, slot: v })}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select slot" />
-              </SelectTrigger>
+              <SelectTrigger><SelectValue placeholder="Select slot" /></SelectTrigger>
               <SelectContent>
-                {bookingSlots.map((s) => (
-                  <SelectItem key={s} value={s}>{s}</SelectItem>
-                ))}
+                {bookingSlots.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
               </SelectContent>
             </Select>
           </div>
@@ -92,13 +92,11 @@ const BookingPage = () => {
         <div>
           <Label htmlFor="test" className="mb-1.5 block">Test / Package</Label>
           <Select value={form.testOrPackage} onValueChange={(v) => setForm({ ...form, testOrPackage: v })}>
-            <SelectTrigger>
-              <SelectValue placeholder="Select test or package (optional)" />
-            </SelectTrigger>
+            <SelectTrigger><SelectValue placeholder="Select test or package (optional)" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="general">General Consultation</SelectItem>
-              {healthPackages.map((p) => (
-                <SelectItem key={p.id} value={p.name}>📦 {p.name} — ₹{p.price}</SelectItem>
+              {packages.map((p) => (
+                <SelectItem key={p.id} value={p.name}>📦 {p.name} — ₹{p.discounted_price ?? p.original_price}</SelectItem>
               ))}
               {tests.map((t) => (
                 <SelectItem key={t.id} value={t.name}>🔬 {t.name} — ₹{t.price}</SelectItem>
@@ -110,9 +108,7 @@ const BookingPage = () => {
           <Label htmlFor="notes" className="mb-1.5 block">Notes</Label>
           <Textarea id="notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Any special requirements..." rows={3} maxLength={500} />
         </div>
-        <Button type="submit" className="w-full" size="lg">
-          Submit Booking Request
-        </Button>
+        <Button type="submit" className="w-full" size="lg">Submit Booking Request</Button>
         <p className="text-center text-xs text-muted-foreground">Bookings require admin approval. You'll be contacted to confirm.</p>
       </form>
     </div>
