@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import SectionHeading from "@/components/SectionHeading";
-import { supabase } from "@/integrations/supabase/client";
+import ErrorBox from "@/components/ErrorBox";
+import useDoctors from "@/hooks/useDoctors";
 
 interface Doctor {
   id: string; name: string; specialization: string; qualification: string | null;
@@ -11,17 +12,31 @@ interface Doctor {
 const DoctorsPage = () => {
   const [doctors, setDoctors] = useState<Doctor[]>([]);
 
+  const doctorsQuery = useDoctors();
+
   useEffect(() => {
-    supabase.from("doctors").select("*").order("display_order").then(({ data }) => {
-      if (data) setDoctors(data);
-    });
-  }, []);
+    if (doctorsQuery.data) setDoctors(doctorsQuery.data);
+  }, [doctorsQuery.data]);
 
   return (
     <div className="container py-12">
       <SectionHeading title="Our Expert Doctors" subtitle="Meet the qualified healthcare professionals at Emerald Medical Care" />
       <div className="grid gap-8 sm:grid-cols-3 max-w-4xl mx-auto">
-        {doctors.map((d, i) => (
+        {doctorsQuery.error && (
+          <div className="col-span-3 p-6">
+            <ErrorBox title="Failed to load doctors" message={String(doctorsQuery.error.message ?? doctorsQuery.error)} onRetry={() => doctorsQuery.refetch()} />
+          </div>
+        )}
+
+        {doctorsQuery.isLoading && Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="overflow-hidden rounded-xl border border-border bg-card card-shadow text-center p-5">
+            <div className="h-48 bg-muted animate-pulse w-full mb-4" />
+            <div className="h-4 w-32 mx-auto mb-2 bg-muted animate-pulse" />
+            <div className="h-3 w-24 mx-auto bg-muted animate-pulse" />
+          </div>
+        ))}
+
+        {doctorsQuery.data?.map((d, i) => (
           <motion.div key={d.id} initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }} transition={{ delay: i * 0.15, duration: 0.5 }}
             className="overflow-hidden rounded-xl border border-border bg-card card-shadow text-center">
@@ -35,7 +50,7 @@ const DoctorsPage = () => {
           </motion.div>
         ))}
       </div>
-      {doctors.length === 0 && <p className="py-12 text-center text-muted-foreground">No doctors listed yet.</p>}
+      {doctorsQuery.isLoading === false && (doctorsQuery.data?.length ?? 0) === 0 && <p className="py-12 text-center text-muted-foreground">No doctors listed yet.</p>}
     </div>
   );
 };

@@ -9,15 +9,19 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import { handleError } from "@/lib/error";
 import type { Tables } from "@/integrations/supabase/types";
+import useTests from "@/hooks/useTests";
+import useCategories from "@/hooks/useCategories";
+import useSupabaseMutation from "@/hooks/useSupabaseMutation";
+import { useQueryClient } from '@tanstack/react-query';
+import ErrorBox from "@/components/ErrorBox";
 
 type Test = Tables<"tests">;
 type Category = Tables<"test_categories">;
 
 const AdminTests = () => {
   const { toast } = useToast();
-  const [items, setItems] = useState<Test[]>([]);
-  const [categories, setCategories] = useState<Category[]>([]);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Test | null>(null);
   const [form, setForm] = useState({
@@ -26,20 +30,19 @@ const AdminTests = () => {
     fasting_required: false, display_order: 0,
   });
 
-  const load = async () => {
-    const [{ data: t }, { data: c }] = await Promise.all([
-      supabase.from("tests").select("*").order("display_order"),
-      supabase.from("test_categories").select("*").order("display_order"),
-    ]);
-    if (t) setItems(t);
-    if (c) setCategories(c);
-  };
+  const queryClient = useQueryClient();
+  const testsQuery = useTests();
+  const categoriesQuery = useCategories();
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    if (testsQuery.data && editing == null) {
+      // noop
+    }
+  }, [testsQuery.data]);
 
   const openNew = () => {
     setEditing(null);
-    setForm({ name: "", slug: "", description: "", price: 0, sample_type: "Blood", report_time: "Same Day", category_id: null, is_active: true, fasting_required: false, display_order: items.length });
+    setForm({ name: "", slug: "", description: "", price: 0, sample_type: "Blood", report_time: "Same Day", category_id: null, is_active: true, fasting_required: false, display_order: testsQuery.data?.length ?? 0 });
     setOpen(true);
   };
 
@@ -49,27 +52,52 @@ const AdminTests = () => {
     setOpen(true);
   };
 
-  const save = async () => {
+  const saveMut = useSupabaseMutation(async () => {
     const slug = form.slug || form.name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
     const payload = { ...form, slug, category_id: form.category_id || null };
     if (editing) {
-      await supabase.from("tests").update(payload).eq("id", editing.id);
+      const { error } = await supabase.from("tests").update(payload).eq("id", editing.id);
+      if (error) throw error;
     } else {
-      await supabase.from("tests").insert(payload);
+      const { error } = await supabase.from("tests").insert(payload);
+      if (error) throw error;
     }
-    toast({ title: editing ? "Test updated" : "Test created" });
-    setOpen(false);
-    load();
-  };
+    return {};
+  }, {
+    onSuccess: () => {
+      toast({ title: editing ? "Test updated" : "Test created" });
+      setOpen(false);
+      queryClient.invalidateQueries(['tests']);
+    },
+    onError: (err: any) => {
+      const msg = handleError(err, { feature: 'admin.tests.save' });
+      toast({ title: 'Error saving test', description: msg, variant: 'destructive' });
+    }
+  });
 
-  const remove = async (id: string) => {
-    if (!confirm("Delete this test?")) return;
-    await supabase.from("tests").delete().eq("id", id);
-    toast({ title: "Test deleted" });
-    load();
-  };
+  const removeMut = useSupabaseMutation(async (id: string) => {
+    const { error } = await supabase.from("tests").delete().eq("id", id);
+    if (error) throw error;
+    return { id };
+  }, {
+    onMutate: async (id: string) => {
+      await queryClient.cancelQueries(['tests']);
+      const previous = queryClient.getQueryData<Test[]>(['tests']);
+      queryClient.setQueryData(['tests'], (old: any) => (old ?? []).filter((t: Test) => t.id !== id));
+      return { previous };
+    },
+    onError: (err: any, id: string, context: any) => {
+      queryClient.setQueryData(['tests'], context.previous);
+      const msg = handleError(err, { feature: 'admin.tests.delete' });
+      toast({ title: 'Error deleting test', description: msg, variant: 'destructive' });
+    },
+    onSuccess: () => {
+      toast({ title: 'Test deleted' });
+      queryClient.invalidateQueries(['tests']);
+    }
+  });
 
-  const catName = (id: string | null) => categories.find((c) => c.id === id)?.name ?? "—";
+  const catName = (id: string | null) => categoriesQuery.data?.find((c) => c.id === id)?.name ?? "—";
 
   return (
     <div>
@@ -77,6 +105,9 @@ const AdminTests = () => {
         <h1 className="font-display text-2xl font-bold text-foreground">Tests</h1>
         <Button size="sm" onClick={openNew}><Plus className="mr-1 h-4 w-4" /> Add</Button>
       </div>
+
+      {testsQuery.error && <ErrorBox title="Failed to load tests" message={String(testsQuery.error.message ?? testsQuery.error)} onRetry={() => testsQuery.refetch()} />}
+
       <div className="rounded-xl border border-border bg-card overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-muted/50 text-left">
@@ -90,7 +121,7 @@ const AdminTests = () => {
             </tr>
           </thead>
           <tbody>
-            {items.map((t) => (
+            {(testsQuery.data ?? []).map((t) => (
               <tr key={t.id} className="border-t border-border">
                 <td className="px-4 py-3">{t.display_order}</td>
                 <td className="px-4 py-3 font-medium">{t.name}</td>
@@ -99,13 +130,14 @@ const AdminTests = () => {
                 <td className="px-4 py-3">{t.is_active ? "✓" : "✗"}</td>
                 <td className="px-4 py-3 text-right space-x-1">
                   <Button variant="ghost" size="icon" onClick={() => openEdit(t)}><Pencil className="h-4 w-4" /></Button>
-                  <Button variant="ghost" size="icon" onClick={() => remove(t.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                  <Button variant="ghost" size="icon" onClick={() => { if (!confirm('Delete this test?')) return; removeMut.mutate(t.id); }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-        {items.length === 0 && <p className="p-6 text-center text-muted-foreground">No tests yet.</p>}
+        {testsQuery.isLoading && <p className="p-6 text-center text-muted-foreground">Loading...</p>}
+        {testsQuery.isLoading === false && (testsQuery.data?.length ?? 0) === 0 && <p className="p-6 text-center text-muted-foreground">No tests yet.</p>}
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
@@ -122,7 +154,7 @@ const AdminTests = () => {
                 <Select value={form.category_id ?? ""} onValueChange={(v) => setForm({ ...form, category_id: v || null })}>
                   <SelectTrigger className="mt-1"><SelectValue placeholder="Select" /></SelectTrigger>
                   <SelectContent>
-                    {categories.map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
+                    {(categoriesQuery.data ?? []).map((c) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -136,7 +168,7 @@ const AdminTests = () => {
               <div className="flex items-center gap-2"><Switch checked={form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: v })} /> <Label>Active</Label></div>
               <div className="flex items-center gap-2"><Switch checked={form.fasting_required} onCheckedChange={(v) => setForm({ ...form, fasting_required: v })} /> <Label>Fasting Required</Label></div>
             </div>
-            <Button onClick={save} className="w-full">Save</Button>
+            <Button onClick={() => saveMut.mutate()} className="w-full" disabled={saveMut.isLoading}>{saveMut.isLoading ? 'Saving...' : 'Save'}</Button>
           </div>
         </DialogContent>
       </Dialog>
