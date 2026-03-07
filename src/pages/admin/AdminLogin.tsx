@@ -1,11 +1,10 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { handleError } from "@/lib/error";
 
 const AdminLogin = () => {
   const { signIn } = useAuth();
@@ -21,8 +20,7 @@ const AdminLogin = () => {
     const { error } = await signIn(email, password);
     setLoading(false);
     if (error) {
-      const msg = handleError(error, { feature: 'admin.login' });
-      toast({ title: "Login failed", description: msg, variant: "destructive" });
+      toast({ title: "Login failed", description: error.message, variant: "destructive" });
     } else {
       navigate("/admin");
     }
@@ -49,6 +47,9 @@ const AdminLogin = () => {
         <Button type="submit" className="w-full" disabled={loading}>
           {loading ? "Signing in..." : "Sign In"}
         </Button>
+        <p className="text-center text-sm text-muted-foreground">
+          Need an account? <Link to="/admin/signup" className="text-primary hover:underline">Sign up</Link>
+        </p>
       </form>
     </div>
   );

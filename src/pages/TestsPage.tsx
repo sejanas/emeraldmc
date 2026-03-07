@@ -5,46 +5,30 @@ import { Search, Clock, Droplets, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import SectionHeading from "@/components/SectionHeading";
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "@/lib/api";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 } as const,
-  visible: (i: number) => ({
-    opacity: 1, y: 0,
-    transition: { delay: i * 0.05, duration: 0.4 },
-  }),
+  visible: (i: number) => ({ opacity: 1, y: 0, transition: { delay: i * 0.05, duration: 0.4 } }),
 };
-
-interface TestRow {
-  id: string; name: string; slug: string; description: string | null;
-  price: number; sample_type: string; report_time: string;
-  category_id: string | null; is_active: boolean; fasting_required: boolean;
-  display_order: number;
-}
-
-interface CategoryRow {
-  id: string; name: string;
-}
 
 const TestsPage = () => {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
-  const [tests, setTests] = useState<TestRow[]>([]);
-  const [categories, setCategories] = useState<CategoryRow[]>([]);
+  const [tests, setTests] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
 
   useEffect(() => {
-    const load = async () => {
-      const [{ data: t }, { data: c }] = await Promise.all([
-        supabase.from("tests").select("*").eq("is_active", true).order("display_order"),
-        supabase.from("test_categories").select("*").order("display_order"),
-      ]);
-      if (t) setTests(t);
-      if (c) setCategories(c);
-    };
-    load();
+    Promise.all([
+      api.get("/tests?active=true"),
+      api.get("/categories"),
+    ]).then(([t, c]) => {
+      setTests(t);
+      setCategories(c);
+    });
   }, []);
 
-  const catName = (id: string | null) => categories.find((c) => c.id === id)?.name ?? "Other";
+  const catName = (id: string | null) => categories.find((c: any) => c.id === id)?.name ?? "Other";
 
   const filtered = tests.filter((t) => {
     const matchSearch = t.name.toLowerCase().includes(search.toLowerCase());
@@ -61,7 +45,7 @@ const TestsPage = () => {
           <Input placeholder="Search tests..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
         </div>
         <div className="flex flex-wrap gap-2">
-          {["All", ...categories.map((c) => c.name)].map((c) => (
+          {["All", ...categories.map((c: any) => c.name)].map((c) => (
             <button key={c} onClick={() => setCategory(c)}
               className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${category === c ? "bg-primary text-primary-foreground" : "bg-accent text-accent-foreground hover:bg-accent/80"}`}
             >{c}</button>

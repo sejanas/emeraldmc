@@ -14,10 +14,102 @@ export type Database = {
   }
   public: {
     Tables: {
+      activity_logs: {
+        Row: {
+          action_source: string | null
+          changes: Json | null
+          created_at: string
+          entity_id: string | null
+          entity_name: string | null
+          entity_type: string | null
+          event_type: string
+          id: string
+          ip_address: string | null
+          request_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action_source?: string | null
+          changes?: Json | null
+          created_at?: string
+          entity_id?: string | null
+          entity_name?: string | null
+          entity_type?: string | null
+          event_type: string
+          id?: string
+          ip_address?: string | null
+          request_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action_source?: string | null
+          changes?: Json | null
+          created_at?: string
+          entity_id?: string | null
+          entity_name?: string | null
+          entity_type?: string | null
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          request_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      bookings: {
+        Row: {
+          address: string | null
+          created_at: string
+          email: string | null
+          id: string
+          notes: string | null
+          patient_name: string
+          phone: string
+          preferred_date: string
+          preferred_time: string
+          selected_package: string | null
+          selected_tests: string[] | null
+          status: string
+          updated_at: string | null
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          notes?: string | null
+          patient_name: string
+          phone: string
+          preferred_date: string
+          preferred_time: string
+          selected_package?: string | null
+          selected_tests?: string[] | null
+          status?: string
+          updated_at?: string | null
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          notes?: string | null
+          patient_name?: string
+          phone?: string
+          preferred_date?: string
+          preferred_time?: string
+          selected_package?: string | null
+          selected_tests?: string[] | null
+          status?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       doctors: {
         Row: {
           bio: string | null
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           display_order: number
           experience_years: number | null
           id: string
@@ -26,10 +118,14 @@ export type Database = {
           qualification: string | null
           slug: string
           specialization: string
+          updated_at: string | null
+          updated_by: string | null
         }
         Insert: {
           bio?: string | null
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           display_order?: number
           experience_years?: number | null
           id?: string
@@ -38,10 +134,14 @@ export type Database = {
           qualification?: string | null
           slug: string
           specialization: string
+          updated_at?: string | null
+          updated_by?: string | null
         }
         Update: {
           bio?: string | null
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           display_order?: number
           experience_years?: number | null
           id?: string
@@ -50,32 +150,49 @@ export type Database = {
           qualification?: string | null
           slug?: string
           specialization?: string
+          updated_at?: string | null
+          updated_by?: string | null
         }
         Relationships: []
       }
       gallery: {
         Row: {
           category: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
           display_order: number
           id: string
           image_url: string
           title: string
+          updated_at: string | null
+          updated_by: string | null
           uploaded_at: string
         }
         Insert: {
           category?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
           display_order?: number
           id?: string
           image_url: string
           title: string
+          updated_at?: string | null
+          updated_by?: string | null
           uploaded_at?: string
         }
         Update: {
           category?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
           display_order?: number
           id?: string
           image_url?: string
           title?: string
+          updated_at?: string | null
+          updated_by?: string | null
           uploaded_at?: string
         }
         Relationships: []
@@ -116,60 +233,87 @@ export type Database = {
       packages: {
         Row: {
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           description: string | null
+          discount_percent: number | null
           discounted_price: number | null
           display_order: number
           id: string
+          image_url: string | null
           is_popular: boolean
           name: string
           original_price: number
           slug: string
+          updated_at: string | null
+          updated_by: string | null
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           description?: string | null
+          discount_percent?: number | null
           discounted_price?: number | null
           display_order?: number
           id?: string
+          image_url?: string | null
           is_popular?: boolean
           name: string
           original_price?: number
           slug: string
+          updated_at?: string | null
+          updated_by?: string | null
         }
         Update: {
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           description?: string | null
+          discount_percent?: number | null
           discounted_price?: number | null
           display_order?: number
           id?: string
+          image_url?: string | null
           is_popular?: boolean
           name?: string
           original_price?: number
           slug?: string
+          updated_at?: string | null
+          updated_by?: string | null
         }
         Relationships: []
       }
       test_categories: {
         Row: {
           created_at: string
+          created_by: string | null
           display_order: number
           id: string
           name: string
           slug: string
+          updated_at: string | null
+          updated_by: string | null
         }
         Insert: {
           created_at?: string
+          created_by?: string | null
           display_order?: number
           id?: string
           name: string
           slug: string
+          updated_at?: string | null
+          updated_by?: string | null
         }
         Update: {
           created_at?: string
+          created_by?: string | null
           display_order?: number
           id?: string
           name?: string
           slug?: string
+          updated_at?: string | null
+          updated_by?: string | null
         }
         Relationships: []
       }
@@ -177,44 +321,59 @@ export type Database = {
         Row: {
           category_id: string | null
           created_at: string
+          created_by: string | null
+          deleted_at: string | null
           description: string | null
           display_order: number
           fasting_required: boolean
           id: string
           is_active: boolean
           name: string
+          preparation: string | null
           price: number
           report_time: string
           sample_type: string
           slug: string
+          updated_at: string | null
+          updated_by: string | null
         }
         Insert: {
           category_id?: string | null
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           description?: string | null
           display_order?: number
           fasting_required?: boolean
           id?: string
           is_active?: boolean
           name: string
+          preparation?: string | null
           price?: number
           report_time?: string
           sample_type?: string
           slug: string
+          updated_at?: string | null
+          updated_by?: string | null
         }
         Update: {
           category_id?: string | null
           created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
           description?: string | null
           display_order?: number
           fasting_required?: boolean
           id?: string
           is_active?: boolean
           name?: string
+          preparation?: string | null
           price?: number
           report_time?: string
           sample_type?: string
           slug?: string
+          updated_at?: string | null
+          updated_by?: string | null
         }
         Relationships: [
           {
@@ -225,6 +384,84 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_emails: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_phones: {
+        Row: {
+          created_at: string
+          id: string
+          phone: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          phone: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          phone?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_profiles: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          clinic_role: string | null
+          created_at: string
+          id: string
+          name: string
+          role: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          clinic_role?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          role?: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          clinic_role?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          role?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       user_roles: {
         Row: {

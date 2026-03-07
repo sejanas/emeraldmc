@@ -1,5 +1,4 @@
-import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,48 +8,37 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2 } from "lucide-react";
-import { handleError } from "@/lib/error";
-import type { Tables } from "@/integrations/supabase/types";
+import { api } from "@/lib/api";
 import usePackages from "@/hooks/usePackages";
-import useTests from "@/hooks/useTests";
-import useSupabaseMutation from "@/hooks/useSupabaseMutation";
-import { useQueryClient } from '@tanstack/react-query';
-import ErrorBox from "@/components/ErrorBox";
-
-type Pkg = Tables<"packages">;
-type Test = Tables<"tests">;
+import useSupabaseQuery from "@/hooks/useSupabaseQuery";
+import { useQueryClient } from "@tanstack/react-query";
 
 const AdminPackages = () => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const packagesQuery = usePackages();
+  const allTestsQuery = useSupabaseQuery(["tests", "all"], () => api.get("/tests"));
   const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState<Pkg | null>(null);
+  const [editing, setEditing] = useState<any>(null);
   const [selectedTests, setSelectedTests] = useState<string[]>([]);
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     name: "", slug: "", description: "", original_price: 0,
     discounted_price: null as number | null, is_popular: false, display_order: 0,
   });
 
-  const queryClient = useQueryClient();
-  const packagesQuery = usePackages();
-  const testsQuery = useTests();
-
-  useEffect(() => {
-    if (packagesQuery.data && editing == null) {
-      // noop
-    }
-  }, [packagesQuery.data]);
-
   const openNew = () => {
     setEditing(null);
-    setForm({ name: "", slug: "", description: "", original_price: 0, discounted_price: null, is_popular: false, display_order: (packagesQuery.data?.packages.length ?? 0) });
+    setForm({ name: "", slug: "", description: "", original_price: 0, discounted_price: null, is_popular: false, display_order: packagesQuery.data?.packages.length ?? 0 });
     setSelectedTests([]);
     setOpen(true);
   };
 
-  const openEdit = (pkg: Pkg) => {
+  const openEdit = (pkg: any) => {
     setEditing(pkg);
     setForm({ name: pkg.name, slug: pkg.slug, description: pkg.description || "", original_price: pkg.original_price, discounted_price: pkg.discounted_price, is_popular: pkg.is_popular, display_order: pkg.display_order });
-    setSelectedTests(packagesQuery.data?.testNames[pkg.id] ?? []);
+    // Get test IDs for this package from testNames
+    setSelectedTests([]);
     setOpen(true);
   };
 
@@ -58,61 +46,36 @@ const AdminPackages = () => {
     setSelectedTests((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]);
   };
 
-  const saveMut = useSupabaseMutation(async () => {
-    const slug = form.slug || form.name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
-    let pkgId = editing?.id;
-    if (editing) {
-      const { error } = await supabase.from("packages").update({ ...form, slug }).eq("id", editing.id);
-      if (error) throw error;
-    } else {
-      const { data, error } = await supabase.from("packages").insert({ ...form, slug }).select("id").single();
-      if (error) throw error;
-      pkgId = data?.id;
-    }
-    if (pkgId) {
-      const { error: e1 } = await supabase.from("package_tests").delete().eq("package_id", pkgId);
-      if (e1) throw e1;
-      if (selectedTests.length) {
-        const { error: e2 } = await supabase.from("package_tests").insert(selectedTests.map((t) => ({ package_id: pkgId!, test_id: t })));
-        if (e2) throw e2;
+  const save = async () => {
+    setSaving(true);
+    try {
+      if (editing) {
+        await api.put(`/packages/${editing.id}`, { ...form, test_ids: selectedTests });
+        toast({ title: "Package updated" });
+      } else {
+        await api.post("/packages", { ...form, test_ids: selectedTests });
+        toast({ title: "Package created" });
       }
-    }
-    return { id: pkgId };
-  }, {
-    onSuccess: () => {
-      toast({ title: editing ? "Package updated" : "Package created" });
       setOpen(false);
-      queryClient.invalidateQueries(['packages']);
-    },
-    onError: (err: any) => {
-      const msg = handleError(err, { feature: 'admin.packages.save' });
-      toast({ title: 'Error saving package', description: msg, variant: 'destructive' });
-    }
-  });
+      queryClient.invalidateQueries({ queryKey: ["packages"] });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally { setSaving(false); }
+  };
 
-  const removeMut = useSupabaseMutation(async (id: string) => {
-    const { error } = await supabase.from("package_tests").delete().eq("package_id", id);
-    if (error) throw error;
-    const { error: e2 } = await supabase.from("packages").delete().eq("id", id);
-    if (e2) throw e2;
-    return { id };
-  }, {
-    onMutate: async (id: string) => {
-      await queryClient.cancelQueries(['packages']);
-      const previous = queryClient.getQueryData<any>(['packages']);
-      queryClient.setQueryData(['packages'], (old: any) => ({ ...old, packages: (old?.packages ?? []).filter((p: any) => p.id !== id) }));
-      return { previous };
-    },
-    onError: (err: any, id: string, context: any) => {
-      queryClient.setQueryData(['packages'], context.previous);
-      const msg = handleError(err, { feature: 'admin.packages.delete' });
-      toast({ title: 'Error deleting package', description: msg, variant: 'destructive' });
-    },
-    onSuccess: () => {
-      toast({ title: 'Package deleted' });
-      queryClient.invalidateQueries(['packages']);
+  const remove = async (id: string) => {
+    if (!confirm("Delete this package?")) return;
+    try {
+      await api.del(`/packages/${id}`);
+      toast({ title: "Package deleted" });
+      queryClient.invalidateQueries({ queryKey: ["packages"] });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
     }
-  });
+  };
+
+  const packages = packagesQuery.data?.packages ?? [];
+  const testNames = packagesQuery.data?.testNames ?? {};
 
   return (
     <div>
@@ -120,9 +83,6 @@ const AdminPackages = () => {
         <h1 className="font-display text-2xl font-bold text-foreground">Packages</h1>
         <Button size="sm" onClick={openNew}><Plus className="mr-1 h-4 w-4" /> Add</Button>
       </div>
-
-      {packagesQuery.error && <ErrorBox title="Failed to load packages" message={String(packagesQuery.error.message ?? packagesQuery.error)} onRetry={() => packagesQuery.refetch()} />}
-
       <div className="rounded-xl border border-border bg-card overflow-x-auto">
         <table className="w-full text-sm">
           <thead className="bg-muted/50 text-left">
@@ -136,23 +96,23 @@ const AdminPackages = () => {
             </tr>
           </thead>
           <tbody>
-            {(packagesQuery.data?.packages ?? []).map((p) => (
+            {packages.map((p: any) => (
               <tr key={p.id} className="border-t border-border">
                 <td className="px-4 py-3">{p.display_order}</td>
                 <td className="px-4 py-3 font-medium">{p.name}</td>
                 <td className="px-4 py-3">₹{p.discounted_price ?? p.original_price}</td>
-                <td className="px-4 py-3 text-muted-foreground">{(packagesQuery.data?.testNames[p.id] ?? []).length} tests</td>
+                <td className="px-4 py-3 text-muted-foreground">{(testNames[p.id] ?? []).length} tests</td>
                 <td className="px-4 py-3">{p.is_popular ? "⭐" : "—"}</td>
                 <td className="px-4 py-3 text-right space-x-1">
                   <Button variant="ghost" size="icon" onClick={() => openEdit(p)}><Pencil className="h-4 w-4" /></Button>
-                  <Button variant="ghost" size="icon" onClick={() => { if (!confirm('Delete this package?')) return; removeMut.mutate(p.id); }}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                  <Button variant="ghost" size="icon" onClick={() => remove(p.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
         {packagesQuery.isLoading && <p className="p-6 text-center text-muted-foreground">Loading...</p>}
-        {packagesQuery.isLoading === false && (packagesQuery.data?.packages.length ?? 0) === 0 && <p className="p-6 text-center text-muted-foreground">No packages yet.</p>}
+        {!packagesQuery.isLoading && !packages.length && <p className="p-6 text-center text-muted-foreground">No packages yet.</p>}
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
@@ -171,7 +131,7 @@ const AdminPackages = () => {
             <div>
               <Label className="mb-2 block">Included Tests</Label>
               <div className="max-h-48 overflow-y-auto rounded-lg border border-border p-3 space-y-2">
-                {(testsQuery.data ?? []).map((t) => (
+                {(allTestsQuery.data ?? []).map((t: any) => (
                   <label key={t.id} className="flex items-center gap-2 text-sm cursor-pointer">
                     <Checkbox checked={selectedTests.includes(t.id)} onCheckedChange={() => toggleTest(t.id)} />
                     {t.name}
@@ -179,7 +139,7 @@ const AdminPackages = () => {
                 ))}
               </div>
             </div>
-            <Button onClick={() => saveMut.mutate()} className="w-full" disabled={saveMut.isLoading}>{saveMut.isLoading ? 'Saving...' : 'Save'}</Button>
+            <Button onClick={save} className="w-full" disabled={saving}>{saving ? "Saving..." : "Save"}</Button>
           </div>
         </DialogContent>
       </Dialog>
