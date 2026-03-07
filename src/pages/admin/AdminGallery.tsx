@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { handleError } from "@/lib/error";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import ImageUpload from "@/components/ImageUpload";
 import type { Tables } from "@/integrations/supabase/types";
@@ -29,21 +30,34 @@ const AdminGallery = () => {
   const openEdit = (g: Gallery) => { setEditing(g); setForm({ title: g.title, image_url: g.image_url, category: g.category, display_order: g.display_order }); setOpen(true); };
 
   const save = async () => {
-    if (editing) {
-      await supabase.from("gallery").update(form).eq("id", editing.id);
-    } else {
-      await supabase.from("gallery").insert(form);
+    try {
+      if (editing) {
+        const { error } = await supabase.from("gallery").update(form).eq("id", editing.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("gallery").insert(form);
+        if (error) throw error;
+      }
+      toast({ title: editing ? "Image updated" : "Image added" });
+      setOpen(false);
+      load();
+    } catch (err: any) {
+      const msg = handleError(err, { feature: 'admin.gallery.save' });
+      toast({ title: 'Error saving image', description: msg, variant: 'destructive' });
     }
-    toast({ title: editing ? "Image updated" : "Image added" });
-    setOpen(false);
-    load();
   };
 
   const remove = async (id: string) => {
     if (!confirm("Delete this image?")) return;
-    await supabase.from("gallery").delete().eq("id", id);
-    toast({ title: "Image deleted" });
-    load();
+    try {
+      const { error } = await supabase.from("gallery").delete().eq("id", id);
+      if (error) throw error;
+      toast({ title: "Image deleted" });
+      load();
+    } catch (err: any) {
+      const msg = handleError(err, { feature: 'admin.gallery.delete' });
+      toast({ title: 'Error deleting image', description: msg, variant: 'destructive' });
+    }
   };
 
   return (

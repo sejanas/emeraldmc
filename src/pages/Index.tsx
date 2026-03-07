@@ -4,7 +4,12 @@ import { motion } from "framer-motion";
 import { ArrowRight, Shield, Clock, FlaskConical, Users, Star, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SectionHeading from "@/components/SectionHeading";
+// supabase calls are handled in hooks (useTests/useDoctors/usePackages)
 import { supabase } from "@/integrations/supabase/client";
+import useTests from "@/hooks/useTests";
+import useDoctors from "@/hooks/useDoctors";
+import usePackages from "@/hooks/usePackages";
+import ErrorBox from "@/components/ErrorBox";
 import heroImg from "@/assets/hero-lab.png";
 import JsonLd from "@/components/JsonLd";
 
@@ -35,27 +40,26 @@ const Index = () => {
   const [categories, setCategories] = useState<CatRow[]>([]);
   const [testNames, setTestNames] = useState<Record<string, string[]>>({});
 
+  const testsQuery = useTests(6);
+  const doctorsQuery = useDoctors(3);
+
   useEffect(() => {
-    const load = async () => {
-      const [{ data: t }, { data: p }, { data: d }, { data: c }, { data: pt }] = await Promise.all([
-        supabase.from("tests").select("id, name, price, report_time, sample_type, category_id").eq("is_active", true).order("display_order").limit(6),
-        supabase.from("packages").select("*").order("display_order"),
-        supabase.from("doctors").select("id, name, specialization, profile_image").order("display_order").limit(3),
-        supabase.from("test_categories").select("id, name"),
-        supabase.from("package_tests").select("package_id, test_id, tests(name)"),
-      ]);
-      if (t) setTests(t);
-      if (p) setPackages(p);
-      if (d) setDoctors(d);
-      if (c) setCategories(c);
-      if (pt) {
-        const map: Record<string, string[]> = {};
-        (pt as any[]).forEach((r) => { (map[r.package_id] ??= []).push(r.tests?.name ?? ""); });
-        setTestNames(map);
-      }
-    };
-    load();
-  }, []);
+    if (testsQuery.data) setTests(testsQuery.data);
+  }, [testsQuery.data]);
+
+  useEffect(() => {
+    if (doctorsQuery.data) setDoctors(doctorsQuery.data);
+  }, [doctorsQuery.data]);
+
+  const packagesQuery = usePackages();
+
+  useEffect(() => {
+    if (packagesQuery.data) {
+      setPackages(packagesQuery.data.packages);
+      setCategories(packagesQuery.data.categories);
+      setTestNames(packagesQuery.data.testNames);
+    }
+  }, [packagesQuery.data]);
 
   const catName = (id: string | null) => categories.find((c) => c.id === id)?.name ?? "";
 
@@ -107,7 +111,25 @@ const Index = () => {
         <div className="container">
           <SectionHeading title="Popular Tests" subtitle="Browse our most frequently requested diagnostic tests" />
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {tests.map((t, i) => (
+            {testsQuery.error && (
+              <div className="col-span-3 p-4">
+                <ErrorBox title="Failed to load tests" message={String(testsQuery.error.message ?? testsQuery.error)} onRetry={() => testsQuery.refetch()} />
+              </div>
+            )}
+            {testsQuery.isLoading && Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="flex items-start justify-between rounded-xl border border-border bg-card p-5">
+                <div className="flex-1">
+                  <div className="h-4 w-24 mb-2"><div className="animate-pulse rounded bg-muted h-4 w-full" /></div>
+                  <div className="h-5 w-40 mb-2"><div className="animate-pulse rounded bg-muted h-5 w-full" /></div>
+                  <div className="h-3 w-36"><div className="animate-pulse rounded bg-muted h-3 w-full" /></div>
+                </div>
+                <div className="text-right shrink-0 ml-4 w-28">
+                  <div className="h-6 w-full"><div className="animate-pulse rounded bg-muted h-6 w-full" /></div>
+                  <div className="h-7 mt-2"><div className="animate-pulse rounded bg-muted h-7 w-full" /></div>
+                </div>
+              </div>
+            ))}
+            {testsQuery.data?.map((t, i) => (
               <motion.div key={t.id} initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={i}
                 className="flex items-start justify-between rounded-xl border border-border bg-card p-5 transition-shadow hover:card-shadow-hover">
                 <div>
@@ -132,6 +154,19 @@ const Index = () => {
       <section className="container py-16">
         <SectionHeading title="Health Packages" subtitle="Comprehensive health checkup packages at affordable prices" />
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          {packagesQuery.isLoading && Array.from({ length: 4 }).map((_, i) => (
+            <div key={`pkg-skel-${i}`} className="relative rounded-xl border p-6">
+              <div className="h-5 w-32 mb-3 bg-muted animate-pulse" />
+              <div className="h-4 w-full mb-3 bg-muted animate-pulse" />
+              <div className="h-8 w-full bg-muted animate-pulse" />
+            </div>
+          ))}
+          {packagesQuery.error && (
+            <div className="col-span-4 p-6">
+              <ErrorBox title="Failed to load packages" message={String(packagesQuery.error.message ?? packagesQuery.error)} onRetry={() => packagesQuery.refetch()} />
+            </div>
+          )}
+
           {packages.map((pkg, i) => (
             <motion.div key={pkg.id} initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={i}
               className={`relative rounded-xl border p-6 transition-shadow hover:card-shadow-hover ${pkg.is_popular ? "border-primary bg-accent/50" : "border-border bg-card"}`}>

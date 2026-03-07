@@ -1,4 +1,5 @@
 import { NavLink, Outlet } from "react-router-dom";
+import ErrorBoundary from "@/components/ErrorBoundary";
 import { LayoutDashboard, List, FlaskConical, Package, Users, Image, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -76,7 +77,10 @@ const AdminLayout = () => {
           </Button>
         </header>
         <main className="flex-1 p-4 md:p-6">
-          <Outlet />
+          {/* Catch render errors inside admin area */}
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </main>
       </div>
     </div>

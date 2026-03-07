@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { handleError } from "@/lib/error";
 
 const AdminLogin = () => {
   const { signIn } = useAuth();
@@ -20,7 +21,8 @@ const AdminLogin = () => {
     const { error } = await signIn(email, password);
     setLoading(false);
     if (error) {
-      toast({ title: "Login failed", description: error.message, variant: "destructive" });
+      const msg = handleError(error, { feature: 'admin.login' });
+      toast({ title: "Login failed", description: msg, variant: "destructive" });
     } else {
       navigate("/admin");
     }
