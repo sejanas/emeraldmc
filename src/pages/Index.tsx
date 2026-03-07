@@ -1,14 +1,12 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight, Shield, Clock, FlaskConical, Users, Star, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SectionHeading from "@/components/SectionHeading";
-// supabase calls are handled in hooks (useTests/useDoctors/usePackages)
-import { supabase } from "@/integrations/supabase/client";
 import useTests from "@/hooks/useTests";
 import useDoctors from "@/hooks/useDoctors";
 import usePackages from "@/hooks/usePackages";
+import useCategories from "@/hooks/useCategories";
 import ErrorBox from "@/components/ErrorBox";
 import heroImg from "@/assets/hero-lab.png";
 import JsonLd from "@/components/JsonLd";
@@ -28,40 +26,17 @@ const features = [
   { icon: Users, title: "Expert Doctors", desc: "Qualified pathologists and physicians" },
 ];
 
-interface TestRow { id: string; name: string; price: number; report_time: string; sample_type: string; category_id: string | null; }
-interface PkgRow { id: string; name: string; description: string | null; original_price: number; discounted_price: number | null; is_popular: boolean; }
-interface DoctorRow { id: string; name: string; specialization: string; profile_image: string | null; }
-interface CatRow { id: string; name: string; }
-
 const Index = () => {
-  const [tests, setTests] = useState<TestRow[]>([]);
-  const [packages, setPackages] = useState<PkgRow[]>([]);
-  const [doctors, setDoctors] = useState<DoctorRow[]>([]);
-  const [categories, setCategories] = useState<CatRow[]>([]);
-  const [testNames, setTestNames] = useState<Record<string, string[]>>({});
-
   const testsQuery = useTests(6);
   const doctorsQuery = useDoctors(3);
-
-  useEffect(() => {
-    if (testsQuery.data) setTests(testsQuery.data);
-  }, [testsQuery.data]);
-
-  useEffect(() => {
-    if (doctorsQuery.data) setDoctors(doctorsQuery.data);
-  }, [doctorsQuery.data]);
-
   const packagesQuery = usePackages();
+  const categoriesQuery = useCategories();
 
-  useEffect(() => {
-    if (packagesQuery.data) {
-      setPackages(packagesQuery.data.packages);
-      setCategories(packagesQuery.data.categories);
-      setTestNames(packagesQuery.data.testNames);
-    }
-  }, [packagesQuery.data]);
+  const catName = (id: string | null) =>
+    (categoriesQuery.data ?? []).find((c: any) => c.id === id)?.name ?? "";
 
-  const catName = (id: string | null) => categories.find((c) => c.id === id)?.name ?? "";
+  const packages = packagesQuery.data?.packages ?? [];
+  const testNames = packagesQuery.data?.testNames ?? {};
 
   return (
     <>
@@ -113,7 +88,7 @@ const Index = () => {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {testsQuery.error && (
               <div className="col-span-3 p-4">
-                <ErrorBox title="Failed to load tests" message={String(testsQuery.error.message ?? testsQuery.error)} onRetry={() => testsQuery.refetch()} />
+                <ErrorBox title="Failed to load tests" message={String(testsQuery.error)} onRetry={() => testsQuery.refetch()} />
               </div>
             )}
             {testsQuery.isLoading && Array.from({ length: 6 }).map((_, i) => (
@@ -121,15 +96,10 @@ const Index = () => {
                 <div className="flex-1">
                   <div className="h-4 w-24 mb-2"><div className="animate-pulse rounded bg-muted h-4 w-full" /></div>
                   <div className="h-5 w-40 mb-2"><div className="animate-pulse rounded bg-muted h-5 w-full" /></div>
-                  <div className="h-3 w-36"><div className="animate-pulse rounded bg-muted h-3 w-full" /></div>
-                </div>
-                <div className="text-right shrink-0 ml-4 w-28">
-                  <div className="h-6 w-full"><div className="animate-pulse rounded bg-muted h-6 w-full" /></div>
-                  <div className="h-7 mt-2"><div className="animate-pulse rounded bg-muted h-7 w-full" /></div>
                 </div>
               </div>
             ))}
-            {testsQuery.data?.map((t, i) => (
+            {(testsQuery.data ?? []).map((t: any, i: number) => (
               <motion.div key={t.id} initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={i}
                 className="flex items-start justify-between rounded-xl border border-border bg-card p-5 transition-shadow hover:card-shadow-hover">
                 <div>
@@ -163,11 +133,10 @@ const Index = () => {
           ))}
           {packagesQuery.error && (
             <div className="col-span-4 p-6">
-              <ErrorBox title="Failed to load packages" message={String(packagesQuery.error.message ?? packagesQuery.error)} onRetry={() => packagesQuery.refetch()} />
+              <ErrorBox title="Failed to load packages" message={String(packagesQuery.error)} onRetry={() => packagesQuery.refetch()} />
             </div>
           )}
-
-          {packages.map((pkg, i) => (
+          {packages.map((pkg: any, i: number) => (
             <motion.div key={pkg.id} initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={i}
               className={`relative rounded-xl border p-6 transition-shadow hover:card-shadow-hover ${pkg.is_popular ? "border-primary bg-accent/50" : "border-border bg-card"}`}>
               {pkg.is_popular && (
@@ -177,7 +146,7 @@ const Index = () => {
               <p className="mt-1 text-sm text-muted-foreground">{pkg.description}</p>
               <p className="mt-3 font-display text-3xl font-bold text-primary">₹{pkg.discounted_price ?? pkg.original_price}</p>
               <ul className="mt-4 space-y-1.5">
-                {(testNames[pkg.id] ?? []).map((t) => (
+                {(testNames[pkg.id] ?? []).map((t: string) => (
                   <li key={t} className="flex items-center gap-2 text-xs text-muted-foreground"><CheckCircle className="h-3.5 w-3.5 text-primary shrink-0" /> {t}</li>
                 ))}
               </ul>
@@ -192,7 +161,7 @@ const Index = () => {
         <div className="container">
           <SectionHeading title="Our Expert Doctors" subtitle="Meet our team of qualified healthcare professionals" />
           <div className="grid gap-6 sm:grid-cols-3 max-w-3xl mx-auto">
-            {doctors.map((d, i) => (
+            {(doctorsQuery.data ?? []).map((d: any, i: number) => (
               <motion.div key={d.id} initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={i}
                 className="overflow-hidden rounded-xl border border-border bg-card text-center card-shadow">
                 {d.profile_image && <img src={d.profile_image} alt={d.name} className="aspect-square w-full object-cover" loading="lazy" />}

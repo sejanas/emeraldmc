@@ -1,14 +1,10 @@
-import { supabase } from "@/integrations/supabase/client";
 import useSupabaseQuery from "./useSupabaseQuery";
-
-type Category = any;
+import { api } from "@/lib/api";
 
 export function useCategories() {
-  return useSupabaseQuery<Category[]>(['test_categories'], async () => {
-    const { data, error } = await supabase.from('test_categories').select('*').order('display_order');
-    if (error) throw error;
-    return data ?? [];
-  });
+  return useSupabaseQuery(["test_categories"], () =>
+    api.get("/categories")
+  );
 }
 
 export default useCategories;

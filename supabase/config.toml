@@ -1,1 +1,10 @@
 project_id = "kswypwqxxhsbnrhnqrzm"
+
+[functions.api]
+verify_jwt = false
+
+[functions.seed-admin]
+verify_jwt = false
+
+[functions.visitor-count]
+verify_jwt = false

@@ -1,13 +1,32 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { api } from "@/lib/api";
 import type { User, Session } from "@supabase/supabase-js";
+
+interface Profile {
+  user_id: string;
+  name: string;
+  clinic_role?: string;
+  role: string;
+  status: string;
+  email?: string;
+}
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
-  isAdmin: boolean | null;
+  profile: Profile | null;
+  isAdmin: boolean;
+  isSuperAdmin: boolean;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
+  signUp: (data: {
+    name: string;
+    clinic_role: string;
+    phones: string[];
+    emails: string[];
+    password: string;
+  }) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -16,64 +35,109 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
-  const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
+  const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const checkAdmin = async (userId: string) => {
-    const { data } = await supabase
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", userId)
-      .eq("role", "admin")
-      .maybeSingle();
-    setIsAdmin(!!data);
+  const fetchProfile = async () => {
+    try {
+      const res = await api.get<{ profile: Profile }>("/auth/me");
+      setProfile(res.profile);
+    } catch {
+      setProfile(null);
+    }
   };
 
-  // Safety net: if Supabase auth hangs (e.g. stale token refresh in Chrome),
-  // force loading=false after 8 seconds so the app doesn't spin forever.
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 8000);
     return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        try { await checkAdmin(session.user.id); } catch { setIsAdmin(false); }
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (_event, sess) => {
+      setSession(sess);
+      setUser(sess?.user ?? null);
+      if (sess?.user) {
+        await fetchProfile();
       } else {
-        setIsAdmin(false);
+        setProfile(null);
       }
       setLoading(false);
     });
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        try { await checkAdmin(session.user.id); } catch { setIsAdmin(false); }
-      } else {
-        setIsAdmin(false);
-      }
-      setLoading(false);
-    }).catch(() => setLoading(false));
+    supabase.auth
+      .getSession()
+      .then(async ({ data: { session: sess } }) => {
+        setSession(sess);
+        setUser(sess?.user ?? null);
+        if (sess?.user) {
+          await fetchProfile();
+        }
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
 
     return () => subscription.unsubscribe();
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error: error as Error | null };
+    try {
+      const res = await api.post<{
+        session: { access_token: string; refresh_token: string };
+        profile: Profile;
+      }>("/auth/login", { email, password });
+
+      const { error } = await supabase.auth.setSession({
+        access_token: res.session.access_token,
+        refresh_token: res.session.refresh_token,
+      });
+      if (error) return { error };
+      setProfile(res.profile);
+      return { error: null };
+    } catch (e: any) {
+      return { error: new Error(e.message) };
+    }
+  };
+
+  const signUp = async (data: {
+    name: string;
+    clinic_role: string;
+    phones: string[];
+    emails: string[];
+    password: string;
+  }) => {
+    try {
+      await api.post("/auth/signup", data);
+      return { error: null };
+    } catch (e: any) {
+      return { error: new Error(e.message) };
+    }
   };
 
   const signOut = async () => {
     await supabase.auth.signOut();
-    setIsAdmin(false);
+    setProfile(null);
   };
 
+  const isAdmin =
+    profile?.role === "admin" || profile?.role === "super_admin";
+  const isSuperAdmin = profile?.role === "super_admin";
+
   return (
-    <AuthContext.Provider value={{ user, session, isAdmin, loading, signIn, signOut }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        session,
+        profile,
+        isAdmin,
+        isSuperAdmin,
+        loading,
+        signIn,
+        signUp,
+        signOut,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

@@ -1,36 +1,12 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
-import { FlaskConical, Package, Users, Image, List, Eye } from "lucide-react";
+import { api } from "@/lib/api";
+import { FlaskConical, Package, Users, Image, List, Eye, CalendarCheck } from "lucide-react";
 
 const AdminDashboard = () => {
-  const [counts, setCounts] = useState({ categories: 0, tests: 0, packages: 0, doctors: 0, gallery: 0, visitors: 0 });
+  const [counts, setCounts] = useState({ categories: 0, tests: 0, packages: 0, doctors: 0, gallery: 0, visitors: 0, bookings: 0 });
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        const [c, t, p, d, g, v] = await Promise.all([
-          supabase.from("test_categories").select("id", { count: "exact", head: true }),
-          supabase.from("tests").select("id", { count: "exact", head: true }),
-          supabase.from("packages").select("id", { count: "exact", head: true }),
-          supabase.from("doctors").select("id", { count: "exact", head: true }),
-          supabase.from("gallery").select("id", { count: "exact", head: true }),
-          supabase.from("visitors").select("id", { count: "exact", head: true }),
-        ]);
-
-        // Log raw responses for debugging (network may succeed but return errors)
-        // eslint-disable-next-line no-console
-        console.debug("Admin counts responses:", { c, t, p, d, g, v });
-
-        setCounts({
-          categories: c.count ?? 0, tests: t.count ?? 0, packages: p.count ?? 0,
-          doctors: d.count ?? 0, gallery: g.count ?? 0, visitors: v.count ?? 0,
-        });
-      } catch (err) {
-        // eslint-disable-next-line no-console
-        console.error("Error loading admin counts:", err);
-      }
-    };
-    load();
+    api.get("/dashboard/counts").then(setCounts).catch(console.error);
   }, []);
 
   const cards = [
@@ -39,6 +15,7 @@ const AdminDashboard = () => {
     { label: "Packages", count: counts.packages, icon: Package },
     { label: "Doctors", count: counts.doctors, icon: Users },
     { label: "Gallery", count: counts.gallery, icon: Image },
+    { label: "Bookings", count: counts.bookings, icon: CalendarCheck },
     { label: "Visitors", count: counts.visitors, icon: Eye },
   ];
 

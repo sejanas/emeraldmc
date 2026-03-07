@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Calendar, Clock, User, Phone, Mail, CheckCircle } from "lucide-react";
+import { Calendar, Clock, User, Phone, Mail, CheckCircle, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,36 +8,55 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import SectionHeading from "@/components/SectionHeading";
 import { bookingSlots } from "@/data/siteData";
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "@/lib/api";
 import { useToast } from "@/hooks/use-toast";
 
 const BookingPage = () => {
   const { toast } = useToast();
   const [submitted, setSubmitted] = useState(false);
-  const [form, setForm] = useState({ name: "", phone: "", email: "", date: "", slot: "", testOrPackage: "", notes: "" });
-  const [tests, setTests] = useState<{ id: string; name: string; price: number }[]>([]);
-  const [packages, setPackages] = useState<{ id: string; name: string; original_price: number; discounted_price: number | null }[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState({ name: "", phone: "", email: "", date: "", slot: "", testOrPackage: "", address: "", notes: "" });
+  const [tests, setTests] = useState<any[]>([]);
+  const [packages, setPackages] = useState<any[]>([]);
 
   const today = new Date().toISOString().split("T")[0];
 
   useEffect(() => {
     Promise.all([
-      supabase.from("tests").select("id, name, price").eq("is_active", true).order("name"),
-      supabase.from("packages").select("id, name, original_price, discounted_price").order("name"),
-    ]).then(([{ data: t }, { data: p }]) => {
-      if (t) setTests(t);
-      if (p) setPackages(p);
+      api.get("/tests?active=true"),
+      api.get<{ packages: any[] }>("/packages"),
+    ]).then(([t, p]) => {
+      setTests(t);
+      setPackages(p.packages);
     });
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name || !form.phone || !form.date || !form.slot) {
       toast({ title: "Please fill all required fields", variant: "destructive" });
       return;
     }
-    setSubmitted(true);
-    toast({ title: "Appointment request submitted!", description: "We will confirm your booking shortly." });
+    setLoading(true);
+    try {
+      await api.post("/bookings", {
+        patient_name: form.name,
+        phone: form.phone,
+        email: form.email || null,
+        preferred_date: form.date,
+        preferred_time: form.slot,
+        selected_tests: form.testOrPackage ? [form.testOrPackage] : [],
+        selected_package: null,
+        address: form.address || null,
+        notes: form.notes || null,
+      });
+      setSubmitted(true);
+      toast({ title: "Booking submitted!", description: "We will confirm your booking shortly." });
+    } catch (err: any) {
+      toast({ title: "Error submitting booking", description: err.message, variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
   };
 
   if (submitted) {
@@ -49,8 +68,8 @@ const BookingPage = () => {
             <CheckCircle className="h-8 w-8 text-primary" />
           </div>
           <h2 className="font-display text-2xl font-bold text-foreground">Booking Submitted!</h2>
-          <p className="mt-2 text-muted-foreground">Your appointment request is pending admin approval. We'll contact you at <strong>{form.phone}</strong> to confirm.</p>
-          <Button className="mt-6" onClick={() => { setSubmitted(false); setForm({ name: "", phone: "", email: "", date: "", slot: "", testOrPackage: "", notes: "" }); }}>Book Another</Button>
+          <p className="mt-2 text-muted-foreground">Your appointment request is pending. We'll contact you at <strong>{form.phone}</strong> to confirm.</p>
+          <Button className="mt-6" onClick={() => { setSubmitted(false); setForm({ name: "", phone: "", email: "", date: "", slot: "", testOrPackage: "", address: "", notes: "" }); }}>Book Another</Button>
         </motion.div>
       </div>
     );
@@ -58,7 +77,7 @@ const BookingPage = () => {
 
   return (
     <div className="container py-12">
-      <SectionHeading title="Book an Appointment" subtitle="Select your preferred date, time, and test. Admin approval is required." />
+      <SectionHeading title="Book an Appointment" subtitle="Select your preferred date, time, and test." />
       <form onSubmit={handleSubmit} className="mx-auto max-w-lg space-y-5 rounded-xl border border-border bg-card p-6 card-shadow md:p-8">
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
@@ -95,21 +114,25 @@ const BookingPage = () => {
             <SelectTrigger><SelectValue placeholder="Select test or package (optional)" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="general">General Consultation</SelectItem>
-              {packages.map((p) => (
+              {packages.map((p: any) => (
                 <SelectItem key={p.id} value={p.name}>📦 {p.name} — ₹{p.discounted_price ?? p.original_price}</SelectItem>
               ))}
-              {tests.map((t) => (
+              {tests.map((t: any) => (
                 <SelectItem key={t.id} value={t.name}>🔬 {t.name} — ₹{t.price}</SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
         <div>
+          <Label htmlFor="address" className="flex items-center gap-1.5 mb-1.5"><MapPin className="h-3.5 w-3.5" /> Address</Label>
+          <Input id="address" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} placeholder="Optional" maxLength={500} />
+        </div>
+        <div>
           <Label htmlFor="notes" className="mb-1.5 block">Notes</Label>
           <Textarea id="notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Any special requirements..." rows={3} maxLength={500} />
         </div>
-        <Button type="submit" className="w-full" size="lg">Submit Booking Request</Button>
-        <p className="text-center text-xs text-muted-foreground">Bookings require admin approval. You'll be contacted to confirm.</p>
+        <Button type="submit" className="w-full" size="lg" disabled={loading}>{loading ? "Submitting..." : "Submit Booking Request"}</Button>
+        <p className="text-center text-xs text-muted-foreground">Bookings require confirmation. You'll be contacted shortly.</p>
       </form>
     </div>
   );

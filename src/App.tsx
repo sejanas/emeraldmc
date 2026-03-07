@@ -15,6 +15,7 @@ import GalleryPage from "./pages/GalleryPage";
 import ContactPage from "./pages/ContactPage";
 import NotFound from "./pages/NotFound";
 import AdminLogin from "./pages/admin/AdminLogin";
+import AdminSignup from "./pages/admin/AdminSignup";
 import AdminLayout from "./pages/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminCategories from "./pages/admin/AdminCategories";
@@ -22,6 +23,9 @@ import AdminTests from "./pages/admin/AdminTests";
 import AdminPackages from "./pages/admin/AdminPackages";
 import AdminDoctors from "./pages/admin/AdminDoctors";
 import AdminGallery from "./pages/admin/AdminGallery";
+import AdminBookings from "./pages/admin/AdminBookings";
+import AdminUsers from "./pages/admin/AdminUsers";
+import AdminActivityLogs from "./pages/admin/AdminActivityLogs";
 import LogoutPage from "./pages/LogoutPage";
 
 const queryClient = new QueryClient();
@@ -46,6 +50,7 @@ const App = () => (
             <Route path="/logout" element={<LogoutPage />} />
             <Route path="/admin/logout" element={<LogoutPage />} />
             <Route path="/admin/login" element={<AdminLogin />} />
+            <Route path="/admin/signup" element={<AdminSignup />} />
             <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
               <Route index element={<AdminDashboard />} />
               <Route path="categories" element={<AdminCategories />} />
@@ -53,6 +58,9 @@ const App = () => (
               <Route path="packages" element={<AdminPackages />} />
               <Route path="doctors" element={<AdminDoctors />} />
               <Route path="gallery" element={<AdminGallery />} />
+              <Route path="bookings" element={<AdminBookings />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="activity-logs" element={<AdminActivityLogs />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

@@ -1,62 +1,53 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { handleError } from "@/lib/error";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import ImageUpload from "@/components/ImageUpload";
-import type { Tables } from "@/integrations/supabase/types";
-
-type Gallery = Tables<"gallery">;
+import { api } from "@/lib/api";
 
 const AdminGallery = () => {
   const { toast } = useToast();
-  const [items, setItems] = useState<Gallery[]>([]);
+  const [items, setItems] = useState<any[]>([]);
   const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState<Gallery | null>(null);
+  const [editing, setEditing] = useState<any>(null);
+  const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ title: "", image_url: "", category: "General", display_order: 0 });
 
-  const load = async () => {
-    const { data } = await supabase.from("gallery").select("*").order("display_order");
-    if (data) setItems(data);
-  };
+  const load = () => api.get("/gallery").then(setItems);
 
   useEffect(() => { load(); }, []);
 
   const openNew = () => { setEditing(null); setForm({ title: "", image_url: "", category: "General", display_order: items.length }); setOpen(true); };
-  const openEdit = (g: Gallery) => { setEditing(g); setForm({ title: g.title, image_url: g.image_url, category: g.category, display_order: g.display_order }); setOpen(true); };
+  const openEdit = (g: any) => { setEditing(g); setForm({ title: g.title, image_url: g.image_url, category: g.category, display_order: g.display_order }); setOpen(true); };
 
   const save = async () => {
+    setSaving(true);
     try {
       if (editing) {
-        const { error } = await supabase.from("gallery").update(form).eq("id", editing.id);
-        if (error) throw error;
+        await api.put(`/gallery/${editing.id}`, form);
+        toast({ title: "Image updated" });
       } else {
-        const { error } = await supabase.from("gallery").insert(form);
-        if (error) throw error;
+        await api.post("/gallery", form);
+        toast({ title: "Image added" });
       }
-      toast({ title: editing ? "Image updated" : "Image added" });
       setOpen(false);
       load();
     } catch (err: any) {
-      const msg = handleError(err, { feature: 'admin.gallery.save' });
-      toast({ title: 'Error saving image', description: msg, variant: 'destructive' });
-    }
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    } finally { setSaving(false); }
   };
 
   const remove = async (id: string) => {
     if (!confirm("Delete this image?")) return;
     try {
-      const { error } = await supabase.from("gallery").delete().eq("id", id);
-      if (error) throw error;
+      await api.del(`/gallery/${id}`);
       toast({ title: "Image deleted" });
       load();
     } catch (err: any) {
-      const msg = handleError(err, { feature: 'admin.gallery.delete' });
-      toast({ title: 'Error deleting image', description: msg, variant: 'destructive' });
+      toast({ title: "Error", description: err.message, variant: "destructive" });
     }
   };
 
@@ -91,7 +82,7 @@ const AdminGallery = () => {
             <div><Label>Title</Label><Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="mt-1" /></div>
             <div><Label>Category</Label><Input value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })} className="mt-1" /></div>
             <div><Label>Display Order</Label><Input type="number" value={form.display_order} onChange={(e) => setForm({ ...form, display_order: +e.target.value })} className="mt-1" /></div>
-            <Button onClick={save} className="w-full">Save</Button>
+            <Button onClick={save} className="w-full" disabled={saving}>{saving ? "Saving..." : "Save"}</Button>
           </div>
         </DialogContent>
       </Dialog>

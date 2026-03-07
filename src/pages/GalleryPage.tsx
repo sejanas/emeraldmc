@@ -1,23 +1,17 @@
 import { useEffect, useState } from "react";
 import SectionHeading from "@/components/SectionHeading";
-import { supabase } from "@/integrations/supabase/client";
-
-interface GalleryItem {
-  id: string; title: string; image_url: string; category: string;
-}
+import { api } from "@/lib/api";
 
 const GalleryPage = () => {
-  const [items, setItems] = useState<GalleryItem[]>([]);
+  const [items, setItems] = useState<any[]>([]);
   const [filter, setFilter] = useState("All");
 
   useEffect(() => {
-    supabase.from("gallery").select("*").order("display_order").then(({ data }) => {
-      if (data) setItems(data);
-    });
+    api.get("/gallery").then((data) => setItems(data));
   }, []);
 
-  const cats = ["All", ...Array.from(new Set(items.map((i) => i.category)))];
-  const filtered = filter === "All" ? items : items.filter((i) => i.category === filter);
+  const cats = ["All", ...Array.from(new Set(items.map((i: any) => i.category)))];
+  const filtered = filter === "All" ? items : items.filter((i: any) => i.category === filter);
 
   return (
     <div className="container py-12">
@@ -32,7 +26,7 @@ const GalleryPage = () => {
         </div>
       )}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {filtered.map((item) => (
+        {filtered.map((item: any) => (
           <div key={item.id} className="group relative overflow-hidden rounded-xl border border-border">
             <img src={item.image_url} alt={item.title} className="aspect-video w-full object-cover transition-transform duration-300 group-hover:scale-105" loading="lazy" />
             <div className="absolute inset-0 bg-gradient-to-t from-foreground/60 to-transparent opacity-0 transition-opacity group-hover:opacity-100" />
