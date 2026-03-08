@@ -72,7 +72,12 @@ const AdminProfile = () => {
       setDeclineReason(p.decline_reason ?? null);
       setDeclinedAt(p.declined_at ?? null);
       setPhones((res.phones ?? []).map((ph: any) => ph.phone).filter(Boolean));
-      setEmails((res.emails ?? []).map((e: any) => e.email).filter(Boolean));
+      // Filter out the primary login email — it's shown read-only separately
+      const authEmail = (res.profile?.email ?? "").toLowerCase();
+      const additional = (res.emails ?? [])
+        .map((e: any) => e.email)
+        .filter((e: string) => e && e.toLowerCase() !== authEmail);
+      setEmails(additional.length ? additional : []);
     } catch (err: any) {
       toast({ title: "Failed to load profile", description: err.message, variant: "destructive" });
     } finally {
@@ -86,9 +91,9 @@ const AdminProfile = () => {
   const validate = useCallback((): FieldErrors => {
     const errs: FieldErrors = {};
     if (!name.trim()) errs.name = "Name is required";
-    const emailErrs = emails.map((e, i) => {
-      if (i === 0 && !e.trim()) return "Required";
-      if (e.trim() && !isValidEmail(e)) return "Invalid email";
+    // Additional emails are all optional, but must be valid if filled
+    const emailErrs = emails.map((e) => {
+      if (e.trim() && !isValidEmail(e)) return "Invalid email format";
       return "";
     });
     if (emailErrs.some(Boolean)) errs.emails = emailErrs;
@@ -297,6 +302,9 @@ const AdminProfile = () => {
             <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">Contact Emails</h2>
           </div>
           <p className="text-xs text-muted-foreground mb-3">Additional email addresses for notifications and communication.</p>
+          {emails.length === 0 && (
+            <p className="text-xs text-muted-foreground italic mb-2">No additional emails added.</p>
+          )}
           {emails.map((email, i) => (
             <div key={i} className="flex gap-2 mb-2">
               <div className="flex-1">
@@ -304,19 +312,18 @@ const AdminProfile = () => {
                   type="email"
                   value={email}
                   onChange={(e) => { updateEmail(i, e.target.value); setTouched((t) => ({ ...t, emails: true })); }}
-                  placeholder={`Email ${i + 1}`}
-                  required={i === 0}
+                  placeholder={`Additional email ${i + 1}`}
+                  pattern="[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*"
+                  title="Please enter a valid email address"
                   className={touched.emails && currentErrors.emails?.[i] ? "border-destructive focus-visible:ring-destructive" : ""}
                 />
                 {touched.emails && currentErrors.emails?.[i] && (
                   <p className="text-xs text-destructive mt-0.5">{currentErrors.emails[i]}</p>
                 )}
               </div>
-              {emails.length > 1 && (
-                <Button type="button" variant="ghost" size="icon" onClick={() => removeEmail(i)} className="shrink-0">
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
-              )}
+              <Button type="button" variant="ghost" size="icon" onClick={() => removeEmail(i)} className="shrink-0">
+                <Trash2 className="h-4 w-4 text-destructive" />
+              </Button>
             </div>
           ))}
           <Button type="button" variant="outline" size="sm" onClick={addEmail} className="mt-1">

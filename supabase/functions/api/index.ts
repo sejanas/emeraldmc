@@ -808,10 +808,20 @@ async function handleUpdateProfile(req: Request) {
   }
 
   if (Array.isArray(emails)) {
+    const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
     const validEmails = emails.filter((e: string) => e?.trim());
-    if (!validEmails.length) return errRes("At least one email is required");
+    const invalidEmail = validEmails.find((e: string) => !emailRegex.test(e.trim()));
+    if (invalidEmail) return errRes(`Invalid email: ${invalidEmail}`);
+
+    // Always include the primary auth email; users cannot remove it
+    const primaryEmail = user.email?.toLowerCase();
+    const allEmails = new Set(validEmails.map((e: string) => e.trim().toLowerCase()));
+    if (primaryEmail) allEmails.add(primaryEmail);
+
     await db.from("user_emails").delete().eq("user_id", user.id);
-    await db.from("user_emails").insert(validEmails.map((e: string) => ({ user_id: user.id, email: e.trim() })));
+    await db.from("user_emails").insert(
+      Array.from(allEmails).map((e: string) => ({ user_id: user.id, email: e }))
+    );
   }
 
   await logActivity({
