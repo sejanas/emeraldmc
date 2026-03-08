@@ -119,11 +119,11 @@ const Index = () => {
               <Shield className="h-3 w-3" /> ISO Certified Lab
             </span>
             <h1 className="mt-4 font-display text-4xl font-bold leading-tight text-foreground md:text-5xl lg:text-6xl">
-              Accurate Diagnostic Tests with Same-Day Reports in{" "}
-              <span className="text-gradient-emerald">Sri Vijaya Puram</span>
+              Bringing World Class Care to{" "}
+              <span className="text-gradient-emerald">the Islands</span>
             </h1>
             <p className="mt-4 text-lg text-muted-foreground leading-relaxed max-w-lg">
-              ISO Certified Diagnostic Lab providing reliable health tests, affordable packages, and free home sample collection.
+              Shifa's Mainland Healthcare — ISO Certified Diagnostic Lab providing reliable health tests, affordable packages, and free home sample collection in Sri Vijaya Puram.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <Button asChild size="lg"><Link to="/book">Book Health Test <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
@@ -131,7 +131,7 @@ const Index = () => {
             </div>
           </motion.div>
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, delay: 0.2 }}>
-            <img src={heroImg} alt="Emerald Medical Care - ISO certified diagnostic laboratory in Sri Vijaya Puram" className="w-full rounded-2xl card-shadow object-cover" loading="eager" />
+            <img src={heroImg} alt="Shifa's Mainland Healthcare - ISO certified diagnostic laboratory in Sri Vijaya Puram" className="w-full rounded-2xl card-shadow object-cover" loading="eager" />
           </motion.div>
         </div>
       </section>

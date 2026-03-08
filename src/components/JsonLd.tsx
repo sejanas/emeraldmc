@@ -25,7 +25,7 @@ const defaultSchema = {
     longitude: "92.7365",
   },
   openingHours: "Mo-Su 06:00-19:00",
-  url: typeof window !== "undefined" ? window.location.origin : "https://emeraldmedicalcare.com",
+  url: typeof window !== "undefined" ? window.location.origin : "https://emeraldmc.lovable.app",
   medicalSpecialty: ["Pathology", "Clinical Laboratory"],
   priceRange: "₹100 - ₹5000",
   areaServed: [

@@ -1,8 +1,8 @@
 // Centralized site data - will be replaced by DB in Phase 2
 
 export const businessInfo = {
-  name: "Emerald Medical Care",
-  shortName: "EMC",
+  name: "Shifa's Mainland Healthcare",
+  shortName: "SMH",
   phone: "+91 7679348684",
   email: "shifasmainlandhealthcare@gmail.com",
   hours: "Everyday 6:00 AM – 7:00 PM",

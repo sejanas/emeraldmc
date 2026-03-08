@@ -25,10 +25,15 @@ const Footer = () => {
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={0}>
             <Link to="/" className="flex items-center gap-3 group">
               <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary p-2 transition-transform group-hover:scale-110">
-                <img src={logo} alt="Shifas Mainland Healthcare" className="h-full w-full object-contain" />
+                <img src={logo} alt="Shifa's Mainland Healthcare" className="h-full w-full object-contain" />
               </div>
-              <span className="font-display text-lg font-semibold">Shifas Healthcare</span>
+              <div className="flex flex-col leading-tight">
+                <span className="font-display text-base font-bold uppercase tracking-wide">Shifa's Mainland</span>
+                <span className="font-display text-sm font-semibold uppercase tracking-wider text-primary">Healthcare</span>
+              </div>
             </Link>
+            <p className="mt-2 text-xs font-medium text-primary/80 italic">Bringing World Class Care to the Islands</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">(A Unit of Emerald Medical Care)</p>
             <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
               Trusted ISO Certified Diagnostic Lab in Sri Vijaya Puram, providing quality healthcare services.
             </p>
@@ -102,7 +107,7 @@ const Footer = () => {
           transition={{ delay: 0.4 }}
           className="mt-10 border-t border-border pt-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground"
         >
-          <span>© {new Date().getFullYear()} Shifas Mainland Healthcare. All rights reserved.</span>
+          <span>© {new Date().getFullYear()} Shifa's Mainland Healthcare (A Unit of Emerald Medical Care). All rights reserved.</span>
           <VisitorTracker />
         </motion.div>
       </div>
