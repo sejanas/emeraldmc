@@ -1269,6 +1269,9 @@ Deno.serve(async (req) => {
       // Patient history
       if (method === "GET" && id === "patient-history")
         return await handlePatientHistory(req, url);
+      // Bulk status update (before individual ID routes)
+      if (method === "PUT" && id === "bulk-status")
+        return await handleBulkStatusUpdate(req);
       if (method === "GET" && !id) {
         await requireRole(req, BOOKING_ROLES);
         const db = adminDb();
