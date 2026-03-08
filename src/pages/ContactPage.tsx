@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import SectionHeading from "@/components/SectionHeading";
 import { businessInfo } from "@/data/siteData";
 import { useToast } from "@/hooks/use-toast";
+import { isValidEmail } from "@/lib/validation";
 
 const contactDetails = [
   { icon: Phone, label: "Phone", value: businessInfo.phone, href: `tel:${businessInfo.phone}` },
@@ -21,6 +22,10 @@ const ContactPage = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isValidEmail(form.email)) {
+      toast({ title: "Please enter a valid email address", variant: "destructive" });
+      return;
+    }
     toast({ title: "Message sent!", description: "We'll get back to you shortly." });
     setForm({ name: "", email: "", message: "" });
   };
@@ -69,7 +74,17 @@ const ContactPage = () => {
           </div>
           <div>
             <Label htmlFor="cemail" className="mb-1.5 block">Email *</Label>
-            <Input id="cemail" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="your@email.com" required maxLength={255} />
+            <Input
+              id="cemail"
+              type="email"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+              placeholder="your@email.com"
+              required
+              maxLength={255}
+              pattern="[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*"
+              title="Please enter a valid email address"
+            />
           </div>
           <div>
             <Label htmlFor="cmsg" className="mb-1.5 block">Message *</Label>

@@ -12,6 +12,8 @@ import useTests from "@/hooks/useTests";
 import usePackages from "@/hooks/usePackages";
 import { useCreateBooking } from "@/hooks/useBookingsMutations";
 import { useToast } from "@/hooks/use-toast";
+import PhoneInputField from "@/components/PhoneInputField";
+import { isValidEmail, isValidPhone } from "@/lib/validation";
 
 const BookingPage = () => {
   const { toast } = useToast();
@@ -31,6 +33,14 @@ const BookingPage = () => {
     e.preventDefault();
     if (!form.name || !form.phone || !form.date || !form.slot) {
       toast({ title: "Please fill all required fields", variant: "destructive" });
+      return;
+    }
+    if (!isValidPhone(form.phone)) {
+      toast({ title: "Please enter a valid phone number", variant: "destructive" });
+      return;
+    }
+    if (form.email && !isValidEmail(form.email)) {
+      toast({ title: "Please enter a valid email address", variant: "destructive" });
       return;
     }
     setLoading(true);
@@ -81,13 +91,22 @@ const BookingPage = () => {
             <Input id="name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Your name" required maxLength={100} />
           </div>
           <div>
-            <Label htmlFor="phone" className="flex items-center gap-1.5 mb-1.5"><Phone className="h-3.5 w-3.5" /> Phone *</Label>
-            <Input id="phone" type="tel" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="+91 XXXXXXXXXX" required maxLength={15} />
+            <Label className="flex items-center gap-1.5 mb-1.5"><Phone className="h-3.5 w-3.5" /> Phone *</Label>
+            <PhoneInputField value={form.phone} onChange={(v) => setForm({ ...form, phone: v })} />
           </div>
         </div>
         <div>
           <Label htmlFor="email" className="flex items-center gap-1.5 mb-1.5"><Mail className="h-3.5 w-3.5" /> Email</Label>
-          <Input id="email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="your@email.com" maxLength={255} />
+          <Input
+            id="email"
+            type="email"
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+            placeholder="your@email.com"
+            maxLength={255}
+            pattern="[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*"
+            title="Please enter a valid email address"
+          />
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>

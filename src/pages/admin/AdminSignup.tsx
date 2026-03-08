@@ -6,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Trash2, CheckCircle } from "lucide-react";
+import PhoneInputField from "@/components/PhoneInputField";
+import { isValidEmail, isValidPhone } from "@/lib/validation";
 
 const AdminSignup = () => {
   const { signUp } = useAuth();
@@ -43,12 +45,23 @@ const AdminSignup = () => {
       toast({ title: "At least one email is required", variant: "destructive" });
       return;
     }
+    const invalidEmail = validEmails.find((e) => !isValidEmail(e));
+    if (invalidEmail) {
+      toast({ title: "Invalid email address", description: invalidEmail, variant: "destructive" });
+      return;
+    }
+    const validPhones = phones.filter((p) => p.trim());
+    const invalidPhone = validPhones.find((p) => !isValidPhone(p));
+    if (invalidPhone) {
+      toast({ title: "Invalid phone number", description: invalidPhone, variant: "destructive" });
+      return;
+    }
 
     setLoading(true);
     const { error } = await signUp({
       name: form.name,
       clinic_role: form.clinic_role,
-      phones: phones.filter((p) => p.trim()),
+      phones: validPhones,
       emails: validEmails,
       password: form.password,
     });
@@ -102,8 +115,15 @@ const AdminSignup = () => {
           <Label className="mb-1.5 block">Email Addresses *</Label>
           {emails.map((email, i) => (
             <div key={i} className="flex gap-2 mb-2">
-              <Input type="email" value={email} onChange={(e) => updateEmail(i, e.target.value)}
-                placeholder={`Email ${i + 1}`} required={i === 0} />
+              <Input
+                type="email"
+                value={email}
+                onChange={(e) => updateEmail(i, e.target.value)}
+                placeholder={`Email ${i + 1}`}
+                required={i === 0}
+                pattern="[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*"
+                title="Please enter a valid email address"
+              />
               {emails.length > 1 && (
                 <Button type="button" variant="ghost" size="icon" onClick={() => removeEmail(i)}>
                   <Trash2 className="h-4 w-4 text-destructive" />
@@ -119,9 +139,10 @@ const AdminSignup = () => {
         <div>
           <Label className="mb-1.5 block">Phone Numbers</Label>
           {phones.map((phone, i) => (
-            <div key={i} className="flex gap-2 mb-2">
-              <Input type="tel" value={phone} onChange={(e) => updatePhone(i, e.target.value)}
-                placeholder={`Phone ${i + 1}`} />
+            <div key={i} className="flex gap-2 mb-2 items-center">
+              <div className="flex-1">
+                <PhoneInputField value={phone} onChange={(v) => updatePhone(i, v)} />
+              </div>
               {phones.length > 1 && (
                 <Button type="button" variant="ghost" size="icon" onClick={() => removePhone(i)}>
                   <Trash2 className="h-4 w-4 text-destructive" />
