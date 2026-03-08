@@ -67,9 +67,7 @@
     font-family: 'DM Sans', system-ui, sans-serif;
   }
 
-  /* ===== EMERALD — Dark ===== */
-  .dark,
-  [data-theme="emerald"].dark {
+  .dark {
     --background: 200 15% 8%;
     --foreground: 160 10% 95%;
     --card: 200 15% 10%;
