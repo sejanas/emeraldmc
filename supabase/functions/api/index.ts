@@ -899,6 +899,29 @@ async function handlePatientHistory(req: Request, url: URL) {
   return json(data);
 }
 
+async function handlePublicBookingTrack(url: URL) {
+  const phone = url.searchParams.get("phone");
+  const patientId = url.searchParams.get("patient_id");
+
+  if (!phone) return errRes("phone required");
+
+  const db = adminDb();
+  let q = db.from("bookings")
+    .select("id, patient_name, phone, patient_id, preferred_date, preferred_time, status, selected_tests, selected_package, created_at")
+    .order("created_at", { ascending: false })
+    .limit(20);
+
+  if (patientId) {
+    q = q.eq("patient_id", patientId).eq("phone", phone);
+  } else {
+    q = q.or(`phone.eq.${phone},extra_phones.cs.{${phone}}`);
+  }
+
+  const { data, error } = await q;
+  if (error) throw { message: error.message, status: 500 };
+  return json(data);
+}
+
 // ── ADMIN USER MANAGEMENT ──
 
 async function handleListUsers(req: Request, url: URL) {
