@@ -491,11 +491,13 @@ export type Database = {
           created_by: string | null
           deleted_at: string | null
           description: string | null
+          discounted_price: number | null
           display_order: number
           fasting_required: boolean
           id: string
           is_active: boolean
           name: string
+          original_price: number | null
           preparation: string | null
           price: number
           report_time: string
@@ -510,11 +512,13 @@ export type Database = {
           created_by?: string | null
           deleted_at?: string | null
           description?: string | null
+          discounted_price?: number | null
           display_order?: number
           fasting_required?: boolean
           id?: string
           is_active?: boolean
           name: string
+          original_price?: number | null
           preparation?: string | null
           price?: number
           report_time?: string
@@ -529,11 +533,13 @@ export type Database = {
           created_by?: string | null
           deleted_at?: string | null
           description?: string | null
+          discounted_price?: number | null
           display_order?: number
           fasting_required?: boolean
           id?: string
           is_active?: boolean
           name?: string
+          original_price?: number | null
           preparation?: string | null
           price?: number
           report_time?: string

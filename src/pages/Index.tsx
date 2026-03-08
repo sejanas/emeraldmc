@@ -207,7 +207,12 @@ const Index = () => {
                           <p className="text-sm font-medium text-foreground">{t.name}</p>
                           <p className="text-xs text-muted-foreground">{catName(t.category_id)} · {t.report_time}</p>
                         </div>
-                        <span className="text-sm font-semibold text-primary shrink-0 ml-3">₹{t.price}</span>
+                        <span className="shrink-0 ml-3 text-right">
+                          {t.original_price && t.original_price > t.price && (
+                            <span className="text-xs text-muted-foreground line-through mr-1">₹{t.original_price}</span>
+                          )}
+                          <span className="text-sm font-semibold text-primary">₹{t.price}</span>
+                        </span>
                       </Link>
                     ))}
                   </div>
@@ -332,6 +337,9 @@ const Index = () => {
                   <p className="mt-1 text-xs text-muted-foreground">{t.report_time} • {t.sample_type}</p>
                 </div>
                 <div className="text-right shrink-0 ml-4">
+                  {t.original_price && t.original_price > t.price && (
+                    <p className="text-xs text-muted-foreground line-through">₹{t.original_price}</p>
+                  )}
                   <p className="font-display text-lg font-bold text-primary">₹{t.price}</p>
                   <Button asChild size="sm" variant="outline" className="mt-1 h-7 text-xs"><Link to="/book">Book</Link></Button>
                 </div>

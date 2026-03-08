@@ -26,20 +26,20 @@ const AdminTests = () => {
   const [editing, setEditing] = useState<any>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    name: "", slug: "", description: "", price: 0, sample_type: "Blood",
+    name: "", slug: "", description: "", price: 0, original_price: 0, sample_type: "Blood",
     report_time: "Same Day", category_id: "" as string | null, is_active: true,
     fasting_required: false, display_order: 0,
   });
 
   const openNew = () => {
     setEditing(null);
-    setForm({ name: "", slug: "", description: "", price: 0, sample_type: "Blood", report_time: "Same Day", category_id: null, is_active: true, fasting_required: false, display_order: testsQuery.data?.length ?? 0 });
+    setForm({ name: "", slug: "", description: "", price: 0, original_price: 0, sample_type: "Blood", report_time: "Same Day", category_id: null, is_active: true, fasting_required: false, display_order: testsQuery.data?.length ?? 0 });
     setOpen(true);
   };
 
   const openEdit = (t: any) => {
     setEditing(t);
-    setForm({ name: t.name, slug: t.slug, description: t.description || "", price: t.price, sample_type: t.sample_type, report_time: t.report_time, category_id: t.category_id, is_active: t.is_active, fasting_required: t.fasting_required, display_order: t.display_order });
+    setForm({ name: t.name, slug: t.slug, description: t.description || "", price: t.price, original_price: t.original_price || 0, sample_type: t.sample_type, report_time: t.report_time, category_id: t.category_id, is_active: t.is_active, fasting_required: t.fasting_required, display_order: t.display_order });
     setOpen(true);
   };
 
@@ -90,6 +90,7 @@ const AdminTests = () => {
               <th className="px-4 py-3 font-medium text-muted-foreground">#</th>
               <th className="px-4 py-3 font-medium text-muted-foreground">Name</th>
               <th className="px-4 py-3 font-medium text-muted-foreground">Category</th>
+              <th className="px-4 py-3 font-medium text-muted-foreground">MRP</th>
               <th className="px-4 py-3 font-medium text-muted-foreground">Price</th>
               <th className="px-4 py-3 font-medium text-muted-foreground">Active</th>
               <th className="px-4 py-3 font-medium text-muted-foreground text-right">Actions</th>
@@ -101,6 +102,7 @@ const AdminTests = () => {
                 <td className="px-4 py-3">{t.display_order}</td>
                 <td className="px-4 py-3 font-medium">{t.name}</td>
                 <td className="px-4 py-3 text-muted-foreground">{catName(t.category_id)}</td>
+                <td className="px-4 py-3 text-muted-foreground">{t.original_price ? `₹${t.original_price}` : '—'}</td>
                 <td className="px-4 py-3">₹{t.price}</td>
                 <td className="px-4 py-3">{t.is_active ? "✓" : "✗"}</td>
                 <td className="px-4 py-3 text-right space-x-1">
@@ -122,8 +124,9 @@ const AdminTests = () => {
             <div><Label>Name</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="mt-1" /></div>
             <div><Label>Slug</Label><Input value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} placeholder="auto-generated" className="mt-1" /></div>
             <div><Label>Description</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="mt-1" /></div>
-            <div className="grid grid-cols-2 gap-4">
-              <div><Label>Price (₹)</Label><Input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: +e.target.value })} className="mt-1" /></div>
+            <div className="grid grid-cols-3 gap-4">
+              <div><Label>MRP (₹)</Label><Input type="number" value={form.original_price} onChange={(e) => setForm({ ...form, original_price: +e.target.value })} className="mt-1" /></div>
+              <div><Label>Selling Price (₹)</Label><Input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: +e.target.value })} className="mt-1" /></div>
               <div>
                 <Label>Category</Label>
                 <Select value={form.category_id ?? ""} onValueChange={(v) => setForm({ ...form, category_id: v || null })}>

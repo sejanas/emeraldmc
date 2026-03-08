@@ -113,7 +113,12 @@ const TestsPage = () => {
                   {t.fasting_required && <span className="flex items-center gap-1 text-destructive"><AlertCircle className="h-3 w-3" /> Fasting</span>}
                 </div>
                 <div className="mt-4 flex items-center justify-between">
-                  <span className="font-display text-xl font-bold text-primary">₹{t.price}</span>
+                  <div className="flex items-baseline gap-2">
+                    {t.original_price && t.original_price > t.price && (
+                      <span className="text-sm text-muted-foreground line-through">₹{t.original_price}</span>
+                    )}
+                    <span className="font-display text-xl font-bold text-primary">₹{t.price}</span>
+                  </div>
                   <Button asChild size="sm"><Link to="/book">Book Now</Link></Button>
                 </div>
               </motion.div>
