@@ -14,6 +14,7 @@ import useTests from "@/hooks/useTests";
 
 const AdminPackages = () => {
   const { toast } = useToast();
+  const confirm = useConfirm();
   const packagesQuery = usePackages();
   const createPackage = useCreatePackage();
   const updatePackage = useUpdatePackage();
