@@ -107,9 +107,13 @@ export const healthPackages: HealthPackage[] = [
 
 export const bookingSlots = (() => {
   const slots: string[] = [];
-  for (let h = 6; h < 19; h++) {
+  for (let h = 6; h <= 18; h++) {
     slots.push(`${h.toString().padStart(2, "0")}:00`);
-    slots.push(`${h.toString().padStart(2, "0")}:30`);
+    if (h < 18) {
+      slots.push(`${h.toString().padStart(2, "0")}:30`);
+    } else {
+      slots.push("18:30");
+    }
   }
   return slots;
 })();

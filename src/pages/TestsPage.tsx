@@ -26,6 +26,8 @@ const TestsPage = () => {
   useEffect(() => {
     const urlCat = searchParams.get("category");
     if (urlCat) setCategory(urlCat);
+    const urlSearch = searchParams.get("search");
+    if (urlSearch !== null) setSearch(urlSearch);
   }, [searchParams]);
 
   const handleCategoryChange = (cat: string) => {
@@ -57,7 +59,13 @@ const TestsPage = () => {
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="Search tests..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+          <Input placeholder="Search tests..." value={search} onChange={(e) => {
+            setSearch(e.target.value);
+            const newParams = new URLSearchParams(searchParams);
+            if (e.target.value) newParams.set("search", e.target.value);
+            else newParams.delete("search");
+            setSearchParams(newParams, { replace: true });
+          }} className="pl-9" />
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {!testsQuery.isLoading && (

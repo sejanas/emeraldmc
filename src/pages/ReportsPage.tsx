@@ -1,42 +1,92 @@
 import { useState } from "react";
-import { FileDown, Search } from "lucide-react";
+import { FileDown, Search, Clock, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import SectionHeading from "@/components/SectionHeading";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import { useToast } from "@/hooks/use-toast";
+import { api } from "@/lib/api";
+
+const statusLabels: Record<string, string> = {
+  pending: "Pending",
+  confirmed: "Confirmed",
+  sample_collected: "Sample Collected",
+  completed: "Completed",
+  cancelled: "Cancelled",
+};
+
+const statusColors: Record<string, string> = {
+  pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
+  confirmed: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+  sample_collected: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400",
+  completed: "bg-primary/10 text-primary",
+  cancelled: "bg-destructive/10 text-destructive",
+};
+
+interface BookingResult {
+  id: string;
+  patient_name: string;
+  phone: string;
+  patient_id: string | null;
+  preferred_date: string;
+  preferred_time: string;
+  status: string;
+  selected_tests: string[] | null;
+  selected_package: string | null;
+  created_at: string;
+}
 
 const ReportsPage = () => {
   const { toast } = useToast();
   const [form, setForm] = useState({ patientId: "", mobile: "" });
   const [loading, setLoading] = useState(false);
+  const [results, setResults] = useState<BookingResult[] | null>(null);
+  const [searched, setSearched] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.patientId.trim() || !form.mobile.trim()) {
-      toast({ title: "Please fill in all fields", variant: "destructive" });
+    if (!form.mobile.trim()) {
+      toast({ title: "Please enter your mobile number", variant: "destructive" });
       return;
     }
-    if (!/^\d{10}$/.test(form.mobile.replace(/\D/g, "").slice(-10))) {
+    const cleanPhone = form.mobile.replace(/\D/g, "").slice(-10);
+    if (!/^\d{10}$/.test(cleanPhone)) {
       toast({ title: "Please enter a valid 10-digit mobile number", variant: "destructive" });
       return;
     }
+
     setLoading(true);
-    // Simulated — replace with real API call when backend is ready
-    setTimeout(() => {
-      setLoading(false);
+    setSearched(true);
+    try {
+      const params = new URLSearchParams();
+      params.set("phone", form.mobile.trim());
+      if (form.patientId.trim()) params.set("patient_id", form.patientId.trim());
+      const data = await api.get<BookingResult[]>(`/bookings/track?${params.toString()}`);
+      setResults(data ?? []);
+      if (!data?.length) {
+        toast({
+          title: "No records found",
+          description: "Please check your details or contact us for assistance.",
+        });
+      }
+    } catch (err: any) {
+      // If unauthorized (no login), try public lookup
+      setResults([]);
       toast({
-        title: "No reports found",
+        title: "No records found",
         description: "Please check your Patient ID and Mobile Number, or contact us for assistance.",
       });
-    }, 1500);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="container py-12">
-      <Breadcrumbs items={[{ label: "Download Reports" }]} />
-      <SectionHeading title="Download Your Reports" subtitle="Enter your details to access and download your diagnostic reports" />
+      <Breadcrumbs items={[{ label: "Track Booking" }]} />
+      <SectionHeading title="Track Your Booking" subtitle="Enter your details to check the status of your diagnostic booking" />
 
       <div className="mx-auto max-w-md">
         <form onSubmit={handleSubmit} className="rounded-xl border border-border bg-card p-8 card-shadow space-y-5">
@@ -45,13 +95,12 @@ const ReportsPage = () => {
           </div>
 
           <div>
-            <Label htmlFor="patientId" className="mb-1.5 block">Patient ID *</Label>
+            <Label htmlFor="patientId" className="mb-1.5 block">Patient ID</Label>
             <Input
               id="patientId"
               value={form.patientId}
               onChange={(e) => setForm({ ...form, patientId: e.target.value })}
-              placeholder="Enter your Patient ID"
-              required
+              placeholder="Enter your Patient ID (optional)"
               maxLength={50}
             />
           </div>
@@ -73,16 +122,81 @@ const ReportsPage = () => {
             {loading ? (
               <span className="flex items-center gap-2"><Search className="h-4 w-4 animate-spin" /> Searching...</span>
             ) : (
-              <span className="flex items-center gap-2"><FileDown className="h-4 w-4" /> Download Report</span>
+              <span className="flex items-center gap-2"><Search className="h-4 w-4" /> Track Booking</span>
             )}
           </Button>
 
           <p className="text-xs text-center text-muted-foreground">
-            Can't find your report? Call us at{" "}
+            Need help? Call us at{" "}
             <a href="tel:+917679348684" className="text-primary hover:underline">+91 7679348684</a>
           </p>
         </form>
       </div>
+
+      {/* Results */}
+      {searched && results !== null && (
+        <div className="mx-auto max-w-2xl mt-8">
+          {results.length === 0 ? (
+            <div className="rounded-xl border border-border bg-card p-8 text-center">
+              <Search className="mx-auto h-12 w-12 text-muted-foreground/30" />
+              <p className="mt-4 text-lg font-medium text-muted-foreground">No bookings found</p>
+              <p className="text-sm text-muted-foreground">Please check your details or contact us for assistance.</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <h3 className="text-lg font-semibold text-foreground">
+                Found {results.length} booking{results.length !== 1 ? "s" : ""}
+              </h3>
+              {results.map((b) => (
+                <div key={b.id} className="rounded-xl border border-border bg-card p-5 card-shadow">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h4 className="font-semibold text-foreground">{b.patient_name}</h4>
+                      {b.patient_id && (
+                        <p className="text-xs text-muted-foreground">Patient ID: {b.patient_id}</p>
+                      )}
+                    </div>
+                    <Badge className={`${statusColors[b.status] || ""} border-0`}>
+                      {statusLabels[b.status] || b.status}
+                    </Badge>
+                  </div>
+                  <div className="mt-3 flex flex-wrap gap-4 text-sm text-muted-foreground">
+                    <span className="flex items-center gap-1.5">
+                      <Clock className="h-3.5 w-3.5" />
+                      {b.preferred_date} at {b.preferred_time}
+                    </span>
+                    {b.selected_tests?.length ? (
+                      <span className="flex items-center gap-1.5">
+                        <CheckCircle className="h-3.5 w-3.5 text-primary" />
+                        {b.selected_tests.join(", ")}
+                      </span>
+                    ) : null}
+                    {b.selected_package && (
+                      <span className="flex items-center gap-1.5">
+                        <CheckCircle className="h-3.5 w-3.5 text-primary" />
+                        {b.selected_package}
+                      </span>
+                    )}
+                  </div>
+                  <div className="mt-3">
+                    {b.status === "completed" ? (
+                      <p className="text-sm text-primary font-medium flex items-center gap-1.5">
+                        <CheckCircle className="h-4 w-4" /> Your report is ready. Please contact us to collect it.
+                      </p>
+                    ) : b.status === "cancelled" ? (
+                      <p className="text-sm text-destructive">This booking was cancelled.</p>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        Your booking is {statusLabels[b.status]?.toLowerCase()}. We will contact you shortly.
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };
