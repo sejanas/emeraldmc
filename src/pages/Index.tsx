@@ -119,11 +119,11 @@ const Index = () => {
               <Shield className="h-3 w-3" /> ISO Certified Lab
             </span>
             <h1 className="mt-4 font-display text-4xl font-bold leading-tight text-foreground md:text-5xl lg:text-6xl">
-              Accurate Diagnostic Tests with Same-Day Reports in{" "}
-              <span className="text-gradient-emerald">Sri Vijaya Puram</span>
+              Bringing World Class Care to{" "}
+              <span className="text-gradient-emerald">the Islands</span>
             </h1>
             <p className="mt-4 text-lg text-muted-foreground leading-relaxed max-w-lg">
-              ISO Certified Diagnostic Lab providing reliable health tests, affordable packages, and free home sample collection.
+              Shifa's Mainland Healthcare — ISO Certified Diagnostic Lab providing reliable health tests, affordable packages, and free home sample collection in Sri Vijaya Puram.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
               <Button asChild size="lg"><Link to="/book">Book Health Test <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>

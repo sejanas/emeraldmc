@@ -43,9 +43,14 @@ const Navbar = () => {
           <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary p-1.5">
             <img src={logo} alt="Shifas Mainland Healthcare" className="h-full w-full object-contain" />
           </div>
-          <span className="font-display text-lg font-semibold text-foreground">
-            Shifas <span className="text-primary">Healthcare</span>
-          </span>
+          <div className="flex flex-col leading-tight">
+            <span className="font-display text-sm font-bold uppercase tracking-wide text-foreground">
+              Shifa's Mainland
+            </span>
+            <span className="font-display text-xs font-semibold uppercase tracking-wider text-primary">
+              Healthcare
+            </span>
+          </div>
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex">

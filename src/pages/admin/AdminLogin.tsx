@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft } from "lucide-react";
+import loginLogo from "@/assets/logo.png";
 
 const AdminLogin = () => {
   const { signIn } = useAuth();

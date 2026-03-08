@@ -107,7 +107,7 @@ const Footer = () => {
           transition={{ delay: 0.4 }}
           className="mt-10 border-t border-border pt-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground"
         >
-          <span>© {new Date().getFullYear()} Shifas Mainland Healthcare. All rights reserved.</span>
+          <span>© {new Date().getFullYear()} Shifa's Mainland Healthcare (A Unit of Emerald Medical Care). All rights reserved.</span>
           <VisitorTracker />
         </motion.div>
       </div>
