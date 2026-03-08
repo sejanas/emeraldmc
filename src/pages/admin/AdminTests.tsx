@@ -26,7 +26,7 @@ const AdminTests = () => {
   const [editing, setEditing] = useState<any>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    name: "", slug: "", description: "", price: 0, sample_type: "Blood",
+    name: "", slug: "", description: "", price: 0, original_price: 0, sample_type: "Blood",
     report_time: "Same Day", category_id: "" as string | null, is_active: true,
     fasting_required: false, display_order: 0,
   });

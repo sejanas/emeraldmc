@@ -180,7 +180,7 @@ const BookingPage = () => {
                 <SelectItem key={p.id} value={p.name}>📦 {p.name} — ₹{p.discounted_price ?? p.original_price}</SelectItem>
               ))}
               {tests.map((t: any) => (
-                <SelectItem key={t.id} value={t.name}>🔬 {t.name} — ₹{t.price}</SelectItem>
+                <SelectItem key={t.id} value={t.name}>🔬 {t.name} — {t.original_price && t.original_price > t.price ? `₹${t.original_price} → ` : ''}₹{t.price}</SelectItem>
               ))}
             </SelectContent>
           </Select>
