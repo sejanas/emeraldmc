@@ -36,6 +36,7 @@ const AdminLayout = () => {
             <span className="text-xs font-bold text-primary-foreground">E</span>
           </div>
           <span className="font-display text-sm font-semibold flex-1">Admin Panel</span>
+          <NotificationBell />
           <ThemeToggle />
         </div>
         <nav className="flex flex-col gap-1 p-3 flex-1">
