@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Search, Clock, Droplets, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -15,10 +15,27 @@ const fadeUp = {
 };
 
 const TestsPage = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("All");
+  const [category, setCategory] = useState(searchParams.get("category") || "All");
   const testsQuery = useTests({ active: true });
   const categoriesQuery = useCategories();
+
+  // Sync category from URL params
+  useEffect(() => {
+    const urlCat = searchParams.get("category");
+    if (urlCat) setCategory(urlCat);
+  }, [searchParams]);
+
+  const handleCategoryChange = (cat: string) => {
+    setCategory(cat);
+    if (cat === "All") {
+      searchParams.delete("category");
+    } else {
+      searchParams.set("category", cat);
+    }
+    setSearchParams(searchParams, { replace: true });
+  };
 
   const catName = (id: string | null) => (categoriesQuery.data ?? []).find((c: any) => c.id === id)?.name ?? "Other";
 
@@ -41,7 +58,7 @@ const TestsPage = () => {
         </div>
         <div className="flex flex-wrap gap-2">
           {["All", ...categories.map((c: any) => c.name)].map((c) => (
-            <button key={c} onClick={() => setCategory(c)}
+            <button key={c} onClick={() => handleCategoryChange(c)}
               className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${category === c ? "bg-primary text-primary-foreground" : "bg-accent text-accent-foreground hover:bg-accent/80"}`}
             >{c}</button>
           ))}
