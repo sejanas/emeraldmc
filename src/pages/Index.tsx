@@ -332,7 +332,7 @@ const Index = () => {
               <motion.div key={t.id} initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={i}
                 className="flex items-start justify-between rounded-xl border border-border bg-card p-5 transition-all hover:card-shadow-hover hover:scale-[1.01]">
                 <div>
-                  <p className="text-xs font-medium text-primary">{catName(t.category_id)}</p>
+                  <p className="text-xs font-medium text-primary">{getCatNames(t)}</p>
                   <h3 className="mt-1 font-semibold text-foreground">{t.name}</h3>
                   <p className="mt-1 text-xs text-muted-foreground">{t.report_time} • {t.sample_type}</p>
                 </div>

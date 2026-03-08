@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import { useConfirm } from "@/components/ConfirmDialog";
@@ -20,11 +21,11 @@ const AdminTests = () => {
   const updateTest = useUpdateTest();
   const deleteTest = useDeleteTest();
   const categoriesQuery = useCategories();
-  // Admin needs ALL tests (not just active)
   const testsQuery = useTests({ active: false });
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [saving, setSaving] = useState(false);
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const [form, setForm] = useState({
     name: "", slug: "", description: "", price: 0, original_price: 0, sample_type: "Blood",
     report_time: "Same Day", category_id: "" as string | null, is_active: true,
@@ -34,23 +35,32 @@ const AdminTests = () => {
   const openNew = () => {
     setEditing(null);
     setForm({ name: "", slug: "", description: "", price: 0, original_price: 0, sample_type: "Blood", report_time: "Same Day", category_id: null, is_active: true, fasting_required: false, display_order: testsQuery.data?.length ?? 0 });
+    setSelectedCategoryIds([]);
     setOpen(true);
   };
 
   const openEdit = (t: any) => {
     setEditing(t);
     setForm({ name: t.name, slug: t.slug, description: t.description || "", price: t.price, original_price: t.original_price || 0, sample_type: t.sample_type, report_time: t.report_time, category_id: t.category_id, is_active: t.is_active, fasting_required: t.fasting_required, display_order: t.display_order });
+    setSelectedCategoryIds((t.categories ?? []).map((c: any) => c.id));
     setOpen(true);
+  };
+
+  const toggleCategory = (id: string) => {
+    setSelectedCategoryIds((prev) =>
+      prev.includes(id) ? prev.filter((c) => c !== id) : [...prev, id]
+    );
   };
 
   const save = async () => {
     setSaving(true);
     try {
+      const payload = { ...form, category_ids: selectedCategoryIds };
       if (editing) {
-        await updateTest.mutateAsync({ id: editing.id, ...form });
+        await updateTest.mutateAsync({ id: editing.id, ...payload });
         toast({ title: "Test updated" });
       } else {
-        await createTest.mutateAsync(form);
+        await createTest.mutateAsync(payload);
         toast({ title: "Test created" });
       }
       setOpen(false);
@@ -75,7 +85,8 @@ const AdminTests = () => {
     }
   };
 
-  const catName = (id: string | null) => (categoriesQuery.data ?? []).find((c: any) => c.id === id)?.name ?? "—";
+  const getCatNames = (t: any) =>
+    (t.categories ?? []).map((c: any) => c.name).join(", ") || "—";
 
   return (
     <div>
@@ -89,7 +100,7 @@ const AdminTests = () => {
             <tr>
               <th className="px-4 py-3 font-medium text-muted-foreground">#</th>
               <th className="px-4 py-3 font-medium text-muted-foreground">Name</th>
-              <th className="px-4 py-3 font-medium text-muted-foreground">Category</th>
+              <th className="px-4 py-3 font-medium text-muted-foreground">Categories</th>
               <th className="px-4 py-3 font-medium text-muted-foreground">MRP</th>
               <th className="px-4 py-3 font-medium text-muted-foreground">Price</th>
               <th className="px-4 py-3 font-medium text-muted-foreground">Active</th>
@@ -101,7 +112,7 @@ const AdminTests = () => {
               <tr key={t.id} className="border-t border-border">
                 <td className="px-4 py-3">{t.display_order}</td>
                 <td className="px-4 py-3 font-medium">{t.name}</td>
-                <td className="px-4 py-3 text-muted-foreground">{catName(t.category_id)}</td>
+                <td className="px-4 py-3 text-muted-foreground">{getCatNames(t)}</td>
                 <td className="px-4 py-3 text-muted-foreground">{t.original_price ? `₹${t.original_price}` : '—'}</td>
                 <td className="px-4 py-3">₹{t.price}</td>
                 <td className="px-4 py-3">{t.is_active ? "✓" : "✗"}</td>
@@ -124,17 +135,22 @@ const AdminTests = () => {
             <div><Label>Name</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="mt-1" /></div>
             <div><Label>Slug</Label><Input value={form.slug} onChange={(e) => setForm({ ...form, slug: e.target.value })} placeholder="auto-generated" className="mt-1" /></div>
             <div><Label>Description</Label><Textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className="mt-1" /></div>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-2 gap-4">
               <div><Label>MRP (₹)</Label><Input type="number" value={form.original_price} onChange={(e) => setForm({ ...form, original_price: +e.target.value })} className="mt-1" /></div>
               <div><Label>Selling Price (₹)</Label><Input type="number" value={form.price} onChange={(e) => setForm({ ...form, price: +e.target.value })} className="mt-1" /></div>
-              <div>
-                <Label>Category</Label>
-                <Select value={form.category_id ?? ""} onValueChange={(v) => setForm({ ...form, category_id: v || null })}>
-                  <SelectTrigger className="mt-1"><SelectValue placeholder="Select" /></SelectTrigger>
-                  <SelectContent>
-                    {(categoriesQuery.data ?? []).map((c: any) => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+            </div>
+            <div>
+              <Label>Categories</Label>
+              <div className="mt-2 grid grid-cols-2 gap-2 max-h-48 overflow-y-auto rounded-md border border-border p-3">
+                {(categoriesQuery.data ?? []).map((c: any) => (
+                  <label key={c.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                    <Checkbox
+                      checked={selectedCategoryIds.includes(c.id)}
+                      onCheckedChange={() => toggleCategory(c.id)}
+                    />
+                    {c.name}
+                  </label>
+                ))}
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
