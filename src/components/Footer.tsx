@@ -41,7 +41,7 @@ const Footer = () => {
                 { to: "/doctors", label: "Our Doctors" },
                 { to: "/reports", label: "Download Reports" },
                 { to: "/book", label: "Book Appointment" },
-                { to: "/gallery", label: "Gallery" },
+                { to: "/blog", label: "Health Blog" },
                 { to: "/faq", label: "FAQs" },
                 { to: "/contact", label: "Contact Us" },
               ].map((l) => (
