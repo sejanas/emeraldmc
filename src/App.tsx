@@ -25,6 +25,8 @@ import AdminPackages from "./pages/admin/AdminPackages";
 import AdminDoctors from "./pages/admin/AdminDoctors";
 import AdminGallery from "./pages/admin/AdminGallery";
 import AdminBookings from "./pages/admin/AdminBookings";
+import AdminFaqs from "./pages/admin/AdminFaqs";
+import FaqPage from "./pages/FaqPage";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminActivityLogs from "./pages/admin/AdminActivityLogs";
 import AdminProfile from "./pages/admin/AdminProfile";
