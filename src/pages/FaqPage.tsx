@@ -3,12 +3,23 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/
 import SectionHeading from "@/components/SectionHeading";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import ErrorBox from "@/components/ErrorBox";
+import PageMeta from "@/components/PageMeta";
+import JsonLd, { createFaqSchema } from "@/components/JsonLd";
 
 const FaqPage = () => {
   const { data: faqs, isLoading, error, refetch } = useFaqs(true);
 
+  const faqList = (faqs ?? []) as { id: string; question: string; answer: string }[];
+
   return (
     <section className="container py-16">
+      <PageMeta
+        title="FAQs – Frequently Asked Questions"
+        description="Find answers to common questions about diagnostic tests, health packages, home sample collection, reports, and services at Emerald Medical Care in Port Blair."
+        canonical="https://emeraldmedicalcare.com/faq"
+      />
+      {faqList.length > 0 && <JsonLd schema={createFaqSchema(faqList)} />}
+
       <Breadcrumbs items={[{ label: "FAQs" }]} />
       <SectionHeading title="Frequently Asked Questions" subtitle="Find answers to common questions about our services" />
 
@@ -22,12 +33,12 @@ const FaqPage = () => {
         </div>
       )}
 
-      {!isLoading && (faqs ?? []).length === 0 && !error && (
+      {!isLoading && faqList.length === 0 && !error && (
         <p className="text-center text-muted-foreground">No FAQs available yet.</p>
       )}
 
       <Accordion type="single" collapsible className="max-w-2xl mx-auto">
-        {(faqs ?? []).map((faq: any) => (
+        {faqList.map((faq) => (
           <AccordionItem key={faq.id} value={faq.id}>
             <AccordionTrigger className="text-left font-medium text-foreground">
               {faq.question}
