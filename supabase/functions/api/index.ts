@@ -296,6 +296,28 @@ async function crudList(table: string, url: URL, softDelete = true) {
 
   const { data, error } = await q;
   if (error) throw { message: error.message, status: 500 };
+
+  // For tests, attach categories array from test_category_map
+  if (table === "tests" && data) {
+    const testIds = data.map((t: any) => t.id);
+    if (testIds.length > 0) {
+      const { data: mappings } = await db
+        .from("test_category_map")
+        .select("test_id, category_id, test_categories(id, name)")
+        .in("test_id", testIds);
+      const catMap: Record<string, { id: string; name: string }[]> = {};
+      (mappings ?? []).forEach((m: any) => {
+        (catMap[m.test_id] ??= []).push({
+          id: m.test_categories?.id ?? m.category_id,
+          name: m.test_categories?.name ?? "",
+        });
+      });
+      data.forEach((t: any) => {
+        t.categories = catMap[t.id] ?? [];
+      });
+    }
+  }
+
   return json(data);
 }
 
