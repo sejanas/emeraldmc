@@ -34,6 +34,7 @@ import AdminUsers from "./pages/admin/AdminUsers";
 import AdminActivityLogs from "./pages/admin/AdminActivityLogs";
 import AdminVisitors from "./pages/admin/AdminVisitors";
 import AdminProfile from "./pages/admin/AdminProfile";
+import AdminThemeSettings from "./pages/admin/AdminThemeSettings";
 import LogoutPage from "./pages/LogoutPage";
 import BlogPage from "./pages/BlogPage";
 import BlogArticlePage from "./pages/BlogArticlePage";
