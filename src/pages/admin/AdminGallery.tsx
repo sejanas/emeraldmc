@@ -95,7 +95,7 @@ const AdminGallery = () => {
           <Input placeholder="Search gallery..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
         </div>
         <div className="flex gap-1.5 flex-wrap">
-          {existingCats.map((c) => (
+          {existingCats.map((c: string) => (
             <button
               key={c}
               onClick={() => setFilterCat(c)}
