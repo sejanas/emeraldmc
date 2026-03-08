@@ -497,6 +497,7 @@ export type Database = {
         Row: {
           approved_at: string | null
           approved_by: string | null
+          avatar_url: string | null
           clinic_role: string | null
           created_at: string
           decline_reason: string | null
@@ -511,6 +512,7 @@ export type Database = {
         Insert: {
           approved_at?: string | null
           approved_by?: string | null
+          avatar_url?: string | null
           clinic_role?: string | null
           created_at?: string
           decline_reason?: string | null
@@ -525,6 +527,7 @@ export type Database = {
         Update: {
           approved_at?: string | null
           approved_by?: string | null
+          avatar_url?: string | null
           clinic_role?: string | null
           created_at?: string
           decline_reason?: string | null
