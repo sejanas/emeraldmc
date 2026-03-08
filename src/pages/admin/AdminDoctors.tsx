@@ -53,8 +53,14 @@ const AdminDoctors = () => {
     } finally { setSaving(false); }
   };
 
-  const remove = async (id: string) => {
-    if (!confirm("Delete this doctor?")) return;
+  const remove = async (id: string, name: string) => {
+    const result = await confirm({
+      title: "Delete Doctor",
+      description: `Are you sure you want to delete "${name}"? This action cannot be undone.`,
+      confirmLabel: "Delete",
+      variant: "destructive",
+    });
+    if (!result.confirmed) return;
     try {
       await deleteDoctor.mutateAsync(id);
       toast({ title: "Doctor deleted" });
