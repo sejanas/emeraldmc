@@ -25,6 +25,8 @@ import AdminPackages from "./pages/admin/AdminPackages";
 import AdminDoctors from "./pages/admin/AdminDoctors";
 import AdminGallery from "./pages/admin/AdminGallery";
 import AdminBookings from "./pages/admin/AdminBookings";
+import AdminFaqs from "./pages/admin/AdminFaqs";
+import FaqPage from "./pages/FaqPage";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminActivityLogs from "./pages/admin/AdminActivityLogs";
 import AdminProfile from "./pages/admin/AdminProfile";
@@ -45,6 +47,7 @@ const App = () => (
               <Route path="/doctors" element={<DoctorsPage />} />
               <Route path="/book" element={<BookingPage />} />
               <Route path="/gallery" element={<GalleryPage />} />
+              <Route path="/faq" element={<FaqPage />} />
               <Route path="/contact" element={<ContactPage />} />
             </Route>
             <Route path="/logout" element={<LogoutPage />} />
@@ -59,6 +62,7 @@ const App = () => (
               <Route path="doctors" element={<AdminDoctors />} />
               <Route path="gallery" element={<AdminGallery />} />
               <Route path="bookings" element={<AdminBookings />} />
+              <Route path="faqs" element={<AdminFaqs />} />
               <Route path="users" element={<AdminUsers />} />
               <Route path="activity-logs" element={<AdminActivityLogs />} />
               <Route path="profile" element={<AdminProfile />} />

@@ -257,7 +257,7 @@ async function crudList(table: string, url: URL, softDelete = true) {
   const limit = url.searchParams.get("limit");
   if (limit) q = q.limit(parseInt(limit));
 
-  if (url.searchParams.get("active") === "true" && table === "tests")
+  if (url.searchParams.get("active") === "true" && (table === "tests" || table === "faqs"))
     q = q.eq("is_active", true);
 
   const { data, error } = await q;
@@ -841,26 +841,15 @@ async function handleResubmit(req: Request) {
 async function handleDashboardCounts(req: Request) {
   await requireRole(req, ["admin", "super_admin"]);
   const db = adminDb();
-  const [cats, tests, pkgs, docs, gal, vis, bk] = await Promise.all([
+  const [cats, tests, pkgs, docs, gal, vis, bk, fq] = await Promise.all([
     db.from("test_categories").select("id", { count: "exact", head: true }),
-    db
-      .from("tests")
-      .select("id", { count: "exact", head: true })
-      .is("deleted_at", null),
-    db
-      .from("packages")
-      .select("id", { count: "exact", head: true })
-      .is("deleted_at", null),
-    db
-      .from("doctors")
-      .select("id", { count: "exact", head: true })
-      .is("deleted_at", null),
-    db
-      .from("gallery")
-      .select("id", { count: "exact", head: true })
-      .is("deleted_at", null),
+    db.from("tests").select("id", { count: "exact", head: true }).is("deleted_at", null),
+    db.from("packages").select("id", { count: "exact", head: true }).is("deleted_at", null),
+    db.from("doctors").select("id", { count: "exact", head: true }).is("deleted_at", null),
+    db.from("gallery").select("id", { count: "exact", head: true }).is("deleted_at", null),
     db.from("visitors").select("id", { count: "exact", head: true }),
     db.from("bookings").select("id", { count: "exact", head: true }),
+    db.from("faqs").select("id", { count: "exact", head: true }).is("deleted_at", null),
   ]);
   return json({
     categories: cats.count ?? 0,
@@ -870,6 +859,7 @@ async function handleDashboardCounts(req: Request) {
     gallery: gal.count ?? 0,
     visitors: vis.count ?? 0,
     bookings: bk.count ?? 0,
+    faqs: fq.count ?? 0,
   });
 }
 
@@ -987,6 +977,12 @@ Deno.serve(async (req) => {
         entity: "gallery",
         softDelete: true,
         nameField: "title",
+      },
+      faqs: {
+        table: "faqs",
+        entity: "faq",
+        softDelete: true,
+        nameField: "question",
       },
     };
 

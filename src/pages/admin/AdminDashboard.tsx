@@ -1,10 +1,10 @@
 import { useState } from "react";
 import useDashboardCounts from "@/hooks/useDashboardCounts";
-import { FlaskConical, Package, Users, Image, List, Eye, CalendarCheck } from "lucide-react";
+import { FlaskConical, Package, Users, Image, List, Eye, CalendarCheck, HelpCircle } from "lucide-react";
 
 const AdminDashboard = () => {
   const countsQuery = useDashboardCounts();
-  const counts = countsQuery.data ?? { categories: 0, tests: 0, packages: 0, doctors: 0, gallery: 0, visitors: 0, bookings: 0 };
+  const counts = countsQuery.data ?? { categories: 0, tests: 0, packages: 0, doctors: 0, gallery: 0, visitors: 0, bookings: 0, faqs: 0 };
 
   const cards = [
     { label: "Categories", count: counts.categories, icon: List },
@@ -12,6 +12,7 @@ const AdminDashboard = () => {
     { label: "Packages", count: counts.packages, icon: Package },
     { label: "Doctors", count: counts.doctors, icon: Users },
     { label: "Gallery", count: counts.gallery, icon: Image },
+    { label: "FAQs", count: counts.faqs, icon: HelpCircle },
     { label: "Bookings", count: counts.bookings, icon: CalendarCheck },
     { label: "Visitors", count: counts.visitors, icon: Eye },
   ];

@@ -10,6 +10,8 @@ import useCategories from "@/hooks/useCategories";
 import ErrorBox from "@/components/ErrorBox";
 import heroImg from "@/assets/hero-lab.png";
 import JsonLd from "@/components/JsonLd";
+import { useFaqs } from "@/hooks/useFaqs";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -31,6 +33,7 @@ const Index = () => {
   const doctorsQuery = useDoctors(3);
   const packagesQuery = usePackages();
   const categoriesQuery = useCategories();
+  const faqsQuery = useFaqs(true);
 
   const catName = (id: string | null) =>
     (categoriesQuery.data ?? []).find((c: any) => c.id === id)?.name ?? "";
@@ -174,6 +177,28 @@ const Index = () => {
           </div>
         </div>
       </section>
+
+      {/* FAQs */}
+      {(faqsQuery.data ?? []).length > 0 && (
+        <section className="container py-16">
+          <SectionHeading title="Frequently Asked Questions" subtitle="Quick answers to common questions about our services" />
+          <Accordion type="single" collapsible className="max-w-2xl mx-auto">
+            {(faqsQuery.data ?? []).slice(0, 5).map((faq: any) => (
+              <AccordionItem key={faq.id} value={faq.id}>
+                <AccordionTrigger className="text-left font-medium text-foreground">{faq.question}</AccordionTrigger>
+                <AccordionContent>
+                  <div className="prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: faq.answer }} />
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+          {(faqsQuery.data ?? []).length > 5 && (
+            <div className="mt-6 text-center">
+              <Button asChild variant="outline"><Link to="/faq">View All FAQs <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
+            </div>
+          )}
+        </section>
+      )}
 
       {/* CTA */}
       <section className="container py-16">
