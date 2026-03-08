@@ -40,8 +40,14 @@ const AdminCategories = () => {
     } finally { setSaving(false); }
   };
 
-  const remove = async (id: string) => {
-    if (!confirm("Delete this category?")) return;
+  const remove = async (id: string, name: string) => {
+    const result = await confirm({
+      title: "Delete Category",
+      description: `Are you sure you want to delete "${name}"?`,
+      confirmLabel: "Delete",
+      variant: "destructive",
+    });
+    if (!result.confirmed) return;
     try {
       await deleteCategory.mutateAsync(id);
       toast({ title: "Category deleted" });
