@@ -988,6 +988,12 @@ Deno.serve(async (req) => {
         softDelete: true,
         nameField: "title",
       },
+      faqs: {
+        table: "faqs",
+        entity: "faq",
+        softDelete: true,
+        nameField: "question",
+      },
     };
 
     if (crudConfig[resource]) {
