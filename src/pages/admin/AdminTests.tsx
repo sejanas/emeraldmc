@@ -25,6 +25,7 @@ const AdminTests = () => {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState("");
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const [form, setForm] = useState({
     name: "", slug: "", description: "", price: 0, original_price: 0, sample_type: "Blood",
