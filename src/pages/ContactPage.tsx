@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Phone, Mail, Clock, MapPin, Send } from "lucide-react";
+import { Phone, Mail, Clock, MapPin, Send, Facebook, Instagram } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -54,6 +54,14 @@ const ContactPage = () => {
               </div>
             </div>
           ))}
+          <div className="flex gap-3">
+            <a href="https://www.facebook.com/profile.php?id=61588640095513" target="_blank" rel="noopener noreferrer" className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:text-primary hover:border-primary" aria-label="Facebook">
+              <Facebook className="h-5 w-5" />
+            </a>
+            <a href="https://www.instagram.com/shifa_health_care0/" target="_blank" rel="noopener noreferrer" className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:text-primary hover:border-primary" aria-label="Instagram">
+              <Instagram className="h-5 w-5" />
+            </a>
+          </div>
           <div className="mt-4 overflow-hidden rounded-xl border border-border">
             <iframe
               src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15628.0!2d92.7365!3d11.6234!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2sSri+Vijaya+Puram!5e0!3m2!1sen!2sin"
