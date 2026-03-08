@@ -540,7 +540,7 @@ async function handleBookingCreate(req: Request) {
 
 async function handleBookingStatusUpdate(req: Request, id: string) {
   const { user } = await requireRole(req, BOOKING_ROLES);
-  const { status } = await req.json();
+  const { status, reason } = await req.json();
   const valid = [
     "pending",
     "confirmed",
@@ -576,6 +576,7 @@ async function handleBookingStatusUpdate(req: Request, id: string) {
     update_type: "status_change",
     old_value: old?.status,
     new_value: status,
+    note: reason || null,
     created_by: user.id,
   });
 
@@ -585,9 +586,47 @@ async function handleBookingStatusUpdate(req: Request, id: string) {
     entity_type: "booking",
     entity_id: id,
     entity_name: old?.patient_name,
-    changes: { status: { from: old?.status, to: status } },
+    changes: { status: { from: old?.status, to: status }, reason: reason || null },
   });
   return json({ success: true });
+}
+
+async function handleBulkStatusUpdate(req: Request) {
+  const { user } = await requireRole(req, BOOKING_ROLES);
+  const { ids, status } = await req.json();
+  if (!Array.isArray(ids) || !ids.length) return errRes("ids array required");
+  const valid = ["pending", "confirmed", "sample_collected", "completed", "cancelled"];
+  if (!valid.includes(status)) return errRes("Invalid status");
+
+  const db = adminDb();
+  let updated = 0;
+
+  for (const id of ids) {
+    const { data: old } = await db.from("bookings").select("status, patient_name").eq("id", id).single();
+    if (!old || old.status === status) continue;
+
+    const updateData: Record<string, any> = { status, updated_at: new Date().toISOString() };
+    const tsCol = STATUS_TIMESTAMP_MAP[status];
+    if (tsCol) updateData[tsCol] = new Date().toISOString();
+
+    await db.from("bookings").update(updateData).eq("id", id);
+    await db.from("booking_updates").insert({
+      booking_id: id,
+      update_type: "status_change",
+      old_value: old.status,
+      new_value: status,
+      created_by: user.id,
+    });
+    updated++;
+  }
+
+  await logActivity({
+    event_type: "booking.bulk_status_update",
+    user_id: user.id,
+    entity_type: "booking",
+    changes: { ids, status, updated },
+  });
+  return json({ updated });
 }
 
 async function handleBookingUpdates(req: Request, id: string) {
