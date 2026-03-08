@@ -167,17 +167,29 @@ async function handleSignup(req: Request) {
 
   const userId = authData.user.id;
 
-  await db.from("user_profiles").insert({
-    user_id: userId,
-    name,
-    clinic_role: clinic_role || null,
-    role: "admin",
-    status: "pending",
-  });
+  // Upsert user_profiles so that any row created by a DB trigger (which
+  // would otherwise cause a silent UNIQUE violation) is overwritten with
+  // the correct name/role/status supplied by this request.
+  const { error: profileError } = await db.from("user_profiles").upsert(
+    {
+      user_id: userId,
+      name,
+      clinic_role: clinic_role || null,
+      role: "admin",
+      status: "pending",
+    },
+    { onConflict: "user_id" }
+  );
+  if (profileError) {
+    // Roll back the auth user so the operation stays atomic.
+    await db.auth.admin.deleteUser(userId);
+    return errRes(profileError.message);
+  }
 
-  await db
-    .from("user_roles")
-    .insert({ user_id: userId, role: "admin" });
+  // Remove any role rows that a trigger may have inserted for this user,
+  // then insert the canonical 'admin' role. This prevents duplicate rows.
+  await db.from("user_roles").delete().eq("user_id", userId);
+  await db.from("user_roles").insert({ user_id: userId, role: "admin" });
 
   if (phones?.length) {
     await db
