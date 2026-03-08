@@ -10,6 +10,7 @@ import AdminRoute from "@/components/AdminRoute";
 import Layout from "@/components/Layout";
 import Index from "./pages/Index";
 import TestsPage from "./pages/TestsPage";
+import TestDetailPage from "./pages/TestDetailPage";
 import PackagesPage from "./pages/PackagesPage";
 import DoctorsPage from "./pages/DoctorsPage";
 import BookingPage from "./pages/BookingPage";
@@ -34,6 +35,9 @@ import AdminActivityLogs from "./pages/admin/AdminActivityLogs";
 import AdminVisitors from "./pages/admin/AdminVisitors";
 import AdminProfile from "./pages/admin/AdminProfile";
 import LogoutPage from "./pages/LogoutPage";
+import BlogPage from "./pages/BlogPage";
+import BlogArticlePage from "./pages/BlogArticlePage";
+import LocationTestPage from "./pages/LocationTestPage";
 
 const App = () => (
   <ThemeProvider>
@@ -47,6 +51,7 @@ const App = () => (
             <Route element={<Layout />}>
               <Route path="/" element={<Index />} />
               <Route path="/tests" element={<TestsPage />} />
+              <Route path="/tests/:slug" element={<TestDetailPage />} />
               <Route path="/packages" element={<PackagesPage />} />
               <Route path="/doctors" element={<DoctorsPage />} />
               <Route path="/book" element={<BookingPage />} />
@@ -54,6 +59,9 @@ const App = () => (
               <Route path="/faq" element={<FaqPage />} />
               <Route path="/contact" element={<ContactPage />} />
               <Route path="/reports" element={<ReportsPage />} />
+              <Route path="/blog" element={<BlogPage />} />
+              <Route path="/blog/:slug" element={<BlogArticlePage />} />
+              <Route path="/:slug" element={<LocationTestPage />} />
             </Route>
             <Route path="/logout" element={<LogoutPage />} />
             <Route path="/admin/logout" element={<LogoutPage />} />
