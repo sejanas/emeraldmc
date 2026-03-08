@@ -562,6 +562,16 @@ async function handleBookingCreate(req: Request) {
     entity_id: data.id,
     entity_name: body.patient_name,
   });
+
+  // Notify all staff about new booking
+  await notifyByRole(["admin", "super_admin", "booking_manager"], {
+    title: "New Booking",
+    message: `${body.patient_name} booked for ${body.preferred_date} at ${body.preferred_time}`,
+    type: "booking",
+    entity_type: "booking",
+    entity_id: data.id,
+  });
+
   return json(data, 201);
 }
 
