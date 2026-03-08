@@ -730,9 +730,12 @@ async function handleBookingUpdates(req: Request, id: string) {
       // Touch updated_at so overdue detection works
       await db.from("bookings").update({ updated_at: new Date().toISOString() }).eq("id", id);
     } else {
+      const customTitle = body.custom_title || null;
       await db.from("booking_updates").insert({
-        booking_id: id, update_type: update_type || "other", note, created_by: user.id,
+        booking_id: id, update_type: update_type || "other", note,
+        new_value: customTitle, created_by: user.id,
       });
+      await db.from("bookings").update({ updated_at: new Date().toISOString() }).eq("id", id);
     }
 
     await logActivity({
