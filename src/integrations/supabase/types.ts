@@ -528,26 +528,35 @@ export type Database = {
       }
       visitors: {
         Row: {
+          city: string | null
+          country: string | null
           id: string
           ip_hash: string | null
           page: string
           referrer: string | null
+          region: string | null
           user_agent: string | null
           visited_at: string
         }
         Insert: {
+          city?: string | null
+          country?: string | null
           id?: string
           ip_hash?: string | null
           page?: string
           referrer?: string | null
+          region?: string | null
           user_agent?: string | null
           visited_at?: string
         }
         Update: {
+          city?: string | null
+          country?: string | null
           id?: string
           ip_hash?: string | null
           page?: string
           referrer?: string | null
+          region?: string | null
           user_agent?: string | null
           visited_at?: string
         }

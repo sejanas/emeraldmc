@@ -1,6 +1,6 @@
 import { NavLink, Outlet } from "react-router-dom";
 import ErrorBoundary from "@/components/ErrorBoundary";
-import { LayoutDashboard, List, FlaskConical, Package, Users, Image, LogOut, CalendarCheck, Shield, Activity, UserCircle, HelpCircle } from "lucide-react";
+import { LayoutDashboard, List, FlaskConical, Package, Users, Image, LogOut, CalendarCheck, Shield, Activity, UserCircle, HelpCircle, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import ThemeToggle from "@/components/ThemeToggle";
@@ -17,6 +17,7 @@ const AdminLayout = () => {
     { to: "/admin/gallery", icon: Image, label: "Gallery" },
     { to: "/admin/bookings", icon: CalendarCheck, label: "Bookings" },
     { to: "/admin/faqs", icon: HelpCircle, label: "FAQs" },
+    { to: "/admin/visitors", icon: Eye, label: "Visitors" },
     { to: "/admin/activity-logs", icon: Activity, label: "Activity Logs" },
     { to: "/admin/profile", icon: UserCircle, label: "My Profile" },
     ...(isSuperAdmin ? [{ to: "/admin/users", icon: Shield, label: "Users" }] : []),

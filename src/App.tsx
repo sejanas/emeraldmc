@@ -29,6 +29,7 @@ import AdminFaqs from "./pages/admin/AdminFaqs";
 import FaqPage from "./pages/FaqPage";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminActivityLogs from "./pages/admin/AdminActivityLogs";
+import AdminVisitors from "./pages/admin/AdminVisitors";
 import AdminProfile from "./pages/admin/AdminProfile";
 import LogoutPage from "./pages/LogoutPage";
 
@@ -64,6 +65,7 @@ const App = () => (
               <Route path="bookings" element={<AdminBookings />} />
               <Route path="faqs" element={<AdminFaqs />} />
               <Route path="users" element={<AdminUsers />} />
+              <Route path="visitors" element={<AdminVisitors />} />
               <Route path="activity-logs" element={<AdminActivityLogs />} />
               <Route path="profile" element={<AdminProfile />} />
             </Route>

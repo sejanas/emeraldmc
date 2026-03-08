@@ -1,10 +1,9 @@
-import { useState } from "react";
 import useDashboardCounts from "@/hooks/useDashboardCounts";
-import { FlaskConical, Package, Users, Image, List, Eye, CalendarCheck, HelpCircle } from "lucide-react";
+import { FlaskConical, Package, Users, Image, List, Eye, CalendarCheck, HelpCircle, MapPin } from "lucide-react";
 
 const AdminDashboard = () => {
   const countsQuery = useDashboardCounts();
-  const counts = countsQuery.data ?? { categories: 0, tests: 0, packages: 0, doctors: 0, gallery: 0, visitors: 0, bookings: 0, faqs: 0 };
+  const counts = countsQuery.data ?? { categories: 0, tests: 0, packages: 0, doctors: 0, gallery: 0, visitors: 0, bookings: 0, faqs: 0, visitors_today: 0, top_locations: [] };
 
   const cards = [
     { label: "Categories", count: counts.categories, icon: List },
@@ -14,7 +13,8 @@ const AdminDashboard = () => {
     { label: "Gallery", count: counts.gallery, icon: Image },
     { label: "FAQs", count: counts.faqs, icon: HelpCircle },
     { label: "Bookings", count: counts.bookings, icon: CalendarCheck },
-    { label: "Visitors", count: counts.visitors, icon: Eye },
+    { label: "Total Visitors", count: counts.visitors, icon: Eye },
+    { label: "Today's Visitors", count: counts.visitors_today, icon: Eye },
   ];
 
   return (
@@ -35,6 +35,35 @@ const AdminDashboard = () => {
           </div>
         ))}
       </div>
+
+      {/* Top Locations */}
+      {(counts.top_locations?.length ?? 0) > 0 && (
+        <div className="mt-6">
+          <h2 className="font-display text-lg font-semibold text-foreground mb-3 flex items-center gap-2">
+            <MapPin className="h-4 w-4 text-primary" /> Top Locations
+          </h2>
+          <div className="rounded-xl border border-border bg-card overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="text-left px-4 py-2 text-muted-foreground font-medium">Location</th>
+                  <th className="text-right px-4 py-2 text-muted-foreground font-medium">Visits</th>
+                </tr>
+              </thead>
+              <tbody>
+                {counts.top_locations.map((loc: any, i: number) => (
+                  <tr key={i} className="border-b border-border last:border-0">
+                    <td className="px-4 py-2">
+                      {[loc.city, loc.region, loc.country].filter(Boolean).join(", ")}
+                    </td>
+                    <td className="px-4 py-2 text-right font-medium">{loc.count}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
