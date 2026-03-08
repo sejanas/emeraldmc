@@ -23,11 +23,11 @@ const Footer = () => {
       <div className="container py-14">
         <div className="grid gap-10 md:grid-cols-4">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={0}>
-            <Link to="/" className="flex items-center gap-2 group">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary p-1 transition-transform group-hover:scale-110">
+            <Link to="/" className="flex items-center gap-3 group">
+              <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary p-2 transition-transform group-hover:scale-110">
                 <img src={logo} alt="Shifas Mainland Healthcare" className="h-full w-full object-contain" />
               </div>
-              <span className="font-display text-base font-semibold">Shifas Healthcare</span>
+              <span className="font-display text-lg font-semibold">Shifas Healthcare</span>
             </Link>
             <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
               Trusted ISO Certified Diagnostic Lab in Sri Vijaya Puram, providing quality healthcare services.
