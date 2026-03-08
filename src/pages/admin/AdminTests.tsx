@@ -39,7 +39,7 @@ const AdminTests = () => {
 
   const openEdit = (t: any) => {
     setEditing(t);
-    setForm({ name: t.name, slug: t.slug, description: t.description || "", price: t.price, sample_type: t.sample_type, report_time: t.report_time, category_id: t.category_id, is_active: t.is_active, fasting_required: t.fasting_required, display_order: t.display_order });
+    setForm({ name: t.name, slug: t.slug, description: t.description || "", price: t.price, original_price: t.original_price || 0, sample_type: t.sample_type, report_time: t.report_time, category_id: t.category_id, is_active: t.is_active, fasting_required: t.fasting_required, display_order: t.display_order });
     setOpen(true);
   };
 
