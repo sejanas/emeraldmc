@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight, Shield, Clock, FlaskConical, Users, Star, CheckCircle, Award, Home, Search, ClipboardList, Microscope, FileDown, MapPin } from "lucide-react";
