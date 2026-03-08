@@ -780,14 +780,22 @@ async function handleActivityLogs(req: Request, url: URL) {
 
 async function handleUpdateProfile(req: Request) {
   const user = await requireAuth(req);
-  const { name, clinic_role, phones, emails } = await req.json();
+  const { name, clinic_role, phones, emails, avatar_url } = await req.json();
 
   if (!name?.trim()) return errRes("Name is required");
 
   const db = adminDb();
+  const updateData: Record<string, unknown> = {
+    name: name.trim(),
+    clinic_role: clinic_role?.trim() || null,
+  };
+  if (typeof avatar_url === "string") {
+    updateData.avatar_url = avatar_url || null;
+  }
+
   const { error: profileError } = await db
     .from("user_profiles")
-    .update({ name: name.trim(), clinic_role: clinic_role?.trim() || null })
+    .update(updateData)
     .eq("user_id", user.id);
   if (profileError) throw { message: profileError.message, status: 500 };
 
