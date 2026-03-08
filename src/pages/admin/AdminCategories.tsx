@@ -56,11 +56,23 @@ const AdminCategories = () => {
     }
   };
 
+  const [search, setSearch] = useState("");
+  const allCategories = categoriesQuery.data ?? [];
+  const filteredCategories = useMemo(() => {
+    if (!search.trim()) return allCategories;
+    const q = search.toLowerCase();
+    return allCategories.filter((c: any) => c.name.toLowerCase().includes(q) || c.slug.toLowerCase().includes(q));
+  }, [allCategories, search]);
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="font-display text-2xl font-bold text-foreground">Test Categories</h1>
         <Button size="sm" onClick={openNew}><Plus className="mr-1 h-4 w-4" /> Add</Button>
+      </div>
+      <div className="relative mb-4 max-w-sm">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input placeholder="Search categories..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
       </div>
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         <table className="w-full text-sm">
