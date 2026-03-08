@@ -24,10 +24,10 @@ const Footer = () => {
         <div className="grid gap-10 md:grid-cols-4">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={0}>
             <Link to="/" className="flex items-center gap-2 group">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary transition-transform group-hover:scale-110">
-                <span className="text-xs font-bold text-primary-foreground">E</span>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary p-1 transition-transform group-hover:scale-110">
+                <img src={logo} alt="Shifas Mainland Healthcare" className="h-full w-full object-contain" />
               </div>
-              <span className="font-display text-base font-semibold">Emerald Medical</span>
+              <span className="font-display text-base font-semibold">Shifas Healthcare</span>
             </Link>
             <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
               Trusted ISO Certified Diagnostic Lab in Sri Vijaya Puram, providing quality healthcare services.
