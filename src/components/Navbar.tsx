@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { businessInfo } from "@/data/siteData";
 import ThemeToggle from "@/components/ThemeToggle";
+import logo from "@/assets/logo.png";
 
 const navLinks = [
   { to: "/", label: "Home" },
@@ -39,11 +40,11 @@ const Navbar = () => {
     >
       <div className="container flex h-16 items-center justify-between">
         <Link to="/" className="flex items-center gap-2">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary">
-            <span className="text-sm font-bold text-primary-foreground">E</span>
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary p-1">
+            <img src={logo} alt="Shifas Mainland Healthcare" className="h-full w-full object-contain" />
           </div>
           <span className="font-display text-lg font-semibold text-foreground">
-            Emerald <span className="text-primary">Medical</span>
+            Shifas <span className="text-primary">Healthcare</span>
           </span>
         </Link>
 

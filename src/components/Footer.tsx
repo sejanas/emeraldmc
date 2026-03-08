@@ -4,6 +4,7 @@ import { Phone, Mail, Clock, MapPin, Facebook, Instagram } from "lucide-react";
 import { businessInfo } from "@/data/siteData";
 import VisitorTracker from "@/components/VisitorTracker";
 import useCategories from "@/hooks/useCategories";
+import logo from "@/assets/logo.png";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 16 },
@@ -23,10 +24,10 @@ const Footer = () => {
         <div className="grid gap-10 md:grid-cols-4">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={0}>
             <Link to="/" className="flex items-center gap-2 group">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary transition-transform group-hover:scale-110">
-                <span className="text-xs font-bold text-primary-foreground">E</span>
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary p-1 transition-transform group-hover:scale-110">
+                <img src={logo} alt="Shifas Mainland Healthcare" className="h-full w-full object-contain" />
               </div>
-              <span className="font-display text-base font-semibold">Emerald Medical</span>
+              <span className="font-display text-base font-semibold">Shifas Healthcare</span>
             </Link>
             <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
               Trusted ISO Certified Diagnostic Lab in Sri Vijaya Puram, providing quality healthcare services.
@@ -101,7 +102,7 @@ const Footer = () => {
           transition={{ delay: 0.4 }}
           className="mt-10 border-t border-border pt-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground"
         >
-          <span>© {new Date().getFullYear()} Emerald Medical Care. All rights reserved.</span>
+          <span>© {new Date().getFullYear()} Shifas Mainland Healthcare. All rights reserved.</span>
           <VisitorTracker />
         </motion.div>
       </div>
