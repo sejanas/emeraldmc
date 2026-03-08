@@ -1,18 +1,22 @@
-import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import useAdminUsers from "@/hooks/useAdminUsers";
 import useAdminUserAction from "@/hooks/useAdminUserAction";
-import { CheckCircle, XCircle, ArrowUpCircle } from "lucide-react";
+import { useConfirm } from "@/components/ConfirmDialog";
+import { CheckCircle, XCircle, ArrowUpCircle, Activity } from "lucide-react";
 
 const statusColors: Record<string, string> = {
   active: "bg-primary/10 text-primary",
   pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
   revoked: "bg-destructive/10 text-destructive",
+  declined: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400",
 };
 
 const AdminUsers = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const confirm = useConfirm();
   const usersQuery = useAdminUsers();
   const users = usersQuery.data ?? [];
   const loading = usersQuery.isLoading;
@@ -20,16 +24,72 @@ const AdminUsers = () => {
   const approveUser = useAdminUserAction('approve-user');
   const promoteUser = useAdminUserAction('promote-user');
   const revokeUser = useAdminUserAction('revoke-user');
+  const declineUser = useAdminUserAction('decline-user');
 
-  const action = async (endpoint: string, user_id: string, label: string) => {
+  const action = async (endpoint: string, payload: any, label: string) => {
     try {
-      if (endpoint === 'approve-user') await approveUser.mutateAsync(user_id);
-      if (endpoint === 'promote-user') await promoteUser.mutateAsync(user_id);
-      if (endpoint === 'revoke-user') await revokeUser.mutateAsync(user_id);
-      toast({ title: `User ${label}` });
+      if (endpoint === 'approve-user') await approveUser.mutateAsync(payload);
+      if (endpoint === 'promote-user') await promoteUser.mutateAsync(payload);
+      if (endpoint === 'revoke-user') await revokeUser.mutateAsync(payload);
+      if (endpoint === 'decline-user') await declineUser.mutateAsync(payload);
+      toast({ title: `User ${label} successfully` });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
+  };
+
+  const handleApprove = async (user_id: string, name: string) => {
+    const result = await confirm({
+      title: "Approve User",
+      description: `Approve account for "${name}"? They will be able to log in immediately.`,
+      confirmLabel: "Approve",
+      variant: "default",
+    });
+    if (result.confirmed) action("approve-user", user_id, "approved");
+  };
+
+  const handleDecline = async (user_id: string, name: string) => {
+    const result = await confirm({
+      title: "Decline User",
+      description: `Decline account request from "${name}"? They will be notified and may resubmit after a cooling period.`,
+      confirmLabel: "Decline",
+      cancelLabel: "Cancel",
+      variant: "destructive",
+      inputLabel: "Reason for declining",
+      inputPlaceholder: "e.g. Insufficient information provided",
+    });
+    if (result.confirmed) {
+      action("decline-user", { user_id, decline_reason: result.input }, "declined");
+    }
+  };
+
+  const handleRevoke = async (user_id: string, name: string) => {
+    const result = await confirm({
+      title: "Revoke Access",
+      description: `Revoke access for "${name}"? They will no longer be able to log in.`,
+      confirmLabel: "Revoke",
+      variant: "destructive",
+    });
+    if (result.confirmed) action("revoke-user", user_id, "revoked");
+  };
+
+  const handlePromote = async (user_id: string, name: string) => {
+    const result = await confirm({
+      title: "Promote to Super Admin",
+      description: `Promote "${name}" to Super Admin? This grants full administrative access including user management.`,
+      confirmLabel: "Promote",
+      variant: "destructive",
+    });
+    if (result.confirmed) action("promote-user", user_id, "promoted");
+  };
+
+  const handleReactivate = async (user_id: string, name: string) => {
+    const result = await confirm({
+      title: "Reactivate User",
+      description: `Reactivate account for "${name}"?`,
+      confirmLabel: "Reactivate",
+    });
+    if (result.confirmed) action("approve-user", user_id, "reactivated");
   };
 
   return (
@@ -44,6 +104,7 @@ const AdminUsers = () => {
               <th className="px-4 py-3 font-medium text-muted-foreground">Role</th>
               <th className="px-4 py-3 font-medium text-muted-foreground">Status</th>
               <th className="px-4 py-3 font-medium text-muted-foreground">Emails</th>
+              <th className="px-4 py-3 font-medium text-muted-foreground">Phones</th>
               <th className="px-4 py-3 font-medium text-muted-foreground text-right">Actions</th>
             </tr>
           </thead>
@@ -56,29 +117,45 @@ const AdminUsers = () => {
                   <span className="rounded-full bg-accent px-2 py-0.5 text-xs font-medium">{u.role}</span>
                 </td>
                 <td className="px-4 py-3">
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusColors[u.status] || ""}`}>{u.status}</span>
+                  <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusColors[u.status] || "bg-muted text-muted-foreground"}`}>{u.status}</span>
                 </td>
                 <td className="px-4 py-3 text-xs text-muted-foreground">
-                  {(u.emails ?? []).map((e: any) => e.email).join(", ")}
+                  {(u.emails ?? []).map((e: any) => e.email).join(", ") || "—"}
                 </td>
-                <td className="px-4 py-3 text-right space-x-1">
+                <td className="px-4 py-3 text-xs text-muted-foreground">
+                  {(u.phones ?? []).map((p: any) => p.phone).join(", ") || "—"}
+                </td>
+                <td className="px-4 py-3 text-right space-x-1 whitespace-nowrap">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    title="View Activity"
+                    onClick={() => navigate(`/admin/activity-logs?user_id=${u.user_id}&user_name=${encodeURIComponent(u.name)}`)}
+                  >
+                    <Activity className="h-4 w-4 text-muted-foreground" />
+                  </Button>
                   {u.status === "pending" && (
-                    <Button variant="ghost" size="sm" onClick={() => action("approve-user", u.user_id, "approved")}>
-                      <CheckCircle className="h-4 w-4 text-primary mr-1" /> Approve
-                    </Button>
+                    <>
+                      <Button variant="ghost" size="sm" onClick={() => handleApprove(u.user_id, u.name)}>
+                        <CheckCircle className="h-4 w-4 text-primary mr-1" /> Approve
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleDecline(u.user_id, u.name)}>
+                        <XCircle className="h-4 w-4 text-destructive mr-1" /> Decline
+                      </Button>
+                    </>
                   )}
                   {u.status === "active" && u.role !== "super_admin" && (
                     <>
-                      <Button variant="ghost" size="sm" onClick={() => action("promote-user", u.user_id, "promoted")}>
+                      <Button variant="ghost" size="sm" onClick={() => handlePromote(u.user_id, u.name)}>
                         <ArrowUpCircle className="h-4 w-4 text-primary mr-1" /> Promote
                       </Button>
-                      <Button variant="ghost" size="sm" onClick={() => action("revoke-user", u.user_id, "revoked")}>
+                      <Button variant="ghost" size="sm" onClick={() => handleRevoke(u.user_id, u.name)}>
                         <XCircle className="h-4 w-4 text-destructive mr-1" /> Revoke
                       </Button>
                     </>
                   )}
                   {u.status === "revoked" && (
-                    <Button variant="ghost" size="sm" onClick={() => action("approve-user", u.user_id, "reactivated")}>
+                    <Button variant="ghost" size="sm" onClick={() => handleReactivate(u.user_id, u.name)}>
                       <CheckCircle className="h-4 w-4 text-primary mr-1" /> Reactivate
                     </Button>
                   )}
