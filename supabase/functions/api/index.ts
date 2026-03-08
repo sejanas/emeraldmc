@@ -302,7 +302,7 @@ async function crudCreate(
     user_id: user.id,
     entity_type: entityType,
     entity_id: data.id,
-    entity_name: data[nameField],
+    entity_name: (data as Record<string, any>)[nameField],
   });
   return json(data, 201);
 }
@@ -349,7 +349,7 @@ async function crudUpdate(
     user_id: user.id,
     entity_type: entityType,
     entity_id: id,
-    entity_name: data[nameField],
+    entity_name: (data as Record<string, any>)[nameField],
     changes: Object.keys(changes).length ? changes : undefined,
   });
   return json(data);
@@ -390,7 +390,7 @@ async function crudDelete(
     user_id: user.id,
     entity_type: entityType,
     entity_id: id,
-    entity_name: old?.[nameField],
+    entity_name: (old as Record<string, any> | null)?.[nameField],
   });
   return json({ success: true });
 }
@@ -1014,6 +1014,44 @@ Deno.serve(async (req) => {
           cfg.softDelete,
           cfg.nameField
         );
+    }
+
+    // Visitors
+    if (resource === "visitors") {
+      if (method === "POST" && id === "track") {
+        const body = await req.json().catch(() => ({}));
+        await adminDb().from("visitors").insert({
+          page: body.page || "/",
+          referrer: body.referrer || null,
+          user_agent: body.user_agent || null,
+        });
+        return json({ success: true });
+      }
+      if (method === "GET" && id === "count") {
+        const { count } = await adminDb()
+          .from("visitors")
+          .select("id", { count: "exact", head: true });
+        return json({ count: count ?? 0 });
+      }
+    }
+
+    // Upload (image)
+    if (resource === "upload" && method === "POST") {
+      const user = await requireAuth(req);
+      const formData = await req.formData();
+      const file = formData.get("file") as File;
+      const folder = (formData.get("folder") as string) || "uploads";
+      if (!file) return errRes("No file provided");
+
+      const ext = file.name?.split(".").pop() || "webp";
+      const name = `${folder}/${Date.now()}.${ext}`;
+      const db = adminDb();
+      const { error } = await db.storage.from("images").upload(name, file, {
+        contentType: file.type || "image/webp",
+      });
+      if (error) throw { message: error.message, status: 500 };
+      const { data } = db.storage.from("images").getPublicUrl(name);
+      return json({ url: data.publicUrl });
     }
 
     return errRes("Not found", 404);

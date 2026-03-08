@@ -1,24 +1,22 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "@/lib/api";
 import { Eye } from "lucide-react";
 
 const VisitorTracker = () => {
   const [count, setCount] = useState<number | null>(null);
 
   useEffect(() => {
-    // Track visit (fire and forget)
-    supabase.from("visitors").insert({
+    // Track visit via API (fire and forget)
+    api.post("/visitors/track", {
       page: window.location.pathname,
       referrer: document.referrer || null,
       user_agent: navigator.userAgent,
-    });
+    }).catch(() => {});
 
-    // Fetch public count via edge function
-    const fetchCount = async () => {
-      const { data } = await supabase.functions.invoke("visitor-count");
-      if (data?.count != null) setCount(data.count);
-    };
-    fetchCount();
+    // Fetch public count via API
+    api.get<{ count: number }>("/visitors/count")
+      .then((data) => { if (data?.count != null) setCount(data.count); })
+      .catch(() => {});
   }, []);
 
   if (count === null) return null;
