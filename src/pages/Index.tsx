@@ -158,26 +158,112 @@ const Index = () => {
 
       {/* Quick Test Search */}
       <section className="container py-12">
-        <motion.form
-          onSubmit={handleHeroSearch}
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.5, duration: 0.5 }}
-          className="mx-auto max-w-xl"
-        >
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="Search tests like CBC, Thyroid, Diabetes..."
-              value={heroSearch}
-              onChange={(e) => setHeroSearch(e.target.value)}
-              className="h-14 rounded-full pl-12 pr-32 text-base shadow-md border-border"
-            />
-            <Button type="submit" size="sm" className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full px-6">
-              Search
-            </Button>
-          </div>
-        </motion.form>
+        <div ref={searchRef} className="mx-auto max-w-xl relative">
+          <motion.form
+            onSubmit={handleHeroSearch}
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5, duration: 0.5 }}
+          >
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search tests like CBC, Thyroid, Diabetes..."
+                value={heroSearch}
+                onChange={(e) => {
+                  setHeroSearch(e.target.value);
+                  setShowResults(true);
+                }}
+                onFocus={() => q && setShowResults(true)}
+                className="h-14 rounded-full pl-12 pr-32 text-base shadow-md border-border"
+              />
+              <Button type="submit" size="sm" className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full px-6">
+                Search
+              </Button>
+            </div>
+          </motion.form>
+
+          {/* Inline Search Results */}
+          {showResults && q && (
+            <div className="absolute z-50 mt-2 w-full rounded-xl border border-border bg-card shadow-lg max-h-[400px] overflow-y-auto">
+              {!hasResults && (
+                <div className="p-4 text-center text-sm text-muted-foreground">
+                  No tests or packages found for "{heroSearch.trim()}"
+                </div>
+              )}
+
+              {matchedTests.length > 0 && (
+                <div className="p-3">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">Tests</p>
+                  <div className="space-y-1">
+                    {matchedTests.map((t: any) => (
+                      <Link
+                        key={t.id}
+                        to={`/tests/${t.slug ?? t.id}`}
+                        onClick={() => setShowResults(false)}
+                        className="flex items-center justify-between rounded-lg px-3 py-2.5 hover:bg-accent transition-colors"
+                      >
+                        <div>
+                          <p className="text-sm font-medium text-foreground">{t.name}</p>
+                          <p className="text-xs text-muted-foreground">{catName(t.category_id)} · {t.report_time}</p>
+                        </div>
+                        <span className="text-sm font-semibold text-primary shrink-0 ml-3">₹{t.price}</span>
+                      </Link>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {matchedPackages.length > 0 && (
+                <div className="p-3 border-t border-border">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">Packages</p>
+                  <div className="space-y-1">
+                    {matchedPackages.map((pkg: any) => {
+                      const pTests = (testNames[pkg.id] ?? []) as string[];
+                      const matching = pTests.filter((t: string) => t.toLowerCase().includes(q));
+                      return (
+                        <Link
+                          key={pkg.id}
+                          to="/packages"
+                          onClick={() => setShowResults(false)}
+                          className="flex items-center justify-between rounded-lg px-3 py-2.5 hover:bg-accent transition-colors"
+                        >
+                          <div>
+                            <p className="text-sm font-medium text-foreground">{pkg.name}</p>
+                            {matching.length > 0 && (
+                              <p className="text-xs text-muted-foreground">
+                                Includes: {matching.slice(0, 3).join(", ")}{matching.length > 3 ? ` +${matching.length - 3} more` : ""}
+                              </p>
+                            )}
+                          </div>
+                          <span className="text-sm font-semibold text-primary shrink-0 ml-3">
+                            ₹{pkg.discounted_price ?? pkg.original_price}
+                          </span>
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {hasResults && (
+                <div className="border-t border-border p-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-full text-xs"
+                    onClick={() => {
+                      setShowResults(false);
+                      navigate(`/tests?search=${encodeURIComponent(heroSearch.trim())}`);
+                    }}
+                  >
+                    View all results <ArrowRight className="ml-1 h-3 w-3" />
+                  </Button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
       </section>
 
       {/* Features */}
