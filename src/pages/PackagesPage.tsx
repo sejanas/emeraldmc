@@ -1,10 +1,9 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Star, CheckCircle, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SectionHeading from "@/components/SectionHeading";
-import { api } from "@/lib/api";
+import usePackages from "@/hooks/usePackages";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const fadeUp = {
@@ -13,23 +12,16 @@ const fadeUp = {
 };
 
 const PackagesPage = () => {
-  const [packages, setPackages] = useState<any[]>([]);
-  const [testNames, setTestNames] = useState<Record<string, string[]>>({});
-  const [loading, setLoading] = useState(true);
+  const packagesQuery = usePackages();
 
-  useEffect(() => {
-    api.get<{ packages: any[]; testNames: Record<string, string[]> }>("/packages").then((res) => {
-      setPackages(res.packages);
-      setTestNames(res.testNames);
-      setLoading(false);
-    });
-  }, []);
+  const packages = packagesQuery.data?.packages ?? [];
+  const testNames = packagesQuery.data?.testNames ?? {};
 
   return (
     <div className="container py-12">
       <SectionHeading title="Health Packages" subtitle="Choose from our curated health checkup packages designed for comprehensive care" />
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        {loading
+        {packagesQuery.isLoading
           ? Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="relative flex flex-col rounded-xl border p-6">
                 <Skeleton className="h-6 w-32" />

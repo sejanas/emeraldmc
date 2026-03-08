@@ -1,13 +1,10 @@
-import { useEffect, useState } from "react";
-import { api } from "@/lib/api";
+import { useState } from "react";
+import useDashboardCounts from "@/hooks/useDashboardCounts";
 import { FlaskConical, Package, Users, Image, List, Eye, CalendarCheck } from "lucide-react";
 
 const AdminDashboard = () => {
-  const [counts, setCounts] = useState({ categories: 0, tests: 0, packages: 0, doctors: 0, gallery: 0, visitors: 0, bookings: 0 });
-
-  useEffect(() => {
-    api.get("/dashboard/counts").then(setCounts).catch(console.error);
-  }, []);
+  const countsQuery = useDashboardCounts();
+  const counts = countsQuery.data ?? { categories: 0, tests: 0, packages: 0, doctors: 0, gallery: 0, visitors: 0, bookings: 0 };
 
   const cards = [
     { label: "Categories", count: counts.categories, icon: List },

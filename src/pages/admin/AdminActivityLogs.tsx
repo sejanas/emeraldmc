@@ -1,18 +1,12 @@
-import { useEffect, useState } from "react";
-import { api } from "@/lib/api";
+import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
+import useActivityLogs from "@/hooks/useActivityLogs";
 
 const AdminActivityLogs = () => {
   const { toast } = useToast();
-  const [logs, setLogs] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    api.get("/activity-logs")
-      .then(setLogs)
-      .catch((err) => toast({ title: "Error loading logs", description: err.message, variant: "destructive" }))
-      .finally(() => setLoading(false));
-  }, []);
+  const logsQuery = useActivityLogs();
+  const logs = logsQuery.data ?? [];
+  const loading = logsQuery.isLoading;
 
   const formatEvent = (event: string) => {
     const [entity, action] = event.split(".");

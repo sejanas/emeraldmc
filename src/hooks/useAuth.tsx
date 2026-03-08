@@ -1,6 +1,7 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { api } from "@/lib/api";
+import * as authApi from "@/lib/auth";
 import type { User, Session } from "@supabase/supabase-js";
 
 interface Profile {
@@ -40,7 +41,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const fetchProfile = async () => {
     try {
-      const res = await api.get<{ profile: Profile }>("/auth/me");
+      const res = await authApi.getProfile();
       setProfile(res.profile);
     } catch {
       setProfile(null);
@@ -83,10 +84,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signIn = async (email: string, password: string) => {
     try {
-      const res = await api.post<{
-        session: { access_token: string; refresh_token: string };
-        profile: Profile;
-      }>("/auth/login", { email, password });
+      const res = await authApi.login(email, password);
 
       const { error } = await supabase.auth.setSession({
         access_token: res.session.access_token,
@@ -108,7 +106,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     password: string;
   }) => {
     try {
-      await api.post("/auth/signup", data);
+      await authApi.signup(data);
       return { error: null };
     } catch (e: any) {
       return { error: new Error(e.message) };

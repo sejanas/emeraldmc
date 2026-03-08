@@ -8,16 +8,16 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2 } from "lucide-react";
-import { api } from "@/lib/api";
-import usePackages from "@/hooks/usePackages";
-import useSupabaseQuery from "@/hooks/useSupabaseQuery";
-import { useQueryClient } from "@tanstack/react-query";
+import usePackages, { useCreatePackage, useUpdatePackage, useDeletePackage } from "@/hooks/usePackages";
+import useTests from "@/hooks/useTests";
 
 const AdminPackages = () => {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const packagesQuery = usePackages();
-  const allTestsQuery = useSupabaseQuery(["tests", "all"], () => api.get("/tests"));
+  const createPackage = useCreatePackage();
+  const updatePackage = useUpdatePackage();
+  const deletePackage = useDeletePackage();
+  const allTestsQuery = useTests({ active: false });
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [selectedTests, setSelectedTests] = useState<string[]>([]);
@@ -50,14 +50,13 @@ const AdminPackages = () => {
     setSaving(true);
     try {
       if (editing) {
-        await api.put(`/packages/${editing.id}`, { ...form, test_ids: selectedTests });
+        await updatePackage.mutateAsync({ id: editing.id, ...form, test_ids: selectedTests });
         toast({ title: "Package updated" });
       } else {
-        await api.post("/packages", { ...form, test_ids: selectedTests });
+        await createPackage.mutateAsync({ ...form, test_ids: selectedTests });
         toast({ title: "Package created" });
       }
       setOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["packages"] });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally { setSaving(false); }
@@ -66,9 +65,8 @@ const AdminPackages = () => {
   const remove = async (id: string) => {
     if (!confirm("Delete this package?")) return;
     try {
-      await api.del(`/packages/${id}`);
+      await deletePackage.mutateAsync(id);
       toast({ title: "Package deleted" });
-      queryClient.invalidateQueries({ queryKey: ["packages"] });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }

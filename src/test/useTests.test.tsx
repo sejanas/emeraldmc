@@ -4,16 +4,14 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import useTests from '@/hooks/useTests';
 
 vi.mock('@/lib/api', () => ({
-  api: {
-    get: (_path: string) =>
-      Promise.resolve([
-        { id: 't1', name: 'Test 1', price: 100, report_time: 'Same Day', sample_type: 'Blood', category_id: null },
-      ]),
-  },
+  getTests: (_params: any) =>
+    Promise.resolve([
+      { id: 't1', name: 'Test 1', price: 100, report_time: 'Same Day', sample_type: 'Blood', category_id: null },
+    ]),
 }));
 
 function TestComp() {
-  const q = useTests(6);
+  const q = useTests({ limit: 6 });
   if (q.isLoading) return <div>loading</div>;
   if (q.isError) return <div>error</div>;
   return <div>loaded:{q.data?.[0].name}</div>;

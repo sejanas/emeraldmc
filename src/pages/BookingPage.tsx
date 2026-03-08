@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Calendar, Clock, User, Phone, Mail, CheckCircle, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import SectionHeading from "@/components/SectionHeading";
 import { bookingSlots } from "@/data/siteData";
-import { api } from "@/lib/api";
+import useTests from "@/hooks/useTests";
+import usePackages from "@/hooks/usePackages";
+import { useCreateBooking } from "@/hooks/useBookingsMutations";
 import { useToast } from "@/hooks/use-toast";
 
 const BookingPage = () => {
@@ -16,20 +18,14 @@ const BookingPage = () => {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ name: "", phone: "", email: "", date: "", slot: "", testOrPackage: "", address: "", notes: "" });
-  const [tests, setTests] = useState<any[]>([]);
-  const [packages, setPackages] = useState<any[]>([]);
+  const testsQuery = useTests({ active: true });
+  const packagesQuery = usePackages();
+  const createBooking = useCreateBooking();
+
+  const tests = testsQuery.data ?? [];
+  const packages = packagesQuery.data?.packages ?? [];
 
   const today = new Date().toISOString().split("T")[0];
-
-  useEffect(() => {
-    Promise.all([
-      api.get("/tests?active=true"),
-      api.get<{ packages: any[] }>("/packages"),
-    ]).then(([t, p]) => {
-      setTests(t);
-      setPackages(p.packages);
-    });
-  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -39,7 +35,7 @@ const BookingPage = () => {
     }
     setLoading(true);
     try {
-      await api.post("/bookings", {
+      await createBooking.mutateAsync({
         patient_name: form.name,
         phone: form.phone,
         email: form.email || null,

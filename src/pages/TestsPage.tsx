@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Search, Clock, Droplets, AlertCircle } from "lucide-react";
@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import SectionHeading from "@/components/SectionHeading";
-import { api } from "@/lib/api";
+import useCategories from "@/hooks/useCategories";
+import useTests from "@/hooks/useTests";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 } as const,
@@ -16,24 +17,15 @@ const fadeUp = {
 const TestsPage = () => {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("All");
-  const [tests, setTests] = useState<any[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const testsQuery = useTests({ active: true });
+  const categoriesQuery = useCategories();
 
-  useEffect(() => {
-    Promise.all([
-      api.get("/tests?active=true"),
-      api.get("/categories"),
-    ]).then(([t, c]) => {
-      setTests(t);
-      setCategories(c);
-      setLoading(false);
-    });
-  }, []);
+  const catName = (id: string | null) => (categoriesQuery.data ?? []).find((c: any) => c.id === id)?.name ?? "Other";
 
-  const catName = (id: string | null) => categories.find((c: any) => c.id === id)?.name ?? "Other";
+  const tests = testsQuery.data ?? [];
+  const categories = categoriesQuery.data ?? [];
 
-  const filtered = tests.filter((t) => {
+  const filtered = tests.filter((t: any) => {
     const matchSearch = t.name.toLowerCase().includes(search.toLowerCase());
     const matchCat = category === "All" || catName(t.category_id) === category;
     return matchSearch && matchCat;
@@ -56,7 +48,7 @@ const TestsPage = () => {
         </div>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {loading
+        {testsQuery.isLoading
           ? Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="rounded-xl border border-border bg-card p-5">
                 <Skeleton className="inline-block rounded-full h-5 w-24" />
@@ -72,7 +64,7 @@ const TestsPage = () => {
                 </div>
               </div>
             ))
-          : filtered.map((t, i) => (
+            : filtered.map((t: any, i: number) => (
               <motion.div key={t.id} initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={i}
                 className="rounded-xl border border-border bg-card p-5 transition-shadow hover:card-shadow-hover">
                 <span className="inline-block rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium text-primary">{catName(t.category_id)}</span>

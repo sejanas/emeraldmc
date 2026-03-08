@@ -1,15 +1,12 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import SectionHeading from "@/components/SectionHeading";
-import { api } from "@/lib/api";
+import useGallery from "@/hooks/useGallery";
 
 const GalleryPage = () => {
-  const [items, setItems] = useState<any[]>([]);
   const [filter, setFilter] = useState("All");
+  const galleryQuery = useGallery();
 
-  useEffect(() => {
-    api.get("/gallery").then((data) => setItems(data));
-  }, []);
-
+  const items = galleryQuery.data ?? [];
   const cats = ["All", ...Array.from(new Set(items.map((i: any) => i.category)))];
   const filtered = filter === "All" ? items : items.filter((i: any) => i.category === filter);
 

@@ -23,7 +23,17 @@ export function useCreatePackage() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: any) => createPackage(body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['packages'] }),
+    onMutate: async (body: any) => {
+      await qc.cancelQueries({ queryKey: ['packages'] });
+      const prev = qc.getQueryData(['packages']);
+      const optimistic = { id: `optimistic-${Date.now()}`, ...body };
+      if (prev) qc.setQueryData(['packages'], (old: any) => [optimistic, ...(old?.packages ?? [])]);
+      return { prev };
+    },
+    onError: (_err, _vars, context: any) => {
+      if (context?.prev) qc.setQueryData(['packages'], context.prev);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['packages'] }),
   });
 }
 
@@ -31,7 +41,16 @@ export function useUpdatePackage() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ id, ...body }: { id: string } & Record<string, any>) => updatePackage(id, body),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['packages'] }),
+    onMutate: async ({ id, ...body }: { id: string } & Record<string, any>) => {
+      await qc.cancelQueries({ queryKey: ['packages'] });
+      const prev = qc.getQueryData(['packages']);
+      if (prev) qc.setQueryData(['packages'], (old: any) => ({ ...old, packages: (old.packages ?? []).map((p: any) => (p.id === id ? { ...p, ...body } : p)) }));
+      return { prev };
+    },
+    onError: (_err, _vars, context: any) => {
+      if (context?.prev) qc.setQueryData(['packages'], context.prev);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['packages'] }),
   });
 }
 
@@ -39,7 +58,16 @@ export function useDeletePackage() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) => deletePackage(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['packages'] }),
+    onMutate: async (id: string) => {
+      await qc.cancelQueries({ queryKey: ['packages'] });
+      const prev = qc.getQueryData(['packages']);
+      if (prev) qc.setQueryData(['packages'], (old: any) => ({ ...old, packages: (old.packages ?? []).filter((p: any) => p.id !== id) }));
+      return { prev };
+    },
+    onError: (_err, _vars, context: any) => {
+      if (context?.prev) qc.setQueryData(['packages'], context.prev);
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['packages'] }),
   });
 }
 

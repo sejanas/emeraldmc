@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { api } from "@/lib/api";
+import useAdminUsers from "@/hooks/useAdminUsers";
+import useAdminUserAction from "@/hooks/useAdminUserAction";
 import { CheckCircle, XCircle, ArrowUpCircle } from "lucide-react";
 
 const statusColors: Record<string, string> = {
@@ -12,26 +13,20 @@ const statusColors: Record<string, string> = {
 
 const AdminUsers = () => {
   const { toast } = useToast();
-  const [users, setUsers] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const usersQuery = useAdminUsers();
+  const users = usersQuery.data ?? [];
+  const loading = usersQuery.isLoading;
 
-  const load = async () => {
-    setLoading(true);
-    try {
-      const data = await api.get("/admin/users");
-      setUsers(data);
-    } catch (err: any) {
-      toast({ title: "Error loading users", description: err.message, variant: "destructive" });
-    } finally { setLoading(false); }
-  };
-
-  useEffect(() => { load(); }, []);
+  const approveUser = useAdminUserAction('approve-user');
+  const promoteUser = useAdminUserAction('promote-user');
+  const revokeUser = useAdminUserAction('revoke-user');
 
   const action = async (endpoint: string, user_id: string, label: string) => {
     try {
-      await api.post(`/admin/${endpoint}`, { user_id });
+      if (endpoint === 'approve-user') await approveUser.mutateAsync(user_id);
+      if (endpoint === 'promote-user') await promoteUser.mutateAsync(user_id);
+      if (endpoint === 'revoke-user') await revokeUser.mutateAsync(user_id);
       toast({ title: `User ${label}` });
-      load();
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
