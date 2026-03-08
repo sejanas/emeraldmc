@@ -72,7 +72,12 @@ const AdminProfile = () => {
       setDeclineReason(p.decline_reason ?? null);
       setDeclinedAt(p.declined_at ?? null);
       setPhones((res.phones ?? []).map((ph: any) => ph.phone).filter(Boolean));
-      setEmails((res.emails ?? []).map((e: any) => e.email).filter(Boolean));
+      // Filter out the primary login email — it's shown read-only separately
+      const authEmail = (res.profile?.email ?? "").toLowerCase();
+      const additional = (res.emails ?? [])
+        .map((e: any) => e.email)
+        .filter((e: string) => e && e.toLowerCase() !== authEmail);
+      setEmails(additional.length ? additional : []);
     } catch (err: any) {
       toast({ title: "Failed to load profile", description: err.message, variant: "destructive" });
     } finally {
