@@ -21,8 +21,8 @@ const AdminLayout = () => {
   ];
 
   return (
-    <div className="flex min-h-screen bg-muted/30">
-      <aside className="hidden w-56 shrink-0 border-r border-border bg-card md:flex md:flex-col">
+    <div className="flex h-screen bg-muted/30">
+      <aside className="hidden w-56 shrink-0 border-r border-border bg-card md:flex md:flex-col h-screen overflow-auto">
         <div className="flex h-14 items-center gap-2 border-b border-border px-4">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
             <span className="text-xs font-bold text-primary-foreground">E</span>
@@ -59,7 +59,7 @@ const AdminLayout = () => {
         </div>
       </aside>
 
-      <div className="flex flex-1 flex-col">
+      <div className="flex flex-1 flex-col overflow-hidden">
         <header className="flex h-14 items-center gap-2 border-b border-border bg-card px-4 md:hidden">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
             <span className="text-xs font-bold text-primary-foreground">E</span>
@@ -78,7 +78,7 @@ const AdminLayout = () => {
             <LogOut className="h-4 w-4" />
           </Button>
         </header>
-        <main className="flex-1 p-4 md:p-6">
+        <main className="flex-1 overflow-auto p-4 md:p-6">
           <ErrorBoundary>
             <Outlet />
           </ErrorBoundary>
