@@ -6,8 +6,7 @@
 
 @layer base {
   /* ===== EMERALD THEME (default) — Light ===== */
-  :root,
-  [data-theme="emerald"] {
+  :root {
     --background: 0 0% 100%;
     --foreground: 200 15% 15%;
 
