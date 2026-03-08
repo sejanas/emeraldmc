@@ -60,6 +60,9 @@ const ReportsPage = () => {
     setLoading(true);
     setSearched(true);
     try {
+      const params = new URLSearchParams();
+      params.set("phone", form.mobile.trim());
+      if (form.patientId.trim()) params.set("patient_id", form.patientId.trim());
       const data = await api.get<BookingResult[]>(`/bookings/track?${params.toString()}`);
       setResults(data ?? []);
       if (!data?.length) {
