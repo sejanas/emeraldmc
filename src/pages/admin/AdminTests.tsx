@@ -59,8 +59,14 @@ const AdminTests = () => {
     } finally { setSaving(false); }
   };
 
-  const remove = async (id: string) => {
-    if (!confirm("Delete this test?")) return;
+  const remove = async (id: string, name: string) => {
+    const result = await confirm({
+      title: "Delete Test",
+      description: `Are you sure you want to delete "${name}"?`,
+      confirmLabel: "Delete",
+      variant: "destructive",
+    });
+    if (!result.confirmed) return;
     try {
       await deleteTest.mutateAsync(id);
       toast({ title: "Test deleted" });
