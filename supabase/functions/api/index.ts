@@ -132,8 +132,8 @@ async function handleLogin(req: Request) {
 
   const profile = await getUserProfile(data.user.id);
   if (!profile) return errRes("No admin account found", 403);
-  if (profile.status !== "active")
-    return errRes(`Account is ${profile.status}. Contact admin.`, 403);
+  if (profile.status === "revoked")
+    return errRes("Account has been revoked. Contact admin.", 403);
 
   await logActivity({
     event_type: "user.login",
