@@ -33,6 +33,7 @@ const Index = () => {
   const doctorsQuery = useDoctors(3);
   const packagesQuery = usePackages();
   const categoriesQuery = useCategories();
+  const faqsQuery = useFaqs(true);
 
   const catName = (id: string | null) =>
     (categoriesQuery.data ?? []).find((c: any) => c.id === id)?.name ?? "";
