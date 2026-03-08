@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ConfirmProvider } from "@/components/ConfirmDialog";
+import { ThemeProvider } from "@/hooks/useTheme";
 import AdminRoute from "@/components/AdminRoute";
 import Layout from "@/components/Layout";
 import Index from "./pages/Index";
