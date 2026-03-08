@@ -5,12 +5,14 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import { useConfirm } from "@/components/ConfirmDialog";
 import ImageUpload from "@/components/ImageUpload";
 import useGallery from "@/hooks/useGallery";
 import { useCreateGallery, useUpdateGallery, useDeleteGallery } from "@/hooks/useGalleryMutations";
 
 const AdminGallery = () => {
   const { toast } = useToast();
+  const confirm = useConfirm();
   const galleryQuery = useGallery();
   const createGallery = useCreateGallery();
   const updateGallery = useUpdateGallery();
@@ -41,8 +43,14 @@ const AdminGallery = () => {
     } finally { setSaving(false); }
   };
 
-  const remove = async (id: string) => {
-    if (!confirm("Delete this image?")) return;
+  const remove = async (id: string, title: string) => {
+    const result = await confirm({
+      title: "Delete Image",
+      description: `Are you sure you want to delete "${title}"?`,
+      confirmLabel: "Delete",
+      variant: "destructive",
+    });
+    if (!result.confirmed) return;
     try {
       await deleteGallery.mutateAsync(id);
       toast({ title: "Image deleted" });
@@ -63,7 +71,7 @@ const AdminGallery = () => {
             <img src={g.image_url} alt={g.title} className="aspect-video w-full object-cover" />
             <div className="absolute inset-0 bg-foreground/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
               <Button variant="secondary" size="sm" onClick={() => openEdit(g)}><Pencil className="h-3.5 w-3.5" /></Button>
-              <Button variant="destructive" size="sm" onClick={() => remove(g.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+              <Button variant="destructive" size="sm" onClick={() => remove(g.id, g.title)}><Trash2 className="h-3.5 w-3.5" /></Button>
             </div>
             <div className="p-3">
               <p className="text-sm font-medium text-foreground">{g.title}</p>

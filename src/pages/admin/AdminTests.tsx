@@ -8,12 +8,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import { useConfirm } from "@/components/ConfirmDialog";
 import useCategories from "@/hooks/useCategories";
 import useTests from "@/hooks/useTests";
 import { useCreateTest, useUpdateTest, useDeleteTest } from "@/hooks/useTests";
 
 const AdminTests = () => {
   const { toast } = useToast();
+  const confirm = useConfirm();
   const createTest = useCreateTest();
   const updateTest = useUpdateTest();
   const deleteTest = useDeleteTest();
@@ -57,8 +59,14 @@ const AdminTests = () => {
     } finally { setSaving(false); }
   };
 
-  const remove = async (id: string) => {
-    if (!confirm("Delete this test?")) return;
+  const remove = async (id: string, name: string) => {
+    const result = await confirm({
+      title: "Delete Test",
+      description: `Are you sure you want to delete "${name}"?`,
+      confirmLabel: "Delete",
+      variant: "destructive",
+    });
+    if (!result.confirmed) return;
     try {
       await deleteTest.mutateAsync(id);
       toast({ title: "Test deleted" });
@@ -97,7 +105,7 @@ const AdminTests = () => {
                 <td className="px-4 py-3">{t.is_active ? "✓" : "✗"}</td>
                 <td className="px-4 py-3 text-right space-x-1">
                   <Button variant="ghost" size="icon" onClick={() => openEdit(t)}><Pencil className="h-4 w-4" /></Button>
-                  <Button variant="ghost" size="icon" onClick={() => remove(t.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                  <Button variant="ghost" size="icon" onClick={() => remove(t.id, t.name)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                 </td>
               </tr>
             ))}

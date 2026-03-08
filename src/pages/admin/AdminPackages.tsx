@@ -8,11 +8,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import { useConfirm } from "@/components/ConfirmDialog";
 import usePackages, { useCreatePackage, useUpdatePackage, useDeletePackage } from "@/hooks/usePackages";
 import useTests from "@/hooks/useTests";
 
 const AdminPackages = () => {
   const { toast } = useToast();
+  const confirm = useConfirm();
   const packagesQuery = usePackages();
   const createPackage = useCreatePackage();
   const updatePackage = useUpdatePackage();
@@ -62,8 +64,14 @@ const AdminPackages = () => {
     } finally { setSaving(false); }
   };
 
-  const remove = async (id: string) => {
-    if (!confirm("Delete this package?")) return;
+  const remove = async (id: string, name: string) => {
+    const result = await confirm({
+      title: "Delete Package",
+      description: `Are you sure you want to delete "${name}"?`,
+      confirmLabel: "Delete",
+      variant: "destructive",
+    });
+    if (!result.confirmed) return;
     try {
       await deletePackage.mutateAsync(id);
       toast({ title: "Package deleted" });
@@ -103,7 +111,7 @@ const AdminPackages = () => {
                 <td className="px-4 py-3">{p.is_popular ? "⭐" : "—"}</td>
                 <td className="px-4 py-3 text-right space-x-1">
                   <Button variant="ghost" size="icon" onClick={() => openEdit(p)}><Pencil className="h-4 w-4" /></Button>
-                  <Button variant="ghost" size="icon" onClick={() => remove(p.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                  <Button variant="ghost" size="icon" onClick={() => remove(p.id, p.name)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                 </td>
               </tr>
             ))}

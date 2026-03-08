@@ -6,12 +6,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import { useConfirm } from "@/components/ConfirmDialog";
 import ImageUpload from "@/components/ImageUpload";
 import useDoctors from "@/hooks/useDoctors";
 import { useCreateDoctor, useUpdateDoctor, useDeleteDoctor } from "@/hooks/useDoctorsMutations";
 
 const AdminDoctors = () => {
   const { toast } = useToast();
+  const confirm = useConfirm();
   const doctorsQuery = useDoctors();
   const createDoctor = useCreateDoctor();
   const updateDoctor = useUpdateDoctor();
@@ -52,8 +54,14 @@ const AdminDoctors = () => {
     } finally { setSaving(false); }
   };
 
-  const remove = async (id: string) => {
-    if (!confirm("Delete this doctor?")) return;
+  const remove = async (id: string, name: string) => {
+    const result = await confirm({
+      title: "Delete Doctor",
+      description: `Are you sure you want to delete "${name}"? This action cannot be undone.`,
+      confirmLabel: "Delete",
+      variant: "destructive",
+    });
+    if (!result.confirmed) return;
     try {
       await deleteDoctor.mutateAsync(id);
       toast({ title: "Doctor deleted" });
@@ -78,7 +86,7 @@ const AdminDoctors = () => {
               <p className="text-xs text-muted-foreground mt-1">{d.qualification}</p>
               <div className="mt-3 flex gap-1">
                 <Button variant="ghost" size="sm" onClick={() => openEdit(d)}><Pencil className="mr-1 h-3.5 w-3.5" /> Edit</Button>
-                <Button variant="ghost" size="sm" onClick={() => remove(d.id)}><Trash2 className="mr-1 h-3.5 w-3.5 text-destructive" /> Delete</Button>
+                <Button variant="ghost" size="sm" onClick={() => remove(d.id, d.name)}><Trash2 className="mr-1 h-3.5 w-3.5 text-destructive" /> Delete</Button>
               </div>
             </div>
           </div>
