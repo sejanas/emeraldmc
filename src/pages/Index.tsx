@@ -60,8 +60,8 @@ const Index = () => {
   const categoriesQuery = useCategories();
   const faqsQuery = useFaqs(true);
 
-  const catName = (id: string | null) =>
-    (categoriesQuery.data ?? []).find((c: any) => c.id === id)?.name ?? "";
+  const getCatNames = (t: any) =>
+    (t.categories ?? []).map((c: any) => c.name).join(", ") || "";
 
   const packages = packagesQuery.data?.packages ?? [];
   const testNames = packagesQuery.data?.testNames ?? {};
@@ -205,7 +205,7 @@ const Index = () => {
                       >
                         <div>
                           <p className="text-sm font-medium text-foreground">{t.name}</p>
-                          <p className="text-xs text-muted-foreground">{catName(t.category_id)} · {t.report_time}</p>
+                          <p className="text-xs text-muted-foreground">{getCatNames(t)} · {t.report_time}</p>
                         </div>
                         <span className="shrink-0 ml-3 text-right">
                           {t.original_price && t.original_price > t.price && (
@@ -332,7 +332,7 @@ const Index = () => {
               <motion.div key={t.id} initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={i}
                 className="flex items-start justify-between rounded-xl border border-border bg-card p-5 transition-all hover:card-shadow-hover hover:scale-[1.01]">
                 <div>
-                  <p className="text-xs font-medium text-primary">{catName(t.category_id)}</p>
+                  <p className="text-xs font-medium text-primary">{getCatNames(t)}</p>
                   <h3 className="mt-1 font-semibold text-foreground">{t.name}</h3>
                   <p className="mt-1 text-xs text-muted-foreground">{t.report_time} • {t.sample_type}</p>
                 </div>

@@ -40,14 +40,14 @@ const TestsPage = () => {
     setSearchParams(searchParams, { replace: true });
   };
 
-  const catName = (id: string | null) => (categoriesQuery.data ?? []).find((c: any) => c.id === id)?.name ?? "Other";
-
-  const tests = testsQuery.data ?? [];
   const categories = categoriesQuery.data ?? [];
+  const tests = testsQuery.data ?? [];
 
   const filtered = tests.filter((t: any) => {
     const matchSearch = t.name.toLowerCase().includes(search.toLowerCase());
-    const matchCat = category === "All" || catName(t.category_id) === category;
+    const matchCat =
+      category === "All" ||
+      (t.categories ?? []).some((c: any) => c.name === category);
     return matchSearch && matchCat;
   });
 
@@ -104,7 +104,11 @@ const TestsPage = () => {
             : filtered.map((t: any, i: number) => (
               <motion.div key={t.id} initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={i}
                 className="rounded-xl border border-border bg-card p-5 transition-all hover:card-shadow-hover hover:scale-[1.01]">
-                <span className="inline-block rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium text-primary">{catName(t.category_id)}</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {(t.categories ?? []).map((c: any) => (
+                    <span key={c.id} className="inline-block rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium text-primary">{c.name}</span>
+                  ))}
+                </div>
                 <h3 className="mt-2 font-display text-lg font-semibold text-foreground">{t.name}</h3>
                 <p className="mt-1 text-sm text-muted-foreground">{t.description}</p>
                 <div className="mt-3 flex flex-wrap gap-3 text-xs text-muted-foreground">

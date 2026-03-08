@@ -296,6 +296,28 @@ async function crudList(table: string, url: URL, softDelete = true) {
 
   const { data, error } = await q;
   if (error) throw { message: error.message, status: 500 };
+
+  // For tests, attach categories array from test_category_map
+  if (table === "tests" && data) {
+    const testIds = data.map((t: any) => t.id);
+    if (testIds.length > 0) {
+      const { data: mappings } = await db
+        .from("test_category_map")
+        .select("test_id, category_id, test_categories(id, name)")
+        .in("test_id", testIds);
+      const catMap: Record<string, { id: string; name: string }[]> = {};
+      (mappings ?? []).forEach((m: any) => {
+        (catMap[m.test_id] ??= []).push({
+          id: m.test_categories?.id ?? m.category_id,
+          name: m.test_categories?.name ?? "",
+        });
+      });
+      data.forEach((t: any) => {
+        t.categories = catMap[t.id] ?? [];
+      });
+    }
+  }
+
   return json(data);
 }
 
@@ -317,19 +339,29 @@ async function crudCreate(
 ) {
   const { user } = await requireRole(req, ADMIN_ROLES);
   const body = await req.json();
+  const { category_ids, ...rest } = body;
   const slug =
-    body.slug ||
-    (body[nameField] || "")
+    rest.slug ||
+    (rest[nameField] || "")
       .toLowerCase()
       .replace(/\s+/g, "-")
       .replace(/[^a-z0-9-]/g, "");
 
   const { data, error } = await adminDb()
     .from(table)
-    .insert({ ...body, slug, created_by: user.id, updated_by: user.id })
+    .insert({ ...rest, slug, created_by: user.id, updated_by: user.id })
     .select()
     .single();
   if (error) throw { message: error.message, status: 500 };
+
+  // Sync test_category_map for tests
+  if (table === "tests" && category_ids?.length) {
+    const db = adminDb();
+    await db.from("test_category_map").delete().eq("test_id", data.id);
+    await db.from("test_category_map").insert(
+      category_ids.map((cid: string) => ({ test_id: data.id, category_id: cid }))
+    );
+  }
 
   await logActivity({
     event_type: `${entityType}.created`,
@@ -350,6 +382,7 @@ async function crudUpdate(
 ) {
   const { user } = await requireRole(req, ADMIN_ROLES);
   const body = await req.json();
+  const { category_ids, ...rest } = body;
   const db = adminDb();
 
   const { data: old } = await db
@@ -361,7 +394,7 @@ async function crudUpdate(
   const { data, error } = await db
     .from(table)
     .update({
-      ...body,
+      ...rest,
       updated_by: user.id,
       updated_at: new Date().toISOString(),
     })
@@ -370,11 +403,21 @@ async function crudUpdate(
     .single();
   if (error) throw { message: error.message, status: 500 };
 
+  // Sync test_category_map for tests
+  if (table === "tests" && category_ids !== undefined) {
+    await db.from("test_category_map").delete().eq("test_id", id);
+    if (category_ids?.length) {
+      await db.from("test_category_map").insert(
+        category_ids.map((cid: string) => ({ test_id: id, category_id: cid }))
+      );
+    }
+  }
+
   const changes: Record<string, any> = {};
   if (old) {
-    for (const key of Object.keys(body)) {
-      if (JSON.stringify(old[key]) !== JSON.stringify(body[key]))
-        changes[key] = { from: old[key], to: body[key] };
+    for (const key of Object.keys(rest)) {
+      if (JSON.stringify(old[key]) !== JSON.stringify(rest[key]))
+        changes[key] = { from: old[key], to: rest[key] };
     }
   }
 
