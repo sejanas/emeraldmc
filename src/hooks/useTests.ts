@@ -1,15 +1,47 @@
-import { supabase } from "@/integrations/supabase/client";
-import useSupabaseQuery from "./useSupabaseQuery";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { getTests, createTest, updateTest, deleteTest } from '@/lib/api';
 
-interface TestRow { id: string; name: string; price: number; report_time: string; sample_type: string; category_id: string | null; }
+export interface TestRow {
+  id: string;
+  name: string;
+  price: number;
+  report_time: string;
+  sample_type: string;
+  category_id: string | null;
+}
 
 export function useTests(limit?: number) {
-  return useSupabaseQuery<TestRow[]>(['tests', limit], async () => {
-    let q = supabase.from('tests').select('id, name, price, report_time, sample_type, category_id').eq('is_active', true).order('display_order');
-    if (limit) q = q.limit(limit);
-    const { data, error } = await q;
-    if (error) throw error;
-    return data ?? [];
+  const params: Record<string, string | number | boolean> = { active: true };
+  if (limit) params.limit = limit;
+  return useQuery({
+    queryKey: ['tests', limit ?? 'all'],
+    queryFn: () => getTests(params),
+    staleTime: 1000 * 60,
+    retry: 2,
+  });
+}
+
+export function useCreateTest() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: any) => createTest(body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['tests'] }),
+  });
+}
+
+export function useUpdateTest() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...body }: { id: string } & Record<string, any>) => updateTest(id, body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['tests'] }),
+  });
+}
+
+export function useDeleteTest() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => deleteTest(id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['tests'] }),
   });
 }
 

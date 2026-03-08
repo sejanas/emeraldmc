@@ -5,47 +5,79 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+function jsonRes(data: unknown, status = 200) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const supabase = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-  );
-
-  // Check if admin already exists
-  const { data: existing } = await supabase.auth.admin.listUsers();
-  const adminExists = existing?.users?.some(u => u.email === 'admin@emeraldmedical.com');
-
-  if (adminExists) {
-    return new Response(JSON.stringify({ message: 'Admin already exists' }), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+  // Only callable with the service role key to prevent unauthorized super-admin creation
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const auth = req.headers.get('Authorization');
+  if (!auth || auth !== `Bearer ${serviceKey}`) {
+    return jsonRes({ error: 'Unauthorized' }, 401);
   }
 
-  // Create admin user
-  const { data: user, error } = await supabase.auth.admin.createUser({
-    email: 'admin@emeraldmedical.com',
-    password: 'admin123',
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    serviceKey,
+    { auth: { autoRefreshToken: false, persistSession: false } },
+  );
+
+  // Idempotency: skip if a SUPER_ADMIN already exists in user_profiles
+  const { data: existing } = await supabase
+    .from('user_profiles')
+    .select('id')
+    .eq('role', 'super_admin')
+    .maybeSingle();
+
+  if (existing) {
+    return jsonRes({ message: 'Super admin already exists' });
+  }
+
+  // Read credentials from env vars; never hardcode secrets in source
+  const adminEmail = Deno.env.get('ADMIN_EMAIL') ?? 'admin@emeraldmedical.com';
+  const adminPassword = Deno.env.get('ADMIN_PASSWORD') ?? 'Change-Me-123!';
+  const adminName = Deno.env.get('ADMIN_NAME') ?? 'Super Admin';
+
+  // Create auth user — Supabase hashes the password with bcrypt internally
+  const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+    email: adminEmail,
+    password: adminPassword,
     email_confirm: true,
   });
 
-  if (error) {
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 400,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+  if (authError) {
+    return jsonRes({ error: authError.message }, 400);
   }
 
-  // Assign admin role
-  await supabase.from('user_roles').insert({
-    user_id: user.user.id,
-    role: 'admin',
+  const userId = authData.user.id;
+
+  // Insert user_profiles with SUPER_ADMIN role and ACTIVE status
+  const { error: profileError } = await supabase.from('user_profiles').insert({
+    user_id: userId,
+    name: adminName,
+    role: 'super_admin',
+    status: 'active',
   });
 
-  return new Response(JSON.stringify({ message: 'Admin created successfully' }), {
-    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-  });
+  if (profileError) {
+    // Roll back the auth user so the operation stays idempotent
+    await supabase.auth.admin.deleteUser(userId);
+    return jsonRes({ error: profileError.message }, 500);
+  }
+
+  // Insert into user_roles (app_role enum) for RLS policy compatibility
+  await supabase.from('user_roles').insert({ user_id: userId, role: 'admin' });
+
+  // Record primary email in user_emails
+  await supabase.from('user_emails').insert({ user_id: userId, email: adminEmail });
+
+  return jsonRes({ message: 'Super admin created successfully', user_id: userId }, 201);
 });
