@@ -11,6 +11,7 @@ import { useCreateCategory, useUpdateCategory, useDeleteCategory } from "@/hooks
 
 const AdminCategories = () => {
   const { toast } = useToast();
+  const confirm = useConfirm();
   const categoriesQuery = useCategories();
   const createCategory = useCreateCategory();
   const updateCategory = useUpdateCategory();
