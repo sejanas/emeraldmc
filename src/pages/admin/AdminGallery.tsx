@@ -59,14 +59,25 @@ const AdminGallery = () => {
     }
   };
 
+  const [search, setSearch] = useState("");
+  const filteredItems = useMemo(() => {
+    if (!search.trim()) return items;
+    const q = search.toLowerCase();
+    return items.filter((g: any) => g.title.toLowerCase().includes(q) || g.category.toLowerCase().includes(q));
+  }, [items, search]);
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="font-display text-2xl font-bold text-foreground">Gallery</h1>
         <Button size="sm" onClick={openNew}><Plus className="mr-1 h-4 w-4" /> Add</Button>
       </div>
+      <div className="relative mb-4 max-w-sm">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input placeholder="Search gallery..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+      </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {items.map((g) => (
+        {filteredItems.map((g) => (
           <div key={g.id} className="group relative overflow-hidden rounded-xl border border-border">
             <img src={g.image_url} alt={g.title} className="aspect-video w-full object-cover" />
             <div className="absolute inset-0 bg-foreground/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
