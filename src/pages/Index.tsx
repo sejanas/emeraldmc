@@ -50,8 +50,11 @@ const serviceAreas = ["Port Blair", "Wimberlygunj", "Bambooflat", "Ferrargunj"];
 
 const Index = () => {
   const [heroSearch, setHeroSearch] = useState("");
+  const [showResults, setShowResults] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const testsQuery = useTests({ limit: 6 });
+  const allTestsQuery = useTests();
   const doctorsQuery = useDoctors(3);
   const packagesQuery = usePackages();
   const categoriesQuery = useCategories();
@@ -63,9 +66,43 @@ const Index = () => {
   const packages = packagesQuery.data?.packages ?? [];
   const testNames = packagesQuery.data?.testNames ?? {};
 
+  const q = heroSearch.trim().toLowerCase();
+
+  const matchedTests = useMemo(() => {
+    if (!q) return [];
+    return (allTestsQuery.data ?? [])
+      .filter((t: any) => t.name.toLowerCase().includes(q))
+      .slice(0, 8);
+  }, [q, allTestsQuery.data]);
+
+  const matchedPackages = useMemo(() => {
+    if (!q) return [];
+    return packages
+      .filter((pkg: any) => {
+        if (pkg.name.toLowerCase().includes(q)) return true;
+        const pTests = testNames[pkg.id] ?? [];
+        return pTests.some((t: string) => t.toLowerCase().includes(q));
+      })
+      .slice(0, 4);
+  }, [q, packages, testNames]);
+
+  const hasResults = matchedTests.length > 0 || matchedPackages.length > 0;
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
+        setShowResults(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
   const handleHeroSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (heroSearch.trim()) {
+      setShowResults(false);
       navigate(`/tests?search=${encodeURIComponent(heroSearch.trim())}`);
     }
   };
