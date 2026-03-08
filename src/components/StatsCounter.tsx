@@ -1,12 +1,12 @@
 import { useEffect, useState, useRef } from "react";
 import { motion, useInView } from "framer-motion";
-import { Users, FlaskConical, CalendarCheck, MapPin } from "lucide-react";
+import { Users, FlaskConical, CalendarCheck, Award } from "lucide-react";
 
 const stats = [
-  { icon: Users, value: 500, suffix: "+", label: "Patients Served" },
-  { icon: FlaskConical, value: 50, suffix: "+", label: "Diagnostic Tests" },
+  { icon: FlaskConical, value: 10000, suffix: "+", label: "Tests Completed" },
+  { icon: Users, value: 5000, suffix: "+", label: "Happy Patients" },
+  { icon: Award, value: 50, suffix: "+", label: "Diagnostic Tests" },
   { icon: CalendarCheck, value: 10, suffix: "+", label: "Years Experience" },
-  { icon: MapPin, value: 3, suffix: "", label: "Locations" },
 ];
 
 const Counter = ({ target, suffix }: { target: number; suffix: string }) => {
@@ -33,7 +33,7 @@ const Counter = ({ target, suffix }: { target: number; suffix: string }) => {
 
   return (
     <span ref={ref} className="font-display text-4xl font-bold text-primary md:text-5xl">
-      {count}{suffix}
+      {count.toLocaleString()}{suffix}
     </span>
   );
 };

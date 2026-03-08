@@ -3,7 +3,8 @@ import { businessInfo } from "@/data/siteData";
 
 const WhatsAppButton = () => {
   const phone = businessInfo.phone.replace(/[^0-9]/g, "");
-  const url = `https://wa.me/${phone}`;
+  const message = encodeURIComponent("Hello, I want to book a health test.");
+  const url = `https://wa.me/${phone}?text=${message}`;
 
   return (
     <a

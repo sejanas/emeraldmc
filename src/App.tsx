@@ -27,6 +27,7 @@ import AdminGallery from "./pages/admin/AdminGallery";
 import AdminBookings from "./pages/admin/AdminBookings";
 import AdminFaqs from "./pages/admin/AdminFaqs";
 import FaqPage from "./pages/FaqPage";
+import ReportsPage from "./pages/ReportsPage";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminActivityLogs from "./pages/admin/AdminActivityLogs";
 import AdminVisitors from "./pages/admin/AdminVisitors";
@@ -50,6 +51,7 @@ const App = () => (
               <Route path="/gallery" element={<GalleryPage />} />
               <Route path="/faq" element={<FaqPage />} />
               <Route path="/contact" element={<ContactPage />} />
+              <Route path="/reports" element={<ReportsPage />} />
             </Route>
             <Route path="/logout" element={<LogoutPage />} />
             <Route path="/admin/logout" element={<LogoutPage />} />

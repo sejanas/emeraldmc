@@ -1,7 +1,9 @@
-import { Link } from "react-router-dom";
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, Shield, Clock, FlaskConical, Users, Star, CheckCircle, Award, Home } from "lucide-react";
+import { ArrowRight, Shield, Clock, FlaskConical, Users, Star, CheckCircle, Award, Home, Search, ClipboardList, Microscope, FileDown, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import SectionHeading from "@/components/SectionHeading";
 import StatsCounter from "@/components/StatsCounter";
 import Testimonials from "@/components/Testimonials";
@@ -31,13 +33,24 @@ const features = [
 ];
 
 const trustBadges = [
-  { icon: Award, label: "NABL Certified" },
-  { icon: Shield, label: "ISO 9001:2015" },
+  { icon: Shield, label: "ISO Certified Lab" },
   { icon: Clock, label: "Same Day Reports" },
-  { icon: Home, label: "Home Collection" },
+  { icon: Home, label: "Free Home Sample Collection" },
+  { icon: Award, label: "Experienced Pathologists" },
 ];
 
+const howItWorks = [
+  { icon: ClipboardList, step: "1", title: "Book Test Online", desc: "Choose your test and book an appointment online" },
+  { icon: Home, step: "2", title: "Visit Lab or Home Collection", desc: "Visit our lab or get free home sample collection" },
+  { icon: Microscope, step: "3", title: "Sample Analysis", desc: "Sample analyzed in our ISO certified laboratory" },
+  { icon: FileDown, step: "4", title: "Download Report", desc: "Get your accurate report on the same day" },
+];
+
+const serviceAreas = ["Port Blair", "Wimberlygunj", "Bambooflat", "Ferrargunj"];
+
 const Index = () => {
+  const [heroSearch, setHeroSearch] = useState("");
+  const navigate = useNavigate();
   const testsQuery = useTests({ limit: 6 });
   const doctorsQuery = useDoctors(3);
   const packagesQuery = usePackages();
@@ -49,6 +62,13 @@ const Index = () => {
 
   const packages = packagesQuery.data?.packages ?? [];
   const testNames = packagesQuery.data?.testNames ?? {};
+
+  const handleHeroSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (heroSearch.trim()) {
+      navigate(`/tests?search=${encodeURIComponent(heroSearch.trim())}`);
+    }
+  };
 
   return (
     <>
@@ -62,15 +82,15 @@ const Index = () => {
               <Shield className="h-3 w-3" /> ISO Certified Lab
             </span>
             <h1 className="mt-4 font-display text-4xl font-bold leading-tight text-foreground md:text-5xl lg:text-6xl">
-              Trusted ISO Certified Diagnostic Lab in{" "}
+              Accurate Diagnostic Tests with Same-Day Reports in{" "}
               <span className="text-gradient-emerald">Sri Vijaya Puram</span>
             </h1>
             <p className="mt-4 text-lg text-muted-foreground leading-relaxed max-w-lg">
-              Book your test today at Emerald Medical Care. Accurate results, expert care, affordable prices.
+              ISO Certified Diagnostic Lab providing reliable health tests, affordable packages, and free home sample collection.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
-              <Button asChild size="lg"><Link to="/book">Book Appointment <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
-              <Button asChild variant="outline" size="lg"><Link to="/packages">View Health Packages</Link></Button>
+              <Button asChild size="lg"><Link to="/book">Book Health Test <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
+              <Button asChild variant="outline" size="lg"><Link to="/packages">View Packages</Link></Button>
             </div>
           </motion.div>
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, delay: 0.2 }}>
@@ -99,6 +119,30 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Quick Test Search */}
+      <section className="container py-12">
+        <motion.form
+          onSubmit={handleHeroSearch}
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.5, duration: 0.5 }}
+          className="mx-auto max-w-xl"
+        >
+          <div className="relative">
+            <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search tests like CBC, Thyroid, Diabetes..."
+              value={heroSearch}
+              onChange={(e) => setHeroSearch(e.target.value)}
+              className="h-14 rounded-full pl-12 pr-32 text-base shadow-md border-border"
+            />
+            <Button type="submit" size="sm" className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full px-6">
+              Search
+            </Button>
+          </div>
+        </motion.form>
+      </section>
+
       {/* Features */}
       <section className="container py-20">
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
@@ -110,6 +154,28 @@ const Index = () => {
               <p className="mt-1 text-sm text-muted-foreground">{f.desc}</p>
             </motion.div>
           ))}
+        </div>
+      </section>
+
+      {/* How It Works */}
+      <section className="bg-section-gradient py-20">
+        <div className="container">
+          <SectionHeading title="How It Works" subtitle="Getting your diagnostic test done is easy" />
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4 max-w-5xl mx-auto">
+            {howItWorks.map((s, i) => (
+              <motion.div key={s.step} initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={i}
+                className="relative flex flex-col items-center text-center">
+                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 ring-4 ring-primary/5">
+                  <s.icon className="h-7 w-7 text-primary" />
+                </div>
+                <span className="absolute -top-2 -right-2 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground lg:right-auto lg:-top-2 lg:left-1/2 lg:-translate-x-1/2 lg:translate-x-8">
+                  {s.step}
+                </span>
+                <h3 className="font-display text-base font-semibold text-foreground">{s.title}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">{s.desc}</p>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -180,6 +246,9 @@ const Index = () => {
               <h3 className="font-display text-lg font-semibold text-foreground">{pkg.name}</h3>
               <p className="mt-1 text-sm text-muted-foreground">{pkg.description}</p>
               <p className="mt-3 font-display text-3xl font-bold text-primary">₹{pkg.discounted_price ?? pkg.original_price}</p>
+              {pkg.discounted_price && pkg.discounted_price < pkg.original_price && (
+                <p className="text-sm text-muted-foreground line-through">₹{pkg.original_price}</p>
+              )}
               <ul className="mt-4 space-y-1.5">
                 {(testNames[pkg.id] ?? []).map((t: string) => (
                   <li key={t} className="flex items-center gap-2 text-xs text-muted-foreground"><CheckCircle className="h-3.5 w-3.5 text-primary shrink-0" /> {t}</li>
@@ -203,6 +272,8 @@ const Index = () => {
                 <div className="p-4">
                   <h3 className="font-display text-base font-semibold text-foreground">{d.name}</h3>
                   <p className="text-sm text-primary">{d.specialization}</p>
+                  {d.qualification && <p className="text-xs text-muted-foreground mt-1">{d.qualification}</p>}
+                  {d.experience_years && <p className="text-xs text-muted-foreground mt-0.5">{d.experience_years} Years Experience</p>}
                 </div>
               </motion.div>
             ))}
@@ -213,25 +284,43 @@ const Index = () => {
       {/* Testimonials */}
       <Testimonials />
 
+      {/* Service Area */}
+      <section className="container py-20">
+        <SectionHeading title="Service Areas" subtitle="Free home sample collection available in these locations" />
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 max-w-4xl mx-auto">
+          {serviceAreas.map((area, i) => (
+            <motion.div key={area} initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={i}
+              className="flex items-center gap-3 rounded-xl border border-border bg-card p-5 card-shadow">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                <MapPin className="h-5 w-5 text-primary" />
+              </div>
+              <span className="font-medium text-foreground">{area}</span>
+            </motion.div>
+          ))}
+        </div>
+      </section>
+
       {/* FAQs */}
       {(faqsQuery.data ?? []).length > 0 && (
-        <section className="container py-20">
-          <SectionHeading title="Frequently Asked Questions" subtitle="Quick answers to common questions about our services" />
-          <Accordion type="single" collapsible className="max-w-2xl mx-auto">
-            {(faqsQuery.data ?? []).slice(0, 5).map((faq: any) => (
-              <AccordionItem key={faq.id} value={faq.id}>
-                <AccordionTrigger className="text-left font-medium text-foreground">{faq.question}</AccordionTrigger>
-                <AccordionContent>
-                  <div className="prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: faq.answer }} />
-                </AccordionContent>
-              </AccordionItem>
-            ))}
-          </Accordion>
-          {(faqsQuery.data ?? []).length > 5 && (
-            <div className="mt-6 text-center">
-              <Button asChild variant="outline"><Link to="/faq">View All FAQs <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
-            </div>
-          )}
+        <section className="bg-section-gradient py-20">
+          <div className="container">
+            <SectionHeading title="Frequently Asked Questions" subtitle="Quick answers to common questions about our services" />
+            <Accordion type="single" collapsible className="max-w-2xl mx-auto">
+              {(faqsQuery.data ?? []).slice(0, 5).map((faq: any) => (
+                <AccordionItem key={faq.id} value={faq.id}>
+                  <AccordionTrigger className="text-left font-medium text-foreground">{faq.question}</AccordionTrigger>
+                  <AccordionContent>
+                    <div className="prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: faq.answer }} />
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+            {(faqsQuery.data ?? []).length > 5 && (
+              <div className="mt-6 text-center">
+                <Button asChild variant="outline"><Link to="/faq">View All FAQs <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
+              </div>
+            )}
+          </div>
         </section>
       )}
 
