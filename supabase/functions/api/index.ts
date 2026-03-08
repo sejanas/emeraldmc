@@ -1017,11 +1017,33 @@ Deno.serve(async (req) => {
     if (resource === "visitors") {
       if (method === "POST" && id === "track") {
         const body = await req.json().catch(() => ({}));
-        await adminDb().from("visitors").insert({
-          page: body.page || "/",
-          referrer: body.referrer || null,
-          user_agent: body.user_agent || null,
-        });
+        const page = body.page || "/";
+        const ua = body.user_agent || "unknown";
+
+        // Create a daily hash from user_agent + page to deduplicate
+        const encoder = new TextEncoder();
+        const dateStr = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+        const raw = `${ua}|${page}|${dateStr}`;
+        const hashBuf = await crypto.subtle.digest("SHA-256", encoder.encode(raw));
+        const ipHash = Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 32);
+
+        // Check if this visitor already tracked today for this page
+        const db = adminDb();
+        const todayStart = `${dateStr}T00:00:00Z`;
+        const { count: existing } = await db
+          .from("visitors")
+          .select("id", { count: "exact", head: true })
+          .eq("ip_hash", ipHash)
+          .gte("visited_at", todayStart);
+
+        if ((existing ?? 0) === 0) {
+          await db.from("visitors").insert({
+            page,
+            referrer: body.referrer || null,
+            user_agent: ua,
+            ip_hash: ipHash,
+          });
+        }
         return json({ success: true });
       }
       if (method === "GET" && id === "count") {

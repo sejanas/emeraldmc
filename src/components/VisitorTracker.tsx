@@ -2,18 +2,28 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { Eye } from "lucide-react";
 
+const TRACK_KEY = "emerald_tracked_pages";
+
 const VisitorTracker = () => {
   const [count, setCount] = useState<number | null>(null);
 
   useEffect(() => {
-    // Track visit via API (fire and forget)
-    api.post("/visitors/track", {
-      page: window.location.pathname,
-      referrer: document.referrer || null,
-      user_agent: navigator.userAgent,
-    }).catch(() => {});
+    // Deduplicate: only track once per session per page path
+    const page = window.location.pathname;
+    const tracked: string[] = JSON.parse(sessionStorage.getItem(TRACK_KEY) || "[]");
 
-    // Fetch public count via API
+    if (!tracked.includes(page)) {
+      api.post("/visitors/track", {
+        page,
+        referrer: document.referrer || null,
+        user_agent: navigator.userAgent,
+      }).then(() => {
+        tracked.push(page);
+        sessionStorage.setItem(TRACK_KEY, JSON.stringify(tracked));
+      }).catch(() => {});
+    }
+
+    // Fetch public count
     api.get<{ count: number }>("/visitors/count")
       .then((data) => { if (data?.count != null) setCount(data.count); })
       .catch(() => {});
