@@ -1,4 +1,5 @@
 import { useParams } from "react-router-dom";
+import { motion } from "framer-motion";
 import { blogArticles } from "@/data/blogArticles";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import PageMeta from "@/components/PageMeta";
@@ -32,7 +33,12 @@ const BlogArticlePage = () => {
 
       <Breadcrumbs items={[{ label: "Health Blog", href: "/blog" }, { label: article.title }]} />
 
-      <header className="mb-8">
+      <motion.header
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="mb-8"
+      >
         <Badge variant="secondary" className="mb-3">{article.category}</Badge>
         <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground leading-tight">
           {article.title}
@@ -44,9 +50,12 @@ const BlogArticlePage = () => {
         <p className="mt-2 text-sm text-muted-foreground flex items-center gap-1">
           <UserCheck className="h-4 w-4" /> {article.author}, {article.authorCredentials}
         </p>
-      </header>
+      </motion.header>
 
-      <div
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.6, delay: 0.2 }}
         className="prose prose-lg dark:prose-invert max-w-none prose-headings:font-display prose-headings:text-foreground prose-p:text-muted-foreground prose-li:text-muted-foreground prose-strong:text-foreground"
         dangerouslySetInnerHTML={{ __html: article.content }}
       />
