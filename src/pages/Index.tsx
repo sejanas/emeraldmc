@@ -1,8 +1,10 @@
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, Shield, Clock, FlaskConical, Users, Star, CheckCircle } from "lucide-react";
+import { ArrowRight, Shield, Clock, FlaskConical, Users, Star, CheckCircle, Award, Home } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SectionHeading from "@/components/SectionHeading";
+import StatsCounter from "@/components/StatsCounter";
+import Testimonials from "@/components/Testimonials";
 import useTests from "@/hooks/useTests";
 import useDoctors from "@/hooks/useDoctors";
 import usePackages from "@/hooks/usePackages";
@@ -28,6 +30,13 @@ const features = [
   { icon: Users, title: "Expert Doctors", desc: "Qualified pathologists and physicians" },
 ];
 
+const trustBadges = [
+  { icon: Award, label: "NABL Certified" },
+  { icon: Shield, label: "ISO 9001:2015" },
+  { icon: Clock, label: "Same Day Reports" },
+  { icon: Home, label: "Home Collection" },
+];
+
 const Index = () => {
   const testsQuery = useTests({ limit: 6 });
   const doctorsQuery = useDoctors(3);
@@ -47,7 +56,7 @@ const Index = () => {
 
       {/* Hero */}
       <section className="relative overflow-hidden bg-section-gradient">
-        <div className="container grid items-center gap-8 py-16 md:grid-cols-2 md:py-24">
+        <div className="container grid items-center gap-8 py-20 md:grid-cols-2 md:py-28">
           <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0}>
             <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-accent px-3 py-1 text-xs font-medium text-primary">
               <Shield className="h-3 w-3" /> ISO Certified Lab
@@ -70,13 +79,33 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Trust Badges */}
+      <section className="border-b border-border bg-card">
+        <div className="container py-6">
+          <div className="flex flex-wrap items-center justify-center gap-4 md:gap-8">
+            {trustBadges.map((b, i) => (
+              <motion.div
+                key={b.label}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4 + i * 0.1 }}
+                className="flex items-center gap-2 rounded-full border border-border bg-background px-4 py-2"
+              >
+                <b.icon className="h-4 w-4 text-primary" />
+                <span className="text-xs font-medium text-foreground">{b.label}</span>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Features */}
-      <section className="container py-16">
+      <section className="container py-20">
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {features.map((f, i) => (
             <motion.div key={f.title} initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={i}
-              className="rounded-xl border border-border bg-card p-6 text-center card-shadow transition-shadow hover:card-shadow-hover">
-              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-accent"><f.icon className="h-6 w-6 text-primary" /></div>
+              className="group rounded-xl border border-border bg-card p-6 text-center card-shadow transition-all hover:card-shadow-hover hover:scale-[1.02]">
+              <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-lg bg-accent transition-colors group-hover:bg-primary/10"><f.icon className="h-6 w-6 text-primary" /></div>
               <h3 className="font-display text-lg font-semibold text-foreground">{f.title}</h3>
               <p className="mt-1 text-sm text-muted-foreground">{f.desc}</p>
             </motion.div>
@@ -84,8 +113,11 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Stats Counter */}
+      <StatsCounter />
+
       {/* Popular Tests */}
-      <section className="bg-section-gradient py-16">
+      <section className="bg-section-gradient py-20">
         <div className="container">
           <SectionHeading title="Popular Tests" subtitle="Browse our most frequently requested diagnostic tests" />
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -104,7 +136,7 @@ const Index = () => {
             ))}
             {(testsQuery.data ?? []).map((t: any, i: number) => (
               <motion.div key={t.id} initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={i}
-                className="flex items-start justify-between rounded-xl border border-border bg-card p-5 transition-shadow hover:card-shadow-hover">
+                className="flex items-start justify-between rounded-xl border border-border bg-card p-5 transition-all hover:card-shadow-hover hover:scale-[1.01]">
                 <div>
                   <p className="text-xs font-medium text-primary">{catName(t.category_id)}</p>
                   <h3 className="mt-1 font-semibold text-foreground">{t.name}</h3>
@@ -124,7 +156,7 @@ const Index = () => {
       </section>
 
       {/* Health Packages */}
-      <section className="container py-16">
+      <section className="container py-20">
         <SectionHeading title="Health Packages" subtitle="Comprehensive health checkup packages at affordable prices" />
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
           {packagesQuery.isLoading && Array.from({ length: 4 }).map((_, i) => (
@@ -141,7 +173,7 @@ const Index = () => {
           )}
           {packages.map((pkg: any, i: number) => (
             <motion.div key={pkg.id} initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={i}
-              className={`relative rounded-xl border p-6 transition-shadow hover:card-shadow-hover ${pkg.is_popular ? "border-primary bg-accent/50" : "border-border bg-card"}`}>
+              className={`relative rounded-xl border p-6 transition-all hover:card-shadow-hover hover:scale-[1.02] ${pkg.is_popular ? "border-primary bg-accent/50" : "border-border bg-card"}`}>
               {pkg.is_popular && (
                 <span className="absolute -top-3 left-4 inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground"><Star className="h-3 w-3" /> Popular</span>
               )}
@@ -160,13 +192,13 @@ const Index = () => {
       </section>
 
       {/* Doctors */}
-      <section className="bg-section-gradient py-16">
+      <section className="bg-section-gradient py-20">
         <div className="container">
           <SectionHeading title="Our Expert Doctors" subtitle="Meet our team of qualified healthcare professionals" />
           <div className="grid gap-6 sm:grid-cols-3 max-w-3xl mx-auto">
             {(doctorsQuery.data ?? []).map((d: any, i: number) => (
               <motion.div key={d.id} initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={i}
-                className="overflow-hidden rounded-xl border border-border bg-card text-center card-shadow">
+                className="overflow-hidden rounded-xl border border-border bg-card text-center card-shadow transition-all hover:card-shadow-hover hover:scale-[1.02]">
                 {d.profile_image && <img src={d.profile_image} alt={d.name} className="aspect-square w-full object-cover" loading="lazy" />}
                 <div className="p-4">
                   <h3 className="font-display text-base font-semibold text-foreground">{d.name}</h3>
@@ -178,9 +210,12 @@ const Index = () => {
         </div>
       </section>
 
+      {/* Testimonials */}
+      <Testimonials />
+
       {/* FAQs */}
       {(faqsQuery.data ?? []).length > 0 && (
-        <section className="container py-16">
+        <section className="container py-20">
           <SectionHeading title="Frequently Asked Questions" subtitle="Quick answers to common questions about our services" />
           <Accordion type="single" collapsible className="max-w-2xl mx-auto">
             {(faqsQuery.data ?? []).slice(0, 5).map((faq: any) => (
@@ -201,7 +236,7 @@ const Index = () => {
       )}
 
       {/* CTA */}
-      <section className="container py-16">
+      <section className="container py-20">
         <div className="rounded-2xl bg-primary p-10 text-center md:p-16">
           <h2 className="font-display text-3xl font-bold text-primary-foreground md:text-4xl">Ready to Book Your Health Checkup?</h2>
           <p className="mx-auto mt-3 max-w-md text-primary-foreground/80">Schedule your appointment today and get accurate diagnostic results from our ISO certified lab.</p>
