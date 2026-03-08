@@ -26,6 +26,8 @@ const TestsPage = () => {
   useEffect(() => {
     const urlCat = searchParams.get("category");
     if (urlCat) setCategory(urlCat);
+    const urlSearch = searchParams.get("search");
+    if (urlSearch !== null) setSearch(urlSearch);
   }, [searchParams]);
 
   const handleCategoryChange = (cat: string) => {
