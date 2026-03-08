@@ -759,7 +759,23 @@ async function handleActivityLogs(req: Request, url: URL) {
 
   const { data, error } = await q;
   if (error) throw { message: error.message, status: 500 };
-  return json(data);
+
+  // Enrich logs with actor names from user_profiles
+  const userIds = [...new Set((data ?? []).map((l: any) => l.user_id).filter(Boolean))];
+  let profileMap: Record<string, string> = {};
+  if (userIds.length) {
+    const { data: profiles } = await db
+      .from("user_profiles")
+      .select("user_id, name")
+      .in("user_id", userIds);
+    (profiles ?? []).forEach((p: any) => { profileMap[p.user_id] = p.name; });
+  }
+
+  const enriched = (data ?? []).map((log: any) => ({
+    ...log,
+    actor_name: log.user_id ? (profileMap[log.user_id] || null) : null,
+  }));
+  return json(enriched);
 }
 
 async function handleUpdateProfile(req: Request) {

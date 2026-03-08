@@ -108,17 +108,21 @@ const AdminActivityLogs = () => {
             <tr>
               <th className="px-4 py-3 font-medium text-muted-foreground">Time</th>
               <th className="px-4 py-3 font-medium text-muted-foreground">Event</th>
+              <th className="px-4 py-3 font-medium text-muted-foreground">By</th>
               <th className="px-4 py-3 font-medium text-muted-foreground">Entity</th>
               <th className="px-4 py-3 font-medium text-muted-foreground">Changes</th>
             </tr>
           </thead>
           <tbody>
-            {logs.map((log) => (
+            {logs.map((log: any) => (
               <tr key={log.id} className="border-t border-border">
                 <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
                   {new Date(log.created_at).toLocaleString()}
                 </td>
                 <td className="px-4 py-3">{formatEvent(log.event_type)}</td>
+                <td className="px-4 py-3 text-xs font-medium text-foreground whitespace-nowrap">
+                  {log.actor_name || "—"}
+                </td>
                 <td className="px-4 py-3 text-muted-foreground">{log.entity_name || "—"}</td>
                 <td className="px-4 py-3 text-xs text-muted-foreground max-w-xs truncate">
                   {log.changes ? JSON.stringify(log.changes) : "—"}
