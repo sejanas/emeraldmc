@@ -12,7 +12,7 @@ import useDoctors from "@/hooks/useDoctors";
 import { useCreateDoctor, useUpdateDoctor, useDeleteDoctor } from "@/hooks/useDoctorsMutations";
 
 const AdminDoctors = () => {
-  const { toast } = useToast();
+  const confirm = useConfirm();
   const doctorsQuery = useDoctors();
   const createDoctor = useCreateDoctor();
   const updateDoctor = useUpdateDoctor();
