@@ -117,7 +117,7 @@ const AdminBookings = () => {
 
   const updateStatus = async (id: string, status: string, reason?: string) => {
     try {
-      await updateBookingStatus.mutateAsync({ id, status, reason });
+      await updateBookingStatus.mutateAsync({ id, status, reason } as any);
       toast({ title: `Status updated to ${statusLabels[status]}` });
       if (selected?.id === id) setSelected({ ...selected, status });
     } catch (err: any) {
