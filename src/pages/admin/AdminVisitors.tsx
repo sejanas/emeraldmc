@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -20,7 +20,8 @@ function getFromDate(days: number | null): string | undefined {
   if (!days) return undefined;
   const d = new Date();
   d.setDate(d.getDate() - days);
-  return d.toISOString();
+  // Truncate to start of day so value is stable across renders
+  return d.toISOString().slice(0, 10) + "T00:00:00.000Z";
 }
 
 const PAGE_SIZE = 50;
@@ -33,7 +34,7 @@ const AdminVisitors = () => {
   const [page, setPage] = useState<string>("");
   const [logOffset, setLogOffset] = useState(0);
 
-  const from = getFromDate(DATE_PRESETS[datePreset].days);
+  const from = useMemo(() => getFromDate(DATE_PRESETS[datePreset].days), [datePreset]);
 
   const filtersQuery = useVisitorFilters();
   const filterOpts = filtersQuery.data ?? { countries: [], regions: [], cities: [], pages: [] };
