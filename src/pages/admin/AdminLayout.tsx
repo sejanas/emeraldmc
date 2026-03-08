@@ -64,17 +64,19 @@ const AdminLayout = () => {
 
       <div className="flex flex-1 flex-col overflow-hidden">
         <header className="flex h-14 items-center gap-2 border-b border-border bg-card px-4 md:hidden">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary shrink-0">
             <span className="text-xs font-bold text-primary-foreground">E</span>
           </div>
-          <span className="font-display text-sm font-semibold flex-1">Admin</span>
-          <div className="flex gap-1 overflow-x-auto">
-            {links.slice(0, 5).map((l) => (
-              <NavLink key={l.to} to={l.to} end={l.end}
-                className={({ isActive }) => `rounded-md px-2 py-1 text-xs whitespace-nowrap ${isActive ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
-                {l.label}
-              </NavLink>
-            ))}
+          <span className="font-display text-sm font-semibold shrink-0">Admin</span>
+          <div className="flex-1 overflow-x-auto mx-2">
+            <div className="flex gap-1 w-max">
+              {links.map((l) => (
+                <NavLink key={l.to} to={l.to} end={l.end}
+                  className={({ isActive }) => `rounded-md px-2 py-1 text-xs whitespace-nowrap ${isActive ? "bg-primary text-primary-foreground" : "text-muted-foreground"}`}>
+                  {l.label}
+                </NavLink>
+              ))}
+            </div>
           </div>
           <ThemeToggle />
           <Button variant="ghost" size="icon" onClick={signOut} className="shrink-0">
