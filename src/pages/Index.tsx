@@ -332,6 +332,9 @@ const Index = () => {
                   <p className="mt-1 text-xs text-muted-foreground">{t.report_time} • {t.sample_type}</p>
                 </div>
                 <div className="text-right shrink-0 ml-4">
+                  {t.original_price && t.original_price > t.price && (
+                    <p className="text-xs text-muted-foreground line-through">₹{t.original_price}</p>
+                  )}
                   <p className="font-display text-lg font-bold text-primary">₹{t.price}</p>
                   <Button asChild size="sm" variant="outline" className="mt-1 h-7 text-xs"><Link to="/book">Book</Link></Button>
                 </div>
