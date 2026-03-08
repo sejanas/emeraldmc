@@ -43,8 +43,14 @@ const AdminGallery = () => {
     } finally { setSaving(false); }
   };
 
-  const remove = async (id: string) => {
-    if (!confirm("Delete this image?")) return;
+  const remove = async (id: string, title: string) => {
+    const result = await confirm({
+      title: "Delete Image",
+      description: `Are you sure you want to delete "${title}"?`,
+      confirmLabel: "Delete",
+      variant: "destructive",
+    });
+    if (!result.confirmed) return;
     try {
       await deleteGallery.mutateAsync(id);
       toast({ title: "Image deleted" });
