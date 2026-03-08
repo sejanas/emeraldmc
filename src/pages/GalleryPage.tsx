@@ -6,8 +6,8 @@ const GalleryPage = () => {
   const [filter, setFilter] = useState("All");
   const galleryQuery = useGallery();
 
-  const items = galleryQuery.data ?? [];
-  const cats = ["All", ...Array.from(new Set(items.map((i: any) => i.category)))];
+  const items: any[] = galleryQuery.data ?? [];
+  const cats: string[] = ["All", ...Array.from(new Set(items.map((i: any) => i.category as string)))];
   const filtered = filter === "All" ? items : items.filter((i: any) => i.category === filter);
 
   return (

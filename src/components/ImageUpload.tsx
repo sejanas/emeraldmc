@@ -2,10 +2,10 @@ import { useState, useRef, useCallback } from "react";
 import ReactCrop, { type Crop, type PixelCrop } from "react-image-crop";
 import "react-image-crop/dist/ReactCrop.css";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { supabase } from "@/integrations/supabase/client";
 import { Upload, Crop as CropIcon, X } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+
+const BASE_URL = `${import.meta.env.VITE_SUPABASE_URL ?? "https://kswypwqxxhsbnrhnqrzm.supabase.co"}/functions/v1/api`;
 
 interface ImageUploadProps {
   value?: string;
@@ -29,6 +29,30 @@ function getCroppedImg(image: HTMLImageElement, crop: PixelCrop): Promise<Blob> 
   return new Promise((resolve) => canvas.toBlob((b) => resolve(b!), "image/webp", 0.85));
 }
 
+async function uploadViaApi(blob: Blob, folder: string): Promise<string> {
+  const formData = new FormData();
+  formData.append("file", blob, `${Date.now()}.webp`);
+  formData.append("folder", folder);
+
+  // Get token from localStorage session
+  const sessionStr = localStorage.getItem("sb-kswypwqxxhsbnrhnqrzm-auth-token");
+  const token = sessionStr ? JSON.parse(sessionStr)?.access_token : null;
+
+  const headers: Record<string, string> = {
+    apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+  };
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const res = await fetch(`${BASE_URL}/upload`, {
+    method: "POST",
+    headers,
+    body: formData,
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || "Upload failed");
+  return data.url;
+}
+
 const ImageUpload = ({ value, onChange, folder = "uploads" }: ImageUploadProps) => {
   const [uploading, setUploading] = useState(false);
   const [cropOpen, setCropOpen] = useState(false);
@@ -49,11 +73,11 @@ const ImageUpload = ({ value, onChange, folder = "uploads" }: ImageUploadProps) 
 
   const uploadBlob = useCallback(async (blob: Blob) => {
     setUploading(true);
-    const name = `${folder}/${Date.now()}.webp`;
-    const { error } = await supabase.storage.from("images").upload(name, blob, { contentType: "image/webp" });
-    if (!error) {
-      const { data } = supabase.storage.from("images").getPublicUrl(name);
-      onChange(data.publicUrl);
+    try {
+      const url = await uploadViaApi(blob, folder);
+      onChange(url);
+    } catch (err) {
+      console.error("Upload failed:", err);
     }
     setUploading(false);
     setCropOpen(false);

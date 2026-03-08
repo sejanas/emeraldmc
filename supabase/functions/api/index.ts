@@ -1016,6 +1016,44 @@ Deno.serve(async (req) => {
         );
     }
 
+    // Visitors
+    if (resource === "visitors") {
+      if (method === "POST" && id === "track") {
+        const body = await req.json().catch(() => ({}));
+        await adminDb().from("visitors").insert({
+          page: body.page || "/",
+          referrer: body.referrer || null,
+          user_agent: body.user_agent || null,
+        });
+        return json({ success: true });
+      }
+      if (method === "GET" && id === "count") {
+        const { count } = await adminDb()
+          .from("visitors")
+          .select("id", { count: "exact", head: true });
+        return json({ count: count ?? 0 });
+      }
+    }
+
+    // Upload (image)
+    if (resource === "upload" && method === "POST") {
+      const user = await requireAuth(req);
+      const formData = await req.formData();
+      const file = formData.get("file") as File;
+      const folder = (formData.get("folder") as string) || "uploads";
+      if (!file) return errRes("No file provided");
+
+      const ext = file.name?.split(".").pop() || "webp";
+      const name = `${folder}/${Date.now()}.${ext}`;
+      const db = adminDb();
+      const { error } = await db.storage.from("images").upload(name, file, {
+        contentType: file.type || "image/webp",
+      });
+      if (error) throw { message: error.message, status: 500 };
+      const { data } = db.storage.from("images").getPublicUrl(name);
+      return json({ url: data.publicUrl });
+    }
+
     return errRes("Not found", 404);
   } catch (e: any) {
     return json({ error: e.message ?? "Internal error" }, e.status ?? 500);
