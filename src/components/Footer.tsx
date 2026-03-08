@@ -4,6 +4,7 @@ import { Phone, Mail, Clock, MapPin, Facebook, Instagram } from "lucide-react";
 import { businessInfo } from "@/data/siteData";
 import VisitorTracker from "@/components/VisitorTracker";
 import useCategories from "@/hooks/useCategories";
+import logo from "@/assets/logo.png";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 16 },
