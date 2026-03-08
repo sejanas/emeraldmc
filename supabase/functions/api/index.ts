@@ -390,7 +390,7 @@ async function crudDelete(
     user_id: user.id,
     entity_type: entityType,
     entity_id: id,
-    entity_name: old?.[nameField],
+    entity_name: (old as Record<string, any> | null)?.[nameField],
   });
   return json({ success: true });
 }
