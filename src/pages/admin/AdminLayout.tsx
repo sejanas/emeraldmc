@@ -4,6 +4,7 @@ import { LayoutDashboard, List, FlaskConical, Package, Users, Image, LogOut, Cal
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import ThemeToggle from "@/components/ThemeToggle";
+import NotificationBell from "@/components/NotificationBell";
 
 const AdminLayout = () => {
   const { signOut, profile, isSuperAdmin, isBookingManager } = useAuth();
@@ -35,6 +36,7 @@ const AdminLayout = () => {
             <span className="text-xs font-bold text-primary-foreground">E</span>
           </div>
           <span className="font-display text-sm font-semibold flex-1">Admin Panel</span>
+          <NotificationBell />
           <ThemeToggle />
         </div>
         <nav className="flex flex-col gap-1 p-3 flex-1">
@@ -82,6 +84,7 @@ const AdminLayout = () => {
               ))}
             </div>
           </div>
+          <NotificationBell />
           <ThemeToggle />
           <Button variant="ghost" size="icon" onClick={signOut} className="shrink-0">
             <LogOut className="h-4 w-4" />

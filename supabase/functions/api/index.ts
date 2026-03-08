@@ -106,6 +106,33 @@ async function logActivity(params: {
     });
 }
 
+// Helper to notify users by role
+async function notifyByRole(
+  roles: string[],
+  notification: { title: string; message?: string; type?: string; entity_type?: string; entity_id?: string }
+) {
+  const db = adminDb();
+  // Get all user_ids with matching roles from user_profiles
+  const { data: profiles } = await db
+    .from("user_profiles")
+    .select("user_id")
+    .in("role", roles)
+    .eq("status", "active");
+
+  if (!profiles?.length) return;
+
+  const rows = profiles.map((p: any) => ({
+    user_id: p.user_id,
+    title: notification.title,
+    message: notification.message || null,
+    type: notification.type || "info",
+    entity_type: notification.entity_type || null,
+    entity_id: notification.entity_id || null,
+  }));
+
+  await db.from("notifications").insert(rows);
+}
+
 // ── AUTH ──
 
 async function handleLogin(req: Request) {
@@ -209,6 +236,15 @@ async function handleSignup(req: Request) {
     entity_type: "user",
     entity_id: userId,
     entity_name: name,
+  });
+
+  // Notify super_admins about new signup
+  await notifyByRole(["super_admin"], {
+    title: "New User Signup",
+    message: `${name} (${clinic_role || "No role"}) has signed up and is awaiting approval`,
+    type: "user_signup",
+    entity_type: "user",
+    entity_id: userId,
   });
 
   return json({ message: "Account created. Awaiting approval." }, 201);
@@ -535,6 +571,16 @@ async function handleBookingCreate(req: Request) {
     entity_id: data.id,
     entity_name: body.patient_name,
   });
+
+  // Notify all staff about new booking
+  await notifyByRole(["admin", "super_admin", "booking_manager"], {
+    title: "New Booking",
+    message: `${body.patient_name} booked for ${body.preferred_date} at ${body.preferred_time}`,
+    type: "booking",
+    entity_type: "booking",
+    entity_id: data.id,
+  });
+
   return json(data, 201);
 }
 
@@ -588,6 +634,17 @@ async function handleBookingStatusUpdate(req: Request, id: string) {
     entity_name: old?.patient_name,
     changes: { status: { from: old?.status, to: status }, reason: reason || null },
   });
+
+  // Notify all staff about status change
+  const STATUS_LABELS: Record<string, string> = { pending: "Pending", confirmed: "Confirmed", sample_collected: "Sample Collected", completed: "Completed", cancelled: "Cancelled" };
+  await notifyByRole(["admin", "super_admin", "booking_manager"], {
+    title: "Booking Status Updated",
+    message: `${old?.patient_name}: ${STATUS_LABELS[old?.status] || old?.status} → ${STATUS_LABELS[status] || status}`,
+    type: "booking_status",
+    entity_type: "booking",
+    entity_id: id,
+  });
+
   return json({ success: true });
 }
 
@@ -1251,6 +1308,29 @@ Deno.serve(async (req) => {
         return await handleRevokeUser(req);
       if (id === "promote-user" && method === "POST")
         return await handlePromoteUser(req);
+    }
+
+    // Notifications
+    if (resource === "notifications") {
+      const user = await requireAuth(req);
+      const db = adminDb();
+      if (method === "GET") {
+        const limit = parseInt(url.searchParams.get("limit") || "50");
+        const unreadOnly = url.searchParams.get("unread") === "true";
+        let q = db.from("notifications").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(limit);
+        if (unreadOnly) q = q.eq("is_read", false);
+        const { data, error } = await q;
+        if (error) throw { message: error.message, status: 500 };
+        return json(data);
+      }
+      if (method === "PUT" && id === "read-all") {
+        await db.from("notifications").update({ is_read: true }).eq("user_id", user.id).eq("is_read", false);
+        return json({ success: true });
+      }
+      if (method === "PUT" && id) {
+        await db.from("notifications").update({ is_read: true }).eq("id", id).eq("user_id", user.id);
+        return json({ success: true });
+      }
     }
 
     // Packages (special)
