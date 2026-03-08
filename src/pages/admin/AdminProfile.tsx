@@ -236,6 +236,8 @@ const AdminProfile = () => {
                 value=""
                 onChange={(url) => setAvatarUrl(url)}
                 folder="avatars"
+                aspectRatio="1:1"
+                showAspectPicker={false}
               />
               {avatarUrl && (
                 <Button type="button" variant="ghost" size="sm" className="text-xs text-destructive" onClick={() => setAvatarUrl("")}>

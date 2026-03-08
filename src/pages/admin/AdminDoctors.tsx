@@ -109,7 +109,7 @@ const AdminDoctors = () => {
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{editing ? "Edit Doctor" : "New Doctor"}</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <div><Label>Profile Image</Label><div className="mt-1"><ImageUpload value={form.profile_image} onChange={(url) => setForm({ ...form, profile_image: url })} folder="doctors" /></div></div>
+            <div><Label>Profile Image</Label><div className="mt-1"><ImageUpload value={form.profile_image} onChange={(url) => setForm({ ...form, profile_image: url })} folder="doctors" aspectRatio="1:1" /></div></div>
             <div><Label>Name</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="mt-1" /></div>
             <div className="grid grid-cols-2 gap-4">
               <div><Label>Specialization</Label><Input value={form.specialization} onChange={(e) => setForm({ ...form, specialization: e.target.value })} className="mt-1" /></div>
