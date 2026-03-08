@@ -44,8 +44,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       const res = await authApi.getProfile();
       setProfile(res.profile);
-    } catch {
+    } catch (err: any) {
       setProfile(null);
+      // If the server says Unauthorized, the session token is stale — clear it
+      if (err?.message?.toLowerCase().includes("unauthorized")) {
+        await supabase.auth.signOut();
+      }
     }
   };
 
