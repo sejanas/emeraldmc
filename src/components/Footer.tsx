@@ -24,7 +24,7 @@ const Footer = () => {
         <div className="grid gap-10 md:grid-cols-4">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={0}>
             <Link to="/" className="flex items-center gap-3 group">
-              <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary p-2 transition-transform group-hover:scale-110">
+              <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-primary p-1 transition-transform group-hover:scale-110">
                 <img src={logo} alt="Shifa's Mainland Healthcare" className="h-full w-full object-contain" />
               </div>
               <div className="flex flex-col leading-tight">
