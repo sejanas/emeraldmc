@@ -134,6 +134,7 @@ const AdminActivityLogs = () => {
         {loading && <p className="p-6 text-center text-muted-foreground">Loading...</p>}
         {!loading && !logs.length && <p className="p-6 text-center text-muted-foreground">No activity logs found.</p>}
       </div>
+    </div>
   );
 };
 
