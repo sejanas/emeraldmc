@@ -634,6 +634,17 @@ async function handleBookingStatusUpdate(req: Request, id: string) {
     entity_name: old?.patient_name,
     changes: { status: { from: old?.status, to: status }, reason: reason || null },
   });
+
+  // Notify all staff about status change
+  const STATUS_LABELS: Record<string, string> = { pending: "Pending", confirmed: "Confirmed", sample_collected: "Sample Collected", completed: "Completed", cancelled: "Cancelled" };
+  await notifyByRole(["admin", "super_admin", "booking_manager"], {
+    title: "Booking Status Updated",
+    message: `${old?.patient_name}: ${STATUS_LABELS[old?.status] || old?.status} → ${STATUS_LABELS[status] || status}`,
+    type: "booking_status",
+    entity_type: "booking",
+    entity_id: id,
+  });
+
   return json({ success: true });
 }
 
