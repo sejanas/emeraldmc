@@ -12,6 +12,7 @@ import { useCreateGallery, useUpdateGallery, useDeleteGallery } from "@/hooks/us
 
 const AdminGallery = () => {
   const { toast } = useToast();
+  const confirm = useConfirm();
   const galleryQuery = useGallery();
   const createGallery = useCreateGallery();
   const updateGallery = useUpdateGallery();
