@@ -302,7 +302,7 @@ async function crudCreate(
     user_id: user.id,
     entity_type: entityType,
     entity_id: data.id,
-    entity_name: data[nameField],
+    entity_name: (data as Record<string, any>)[nameField],
   });
   return json(data, 201);
 }
