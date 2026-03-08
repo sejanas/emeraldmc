@@ -155,6 +155,48 @@ export type Database = {
         }
         Relationships: []
       }
+      faqs: {
+        Row: {
+          answer: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          display_order: number
+          id: string
+          is_active: boolean
+          question: string
+          slug: string
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          answer: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          question: string
+          slug: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          answer?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          question?: string
+          slug?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       gallery: {
         Row: {
           category: string
