@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -6,19 +6,21 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import ImageUpload from "@/components/ImageUpload";
-import { api } from "@/lib/api";
+import useGallery from "@/hooks/useGallery";
+import { useCreateGallery, useUpdateGallery, useDeleteGallery } from "@/hooks/useGalleryMutations";
 
 const AdminGallery = () => {
   const { toast } = useToast();
-  const [items, setItems] = useState<any[]>([]);
+  const galleryQuery = useGallery();
+  const createGallery = useCreateGallery();
+  const updateGallery = useUpdateGallery();
+  const deleteGallery = useDeleteGallery();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ title: "", image_url: "", category: "General", display_order: 0 });
 
-  const load = () => api.get("/gallery").then(setItems);
-
-  useEffect(() => { load(); }, []);
+  const items = galleryQuery.data ?? [];
 
   const openNew = () => { setEditing(null); setForm({ title: "", image_url: "", category: "General", display_order: items.length }); setOpen(true); };
   const openEdit = (g: any) => { setEditing(g); setForm({ title: g.title, image_url: g.image_url, category: g.category, display_order: g.display_order }); setOpen(true); };
@@ -27,14 +29,13 @@ const AdminGallery = () => {
     setSaving(true);
     try {
       if (editing) {
-        await api.put(`/gallery/${editing.id}`, form);
+        await updateGallery.mutateAsync({ id: editing.id, body: form });
         toast({ title: "Image updated" });
       } else {
-        await api.post("/gallery", form);
+        await createGallery.mutateAsync(form);
         toast({ title: "Image added" });
       }
       setOpen(false);
-      load();
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally { setSaving(false); }
@@ -43,9 +44,8 @@ const AdminGallery = () => {
   const remove = async (id: string) => {
     if (!confirm("Delete this image?")) return;
     try {
-      await api.del(`/gallery/${id}`);
+      await deleteGallery.mutateAsync(id);
       toast({ title: "Image deleted" });
-      load();
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }

@@ -8,17 +8,18 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2 } from "lucide-react";
-import { api } from "@/lib/api";
 import useCategories from "@/hooks/useCategories";
-import { useQueryClient } from "@tanstack/react-query";
-import useSupabaseQuery from "@/hooks/useSupabaseQuery";
+import useTests from "@/hooks/useTests";
+import { useCreateTest, useUpdateTest, useDeleteTest } from "@/hooks/useTests";
 
 const AdminTests = () => {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const createTest = useCreateTest();
+  const updateTest = useUpdateTest();
+  const deleteTest = useDeleteTest();
   const categoriesQuery = useCategories();
   // Admin needs ALL tests (not just active)
-  const testsQuery = useSupabaseQuery(["tests", "all"], () => api.get("/tests"));
+  const testsQuery = useTests({ active: false });
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [saving, setSaving] = useState(false);
@@ -44,14 +45,13 @@ const AdminTests = () => {
     setSaving(true);
     try {
       if (editing) {
-        await api.put(`/tests/${editing.id}`, form);
+        await updateTest.mutateAsync({ id: editing.id, ...form });
         toast({ title: "Test updated" });
       } else {
-        await api.post("/tests", form);
+        await createTest.mutateAsync(form);
         toast({ title: "Test created" });
       }
       setOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["tests"] });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally { setSaving(false); }
@@ -60,9 +60,8 @@ const AdminTests = () => {
   const remove = async (id: string) => {
     if (!confirm("Delete this test?")) return;
     try {
-      await api.del(`/tests/${id}`);
+      await deleteTest.mutateAsync(id);
       toast({ title: "Test deleted" });
-      queryClient.invalidateQueries({ queryKey: ["tests"] });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }

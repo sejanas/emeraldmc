@@ -27,7 +27,7 @@ const features = [
 ];
 
 const Index = () => {
-  const testsQuery = useTests(6);
+  const testsQuery = useTests({ limit: 6 });
   const doctorsQuery = useDoctors(3);
   const packagesQuery = usePackages();
   const categoriesQuery = useCategories();

@@ -5,14 +5,15 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2 } from "lucide-react";
-import { api } from "@/lib/api";
 import useCategories from "@/hooks/useCategories";
-import { useQueryClient } from "@tanstack/react-query";
+import { useCreateCategory, useUpdateCategory, useDeleteCategory } from "@/hooks/useCategoriesMutations";
 
 const AdminCategories = () => {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const categoriesQuery = useCategories();
+  const createCategory = useCreateCategory();
+  const updateCategory = useUpdateCategory();
+  const deleteCategory = useDeleteCategory();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [saving, setSaving] = useState(false);
@@ -25,14 +26,13 @@ const AdminCategories = () => {
     setSaving(true);
     try {
       if (editing) {
-        await api.put(`/categories/${editing.id}`, form);
+        await updateCategory.mutateAsync({ id: editing.id, body: form });
         toast({ title: "Category updated" });
       } else {
-        await api.post("/categories", form);
+        await createCategory.mutateAsync(form);
         toast({ title: "Category created" });
       }
       setOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["test_categories"] });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally { setSaving(false); }
@@ -41,9 +41,8 @@ const AdminCategories = () => {
   const remove = async (id: string) => {
     if (!confirm("Delete this category?")) return;
     try {
-      await api.del(`/categories/${id}`);
+      await deleteCategory.mutateAsync(id);
       toast({ title: "Category deleted" });
-      queryClient.invalidateQueries({ queryKey: ["test_categories"] });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }

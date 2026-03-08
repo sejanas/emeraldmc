@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { api } from "@/lib/api";
+import useBookings from "@/hooks/useBookings";
+import { useUpdateBookingStatus } from "@/hooks/useBookingsMutations";
 
 const statusColors: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
@@ -23,27 +24,17 @@ const statusLabels: Record<string, string> = {
 
 const AdminBookings = () => {
   const { toast } = useToast();
-  const [bookings, setBookings] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const bookingsQuery = useBookings();
+  const bookings = bookingsQuery.data ?? [];
+  const loading = bookingsQuery.isLoading;
   const [selected, setSelected] = useState<any>(null);
 
-  const load = async () => {
-    setLoading(true);
-    try {
-      const data = await api.get("/bookings");
-      setBookings(data);
-    } catch (err: any) {
-      toast({ title: "Error loading bookings", description: err.message, variant: "destructive" });
-    } finally { setLoading(false); }
-  };
-
-  useEffect(() => { load(); }, []);
+  const updateBookingStatus = useUpdateBookingStatus();
 
   const updateStatus = async (id: string, status: string) => {
     try {
-      await api.put(`/bookings/${id}/status`, { status });
+      await updateBookingStatus.mutateAsync({ id, status });
       toast({ title: `Status updated to ${statusLabels[status]}` });
-      load();
       if (selected?.id === id) setSelected({ ...selected, status });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });

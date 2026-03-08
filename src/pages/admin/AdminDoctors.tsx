@@ -7,14 +7,15 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2 } from "lucide-react";
 import ImageUpload from "@/components/ImageUpload";
-import { api } from "@/lib/api";
 import useDoctors from "@/hooks/useDoctors";
-import { useQueryClient } from "@tanstack/react-query";
+import { useCreateDoctor, useUpdateDoctor, useDeleteDoctor } from "@/hooks/useDoctorsMutations";
 
 const AdminDoctors = () => {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const doctorsQuery = useDoctors();
+  const createDoctor = useCreateDoctor();
+  const updateDoctor = useUpdateDoctor();
+  const deleteDoctor = useDeleteDoctor();
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [saving, setSaving] = useState(false);
@@ -39,14 +40,13 @@ const AdminDoctors = () => {
     setSaving(true);
     try {
       if (editing) {
-        await api.put(`/doctors/${editing.id}`, form);
+        await updateDoctor.mutateAsync({ id: editing.id, body: form });
         toast({ title: "Doctor updated" });
       } else {
-        await api.post("/doctors", form);
+        await createDoctor.mutateAsync(form);
         toast({ title: "Doctor added" });
       }
       setOpen(false);
-      queryClient.invalidateQueries({ queryKey: ["doctors"] });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     } finally { setSaving(false); }
@@ -55,9 +55,8 @@ const AdminDoctors = () => {
   const remove = async (id: string) => {
     if (!confirm("Delete this doctor?")) return;
     try {
-      await api.del(`/doctors/${id}`);
+      await deleteDoctor.mutateAsync(id);
       toast({ title: "Doctor deleted" });
-      queryClient.invalidateQueries({ queryKey: ["doctors"] });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
