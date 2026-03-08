@@ -6,9 +6,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, Search, Images } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Images, SlidersHorizontal } from "lucide-react";
 import { useConfirm } from "@/components/ConfirmDialog";
 import ImageUpload from "@/components/ImageUpload";
+import ImageEditor from "@/components/ImageEditor";
 import useGallery from "@/hooks/useGallery";
 import { useCreateGallery, useUpdateGallery, useDeleteGallery } from "@/hooks/useGalleryMutations";
 
@@ -26,10 +27,29 @@ const AdminGallery = () => {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ title: "", description: "", image_url: "", category: "General", display_order: 0 });
 
+  // Image editor state
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editorItem, setEditorItem] = useState<any>(null);
+
   const items = galleryQuery.data ?? [];
 
   const openNew = () => { setEditing(null); setForm({ title: "", description: "", image_url: "", category: "General", display_order: items.length }); setOpen(true); };
   const openEdit = (g: any) => { setEditing(g); setForm({ title: g.title, description: g.description || "", image_url: g.image_url, category: g.category, display_order: g.display_order }); setOpen(true); };
+
+  const openEditor = (g: any) => {
+    setEditorItem(g);
+    setEditorOpen(true);
+  };
+
+  const handleEditorSave = async (newUrl: string) => {
+    if (!editorItem) return;
+    try {
+      await updateGallery.mutateAsync({ id: editorItem.id, body: { image_url: newUrl } });
+      toast({ title: "Image updated successfully" });
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
 
   const save = async () => {
     if (!form.image_url) { toast({ title: "Please upload an image", variant: "destructive" }); return; }
@@ -114,8 +134,15 @@ const AdminGallery = () => {
               <img src={g.image_url} alt={g.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
             </div>
             <div className="absolute inset-0 bg-foreground/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-              <Button variant="secondary" size="sm" onClick={() => openEdit(g)}><Pencil className="h-3.5 w-3.5 mr-1" /> Edit</Button>
-              <Button variant="destructive" size="sm" onClick={() => remove(g.id, g.title)}><Trash2 className="h-3.5 w-3.5" /></Button>
+              <Button variant="secondary" size="sm" onClick={() => openEdit(g)}>
+                <Pencil className="h-3.5 w-3.5 mr-1" /> Edit
+              </Button>
+              <Button variant="secondary" size="sm" onClick={() => openEditor(g)}>
+                <SlidersHorizontal className="h-3.5 w-3.5 mr-1" /> Adjust
+              </Button>
+              <Button variant="destructive" size="sm" onClick={() => remove(g.id, g.title)}>
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
             </div>
             <div className="p-3">
               <p className="text-sm font-medium text-foreground truncate">{g.title}</p>
@@ -136,6 +163,7 @@ const AdminGallery = () => {
         </div>
       )}
 
+      {/* Add/Edit form dialog */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{editing ? "Edit Gallery Image" : "Add Gallery Image"}</DialogTitle></DialogHeader>
@@ -173,6 +201,17 @@ const AdminGallery = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Image Editor dialog */}
+      {editorItem && (
+        <ImageEditor
+          open={editorOpen}
+          onOpenChange={setEditorOpen}
+          imageUrl={editorItem.image_url}
+          onSave={handleEditorSave}
+          folder="gallery"
+        />
+      )}
     </div>
   );
 };
