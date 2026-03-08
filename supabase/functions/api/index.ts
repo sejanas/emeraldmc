@@ -1,4 +1,4 @@
-// API Edge Function — v2
+// API Edge Function — v3
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
@@ -85,6 +85,9 @@ async function requireRole(req: Request, roles: string[]) {
   return { user, profile };
 }
 
+const BOOKING_ROLES = ["admin", "super_admin", "booking_manager"];
+const ADMIN_ROLES = ["admin", "super_admin"];
+
 async function logActivity(params: {
   event_type: string;
   user_id?: string;
@@ -168,29 +171,23 @@ async function handleSignup(req: Request) {
 
   const userId = authData.user.id;
 
-  // Upsert user_profiles so that any row created by a DB trigger (which
-  // would otherwise cause a silent UNIQUE violation) is overwritten with
-  // the correct name/role/status supplied by this request.
   const { error: profileError } = await db.from("user_profiles").upsert(
     {
       user_id: userId,
       name,
       clinic_role: clinic_role || null,
-      role: "admin",
+      role: "booking_manager",
       status: "pending",
     },
     { onConflict: "user_id" }
   );
   if (profileError) {
-    // Roll back the auth user so the operation stays atomic.
     await db.auth.admin.deleteUser(userId);
     return errRes(profileError.message);
   }
 
-  // Remove any role rows that a trigger may have inserted for this user,
-  // then insert the canonical 'admin' role. This prevents duplicate rows.
   await db.from("user_roles").delete().eq("user_id", userId);
-  await db.from("user_roles").insert({ user_id: userId, role: "admin" });
+  await db.from("user_roles").insert({ user_id: userId, role: "booking_manager" });
 
   if (phones?.length) {
     await db
@@ -282,7 +279,7 @@ async function crudCreate(
   entityType: string,
   nameField = "name"
 ) {
-  const { user } = await requireRole(req, ["admin", "super_admin"]);
+  const { user } = await requireRole(req, ADMIN_ROLES);
   const body = await req.json();
   const slug =
     body.slug ||
@@ -315,7 +312,7 @@ async function crudUpdate(
   entityType: string,
   nameField = "name"
 ) {
-  const { user } = await requireRole(req, ["admin", "super_admin"]);
+  const { user } = await requireRole(req, ADMIN_ROLES);
   const body = await req.json();
   const db = adminDb();
 
@@ -364,7 +361,7 @@ async function crudDelete(
   soft = true,
   nameField = "name"
 ) {
-  const { user } = await requireRole(req, ["admin", "super_admin"]);
+  const { user } = await requireRole(req, ADMIN_ROLES);
   const db = adminDb();
   const { data: old } = await db
     .from(table)
@@ -419,7 +416,7 @@ async function handlePackagesList(url: URL) {
 }
 
 async function handlePackageSave(req: Request, id?: string) {
-  const { user } = await requireRole(req, ["admin", "super_admin"]);
+  const { user } = await requireRole(req, ADMIN_ROLES);
   const body = await req.json();
   const { test_ids, ...pkgData } = body;
   const slug =
@@ -497,6 +494,13 @@ async function handlePackageSave(req: Request, id?: string) {
 
 // ── BOOKINGS ──
 
+const STATUS_TIMESTAMP_MAP: Record<string, string> = {
+  confirmed: "confirmed_at",
+  sample_collected: "sample_collected_at",
+  completed: "completed_at",
+  cancelled: "cancelled_at",
+};
+
 async function handleBookingCreate(req: Request) {
   const body = await req.json();
   if (
@@ -509,12 +513,21 @@ async function handleBookingCreate(req: Request) {
       "Required: patient_name, phone, preferred_date, preferred_time"
     );
 
-  const { data, error } = await adminDb()
+  const db = adminDb();
+  const { data, error } = await db
     .from("bookings")
     .insert(body)
     .select()
     .single();
   if (error) throw { message: error.message, status: 500 };
+
+  // Auto-insert initial timeline entry
+  await db.from("booking_updates").insert({
+    booking_id: data.id,
+    update_type: "status_change",
+    new_value: "pending",
+    note: "Booking created",
+  });
 
   await logActivity({
     event_type: "booking.created",
@@ -526,7 +539,7 @@ async function handleBookingCreate(req: Request) {
 }
 
 async function handleBookingStatusUpdate(req: Request, id: string) {
-  const { user } = await requireRole(req, ["admin", "super_admin"]);
+  const { user } = await requireRole(req, BOOKING_ROLES);
   const { status } = await req.json();
   const valid = [
     "pending",
@@ -543,11 +556,28 @@ async function handleBookingStatusUpdate(req: Request, id: string) {
     .select("status, patient_name")
     .eq("id", id)
     .single();
+
+  const updateData: Record<string, any> = {
+    status,
+    updated_at: new Date().toISOString(),
+  };
+  const tsCol = STATUS_TIMESTAMP_MAP[status];
+  if (tsCol) updateData[tsCol] = new Date().toISOString();
+
   const { error } = await db
     .from("bookings")
-    .update({ status, updated_at: new Date().toISOString() })
+    .update(updateData)
     .eq("id", id);
   if (error) throw { message: error.message, status: 500 };
+
+  // Insert timeline entry
+  await db.from("booking_updates").insert({
+    booking_id: id,
+    update_type: "status_change",
+    old_value: old?.status,
+    new_value: status,
+    created_by: user.id,
+  });
 
   await logActivity({
     event_type: "booking.updated",
@@ -558,6 +588,214 @@ async function handleBookingStatusUpdate(req: Request, id: string) {
     changes: { status: { from: old?.status, to: status } },
   });
   return json({ success: true });
+}
+
+async function handleBookingUpdates(req: Request, id: string) {
+  const method = req.method;
+
+  if (method === "GET") {
+    await requireRole(req, BOOKING_ROLES);
+    const db = adminDb();
+    const { data, error } = await db
+      .from("booking_updates")
+      .select("*")
+      .eq("booking_id", id)
+      .order("created_at", { ascending: true });
+    if (error) throw { message: error.message, status: 500 };
+
+    // Enrich with actor names
+    const userIds = [...new Set((data ?? []).map((u: any) => u.created_by).filter(Boolean))];
+    let profileMap: Record<string, string> = {};
+    if (userIds.length) {
+      const { data: profiles } = await db
+        .from("user_profiles")
+        .select("user_id, name")
+        .in("user_id", userIds);
+      (profiles ?? []).forEach((p: any) => { profileMap[p.user_id] = p.name; });
+    }
+
+    const enriched = (data ?? []).map((u: any) => ({
+      ...u,
+      actor_name: u.created_by ? (profileMap[u.created_by] || null) : null,
+    }));
+    return json(enriched);
+  }
+
+  if (method === "POST") {
+    const { user } = await requireRole(req, BOOKING_ROLES);
+    const body = await req.json();
+    const { update_type, note, status, preferred_date, preferred_time, patient_id, extra_phones } = body;
+
+    if (!update_type) return errRes("update_type required");
+
+    const db = adminDb();
+    const { data: booking } = await db.from("bookings").select("*").eq("id", id).single();
+    if (!booking) return errRes("Booking not found", 404);
+
+    // Handle different update types
+    if (update_type === "status_change" && status) {
+      const valid = ["pending", "confirmed", "sample_collected", "completed", "cancelled"];
+      if (!valid.includes(status)) return errRes("Invalid status");
+      const updateData: Record<string, any> = { status, updated_at: new Date().toISOString() };
+      const tsCol = STATUS_TIMESTAMP_MAP[status];
+      if (tsCol) updateData[tsCol] = new Date().toISOString();
+      await db.from("bookings").update(updateData).eq("id", id);
+      await db.from("booking_updates").insert({
+        booking_id: id, update_type: "status_change",
+        old_value: booking.status, new_value: status, note, created_by: user.id,
+      });
+    } else if (update_type === "date_change" && (preferred_date || preferred_time)) {
+      const updateData: Record<string, any> = { updated_at: new Date().toISOString() };
+      const oldParts: string[] = [];
+      const newParts: string[] = [];
+      if (preferred_date) {
+        oldParts.push(booking.preferred_date);
+        newParts.push(preferred_date);
+        updateData.preferred_date = preferred_date;
+      }
+      if (preferred_time) {
+        oldParts.push(booking.preferred_time);
+        newParts.push(preferred_time);
+        updateData.preferred_time = preferred_time;
+      }
+      await db.from("bookings").update(updateData).eq("id", id);
+      await db.from("booking_updates").insert({
+        booking_id: id, update_type: "date_change",
+        old_value: oldParts.join(" "), new_value: newParts.join(" "),
+        note, created_by: user.id,
+      });
+    } else if (update_type === "info_update") {
+      const updateData: Record<string, any> = { updated_at: new Date().toISOString() };
+      const changes: string[] = [];
+      if (patient_id !== undefined) {
+        updateData.patient_id = patient_id;
+        changes.push(`patient_id: ${patient_id}`);
+      }
+      if (extra_phones !== undefined) {
+        updateData.extra_phones = extra_phones;
+        changes.push(`extra_phones: ${JSON.stringify(extra_phones)}`);
+      }
+      if (body.notes !== undefined) {
+        updateData.notes = body.notes;
+        changes.push(`notes updated`);
+      }
+      await db.from("bookings").update(updateData).eq("id", id);
+      await db.from("booking_updates").insert({
+        booking_id: id, update_type: "info_update",
+        new_value: changes.join("; "), note, created_by: user.id,
+      });
+    } else if (update_type === "follow_up_call" || update_type === "note") {
+      await db.from("booking_updates").insert({
+        booking_id: id, update_type, note, created_by: user.id,
+      });
+      // Touch updated_at so overdue detection works
+      await db.from("bookings").update({ updated_at: new Date().toISOString() }).eq("id", id);
+    } else {
+      await db.from("booking_updates").insert({
+        booking_id: id, update_type: update_type || "other", note, created_by: user.id,
+      });
+    }
+
+    await logActivity({
+      event_type: "booking.timeline_update",
+      user_id: user.id,
+      entity_type: "booking",
+      entity_id: id,
+      entity_name: booking.patient_name,
+      changes: { update_type, note },
+    });
+    return json({ success: true });
+  }
+
+  return errRes("Method not allowed", 405);
+}
+
+async function handleBookingReschedule(req: Request, id: string) {
+  const { user } = await requireRole(req, BOOKING_ROLES);
+  const { preferred_date, preferred_time } = await req.json();
+  if (!preferred_date && !preferred_time) return errRes("preferred_date or preferred_time required");
+
+  const db = adminDb();
+  const { data: booking } = await db.from("bookings").select("preferred_date, preferred_time, patient_name").eq("id", id).single();
+  if (!booking) return errRes("Booking not found", 404);
+
+  const updateData: Record<string, any> = { updated_at: new Date().toISOString() };
+  if (preferred_date) updateData.preferred_date = preferred_date;
+  if (preferred_time) updateData.preferred_time = preferred_time;
+
+  await db.from("bookings").update(updateData).eq("id", id);
+  await db.from("booking_updates").insert({
+    booking_id: id,
+    update_type: "date_change",
+    old_value: `${booking.preferred_date} ${booking.preferred_time}`,
+    new_value: `${preferred_date || booking.preferred_date} ${preferred_time || booking.preferred_time}`,
+    created_by: user.id,
+  });
+
+  await logActivity({
+    event_type: "booking.rescheduled",
+    user_id: user.id,
+    entity_type: "booking",
+    entity_id: id,
+    entity_name: booking.patient_name,
+  });
+  return json({ success: true });
+}
+
+async function handleBookingInfoUpdate(req: Request, id: string) {
+  const { user } = await requireRole(req, BOOKING_ROLES);
+  const { patient_id, extra_phones, notes } = await req.json();
+
+  const db = adminDb();
+  const { data: booking } = await db.from("bookings").select("patient_name").eq("id", id).single();
+  if (!booking) return errRes("Booking not found", 404);
+
+  const updateData: Record<string, any> = { updated_at: new Date().toISOString() };
+  const changes: string[] = [];
+  if (patient_id !== undefined) { updateData.patient_id = patient_id; changes.push(`patient_id: ${patient_id}`); }
+  if (extra_phones !== undefined) { updateData.extra_phones = extra_phones; changes.push(`extra_phones updated`); }
+  if (notes !== undefined) { updateData.notes = notes; changes.push(`notes updated`); }
+
+  await db.from("bookings").update(updateData).eq("id", id);
+  await db.from("booking_updates").insert({
+    booking_id: id,
+    update_type: "info_update",
+    new_value: changes.join("; "),
+    created_by: user.id,
+  });
+
+  await logActivity({
+    event_type: "booking.info_updated",
+    user_id: user.id,
+    entity_type: "booking",
+    entity_id: id,
+    entity_name: booking.patient_name,
+  });
+  return json({ success: true });
+}
+
+async function handlePatientHistory(req: Request, url: URL) {
+  await requireRole(req, BOOKING_ROLES);
+  const phone = url.searchParams.get("phone");
+  const name = url.searchParams.get("name");
+  const patientId = url.searchParams.get("patient_id");
+
+  if (!phone && !patientId) return errRes("phone or patient_id required");
+
+  const db = adminDb();
+  let q = db.from("bookings").select("*").order("created_at", { ascending: false }).limit(50);
+
+  if (patientId) {
+    q = q.eq("patient_id", patientId);
+  } else if (phone) {
+    // Search by primary phone or in extra_phones
+    q = q.or(`phone.eq.${phone},extra_phones.cs.{${phone}}`);
+    if (name) q = q.ilike("patient_name", `%${name}%`);
+  }
+
+  const { data, error } = await q;
+  if (error) throw { message: error.message, status: 500 };
+  return json(data);
 }
 
 // ── ADMIN USER MANAGEMENT ──
@@ -644,16 +882,12 @@ async function handleDeclineUser(req: Request) {
     .eq("user_id", user_id)
     .single();
 
-  // Try with audit columns first (requires migration 20260308120000).
-  // If columns don't exist yet, fall back to status-only update so the
-  // action always succeeds even before the migration is deployed.
   const fullUpdate = await db
     .from("user_profiles")
     .update({ status: "declined", declined_by: user.id, declined_at: new Date().toISOString(), decline_reason: decline_reason ?? null })
     .eq("user_id", user_id);
 
   if (fullUpdate.error) {
-    // 42703 = undefined_column; fall back to bare status update
     if (fullUpdate.error.code === "42703") {
       const { error: fallbackError } = await db
         .from("user_profiles")
@@ -704,27 +938,38 @@ async function handleRevokeUser(req: Request) {
 
 async function handlePromoteUser(req: Request) {
   const { user } = await requireRole(req, ["super_admin"]);
-  const { user_id } = await req.json();
+  const { user_id, target_role } = await req.json();
   if (!user_id) return errRes("user_id required");
+
+  const validRoles = ["booking_manager", "admin", "super_admin"];
+  const role = target_role || "super_admin";
+  if (!validRoles.includes(role)) return errRes("Invalid target_role");
 
   const db = adminDb();
   const { data: profile } = await db
     .from("user_profiles")
-    .select("name")
+    .select("name, role")
     .eq("user_id", user_id)
     .single();
 
   await db
     .from("user_profiles")
-    .update({ role: "super_admin" })
+    .update({ role })
     .eq("user_id", user_id);
 
+  // Update user_roles table too
+  await db.from("user_roles").delete().eq("user_id", user_id);
+  // Map to app_role enum: booking_manager, admin (super_admin maps to admin in enum)
+  const enumRole = role === "super_admin" ? "admin" : role;
+  await db.from("user_roles").insert({ user_id, role: enumRole });
+
   await logActivity({
-    event_type: "admin.promoted",
+    event_type: "admin.role_changed",
     user_id: user.id,
     entity_type: "user",
     entity_id: user_id,
     entity_name: profile?.name,
+    changes: { role: { from: profile?.role, to: role } },
   });
   return json({ success: true });
 }
@@ -743,7 +988,6 @@ async function handleActivityLogs(req: Request, url: URL) {
     .order("created_at", { ascending: false })
     .limit(200);
 
-  // Super admins can filter by a specific user_id; regular admins see only own logs
   const filterUserId = url.searchParams.get("user_id");
   if (profile.role === "super_admin" && filterUserId) {
     q = q.eq("user_id", filterUserId);
@@ -760,7 +1004,6 @@ async function handleActivityLogs(req: Request, url: URL) {
   const { data, error } = await q;
   if (error) throw { message: error.message, status: 500 };
 
-  // Enrich logs with actor names from user_profiles
   const userIds = [...new Set((data ?? []).map((l: any) => l.user_id).filter(Boolean))];
   let profileMap: Record<string, string> = {};
   if (userIds.length) {
@@ -813,7 +1056,6 @@ async function handleUpdateProfile(req: Request) {
     const invalidEmail = validEmails.find((e: string) => !emailRegex.test(e.trim()));
     if (invalidEmail) return errRes(`Invalid email: ${invalidEmail}`);
 
-    // Always include the primary auth email; users cannot remove it
     const primaryEmail = user.email?.toLowerCase();
     const allEmails = new Set(validEmails.map((e: string) => e.trim().toLowerCase()));
     if (primaryEmail) allEmails.add(primaryEmail);
@@ -846,7 +1088,6 @@ async function handleResubmit(req: Request) {
   if (!profile) return errRes("Profile not found", 404);
   if (profile.status !== "declined") return errRes("Account is not in declined state");
 
-  // Enforce 5-minute cooling period from declined_at (if column exists)
   if (profile.declined_at) {
     const declinedAt = new Date(profile.declined_at).getTime();
     const cooldownMs = 5 * 60 * 1000;
@@ -874,7 +1115,7 @@ async function handleResubmit(req: Request) {
 // ── DASHBOARD ──
 
 async function handleDashboardCounts(req: Request) {
-  await requireRole(req, ["admin", "super_admin"]);
+  await requireRole(req, BOOKING_ROLES);
   const db = adminDb();
   const todayStart = new Date().toISOString().slice(0, 10) + "T00:00:00Z";
   const [cats, tests, pkgs, docs, gal, vis, bk, fq, visToday] = await Promise.all([
@@ -889,7 +1130,6 @@ async function handleDashboardCounts(req: Request) {
     db.from("visitors").select("id", { count: "exact", head: true }).gte("visited_at", todayStart),
   ]);
 
-  // Top 5 locations
   const { data: locData } = await db.from("visitors").select("country, region, city").not("country", "is", null).limit(1000);
   const locAgg: Record<string, number> = {};
   (locData ?? []).forEach((r: any) => {
@@ -982,8 +1222,11 @@ Deno.serve(async (req) => {
     // Bookings
     if (resource === "bookings") {
       if (method === "POST" && !id) return await handleBookingCreate(req);
+      // Patient history
+      if (method === "GET" && id === "patient-history")
+        return await handlePatientHistory(req, url);
       if (method === "GET" && !id) {
-        await requireRole(req, ["admin", "super_admin"]);
+        await requireRole(req, BOOKING_ROLES);
         const db = adminDb();
         const { data } = await db
           .from("bookings")
@@ -991,12 +1234,20 @@ Deno.serve(async (req) => {
           .order("created_at", { ascending: false });
         return json(data);
       }
+      if (method === "GET" && id && sub === "updates")
+        return await handleBookingUpdates(req, id);
       if (method === "GET" && id) {
-        await requireRole(req, ["admin", "super_admin"]);
+        await requireRole(req, BOOKING_ROLES);
         return await crudGet("bookings", id);
       }
       if (method === "PUT" && id && sub === "status")
         return await handleBookingStatusUpdate(req, id);
+      if (method === "PUT" && id && sub === "reschedule")
+        return await handleBookingReschedule(req, id);
+      if (method === "PUT" && id && sub === "info")
+        return await handleBookingInfoUpdate(req, id);
+      if (method === "POST" && id && sub === "updates")
+        return await handleBookingUpdates(req, id);
     }
 
     // Generic CRUD
@@ -1089,7 +1340,6 @@ Deno.serve(async (req) => {
           .gte("visited_at", todayStart);
 
         if ((existing ?? 0) === 0) {
-          // Resolve geolocation from IP
           let city: string | null = null;
           let region: string | null = null;
           let country: string | null = null;
@@ -1126,9 +1376,8 @@ Deno.serve(async (req) => {
         return json({ count: count ?? 0 });
       }
 
-      // Admin-only analytics endpoints
       if (method === "GET" && id === "analytics") {
-        await requireRole(req, ["admin", "super_admin"]);
+        await requireRole(req, ADMIN_ROLES);
         const db = adminDb();
         let q = db.from("visitors").select("*").order("visited_at", { ascending: false });
         const from = url.searchParams.get("from");
@@ -1152,7 +1401,7 @@ Deno.serve(async (req) => {
       }
 
       if (method === "GET" && id === "locations") {
-        await requireRole(req, ["admin", "super_admin"]);
+        await requireRole(req, ADMIN_ROLES);
         const db = adminDb();
         let q = db.from("visitors").select("country, region, city, visited_at");
         const from = url.searchParams.get("from");
@@ -1164,7 +1413,6 @@ Deno.serve(async (req) => {
         const { data, error } = await q;
         if (error) throw { message: error.message, status: 500 };
 
-        // Aggregate in memory
         const agg: Record<string, number> = {};
         (data ?? []).forEach((r: any) => {
           const key = `${r.country || "Unknown"}||${r.region || "Unknown"}||${r.city || "Unknown"}`;
@@ -1180,7 +1428,7 @@ Deno.serve(async (req) => {
       }
 
       if (method === "GET" && id === "daily") {
-        await requireRole(req, ["admin", "super_admin"]);
+        await requireRole(req, ADMIN_ROLES);
         const db = adminDb();
         let q = db.from("visitors").select("visited_at, country, page");
         const from = url.searchParams.get("from");
@@ -1206,7 +1454,7 @@ Deno.serve(async (req) => {
       }
 
       if (method === "GET" && id === "filters") {
-        await requireRole(req, ["admin", "super_admin"]);
+        await requireRole(req, ADMIN_ROLES);
         const db = adminDb();
         const { data } = await db.from("visitors").select("country, region, city, page");
         const countries = new Set<string>();

@@ -6,25 +6,26 @@ import { useAuth } from "@/hooks/useAuth";
 import ThemeToggle from "@/components/ThemeToggle";
 
 const AdminLayout = () => {
-  const { signOut, profile, isSuperAdmin } = useAuth();
+  const { signOut, profile, isSuperAdmin, isBookingManager } = useAuth();
 
-  const links = [
-    { to: "/admin", icon: LayoutDashboard, label: "Dashboard", end: true },
-    { to: "/admin/categories", icon: List, label: "Categories" },
-    { to: "/admin/tests", icon: FlaskConical, label: "Tests" },
-    { to: "/admin/packages", icon: Package, label: "Packages" },
-    { to: "/admin/doctors", icon: Users, label: "Doctors" },
-    { to: "/admin/gallery", icon: Image, label: "Gallery" },
-    { to: "/admin/bookings", icon: CalendarCheck, label: "Bookings" },
-    { to: "/admin/faqs", icon: HelpCircle, label: "FAQs" },
-    { to: "/admin/visitors", icon: Eye, label: "Visitors" },
-    { to: "/admin/activity-logs", icon: Activity, label: "Activity Logs" },
-    { to: "/admin/profile", icon: UserCircle, label: "My Profile" },
-    ...(isSuperAdmin ? [
-      { to: "/admin/users", icon: Shield, label: "Users" },
-      { to: "/admin/theme", icon: Palette, label: "Theme" },
-    ] : []),
+  const allLinks = [
+    { to: "/admin", icon: LayoutDashboard, label: "Dashboard", end: true, roles: ["admin", "super_admin"] },
+    { to: "/admin/categories", icon: List, label: "Categories", roles: ["admin", "super_admin"] },
+    { to: "/admin/tests", icon: FlaskConical, label: "Tests", roles: ["admin", "super_admin"] },
+    { to: "/admin/packages", icon: Package, label: "Packages", roles: ["admin", "super_admin"] },
+    { to: "/admin/doctors", icon: Users, label: "Doctors", roles: ["admin", "super_admin"] },
+    { to: "/admin/gallery", icon: Image, label: "Gallery", roles: ["admin", "super_admin"] },
+    { to: "/admin/bookings", icon: CalendarCheck, label: "Bookings", roles: ["admin", "super_admin", "booking_manager"] },
+    { to: "/admin/faqs", icon: HelpCircle, label: "FAQs", roles: ["admin", "super_admin"] },
+    { to: "/admin/visitors", icon: Eye, label: "Visitors", roles: ["admin", "super_admin"] },
+    { to: "/admin/activity-logs", icon: Activity, label: "Activity Logs", roles: ["admin", "super_admin"] },
+    { to: "/admin/profile", icon: UserCircle, label: "My Profile", roles: ["admin", "super_admin", "booking_manager"] },
+    { to: "/admin/users", icon: Shield, label: "Users", roles: ["super_admin"] },
+    { to: "/admin/theme", icon: Palette, label: "Theme", roles: ["super_admin"] },
   ];
+
+  const userRole = profile?.role || "booking_manager";
+  const links = allLinks.filter((l) => l.roles.includes(userRole));
 
   return (
     <div className="flex h-screen bg-muted/30">

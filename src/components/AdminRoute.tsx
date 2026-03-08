@@ -1,11 +1,12 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 
-// Non-active statuses that are still allowed to access the profile page
 const PROFILE_ALLOWED_STATUSES = ["pending", "declined"];
 
+const BOOKING_MANAGER_PATHS = ["/admin/bookings", "/admin/profile"];
+
 const AdminRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, isAdmin, profile, loading } = useAuth();
+  const { user, isAdmin, isBookingManager, profile, loading } = useAuth();
   const location = useLocation();
 
   if (loading) {
@@ -27,6 +28,20 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
   }
 
   if (!isAdmin) return <Navigate to="/" replace />;
+
+  // Booking managers can only access bookings and profile
+  if (isBookingManager) {
+    const allowed = BOOKING_MANAGER_PATHS.some(
+      (p) => location.pathname === p || location.pathname.startsWith(p + "/")
+    );
+    // Also allow the base /admin path — redirect to bookings
+    if (location.pathname === "/admin") {
+      return <Navigate to="/admin/bookings" replace />;
+    }
+    if (!allowed) {
+      return <Navigate to="/admin/bookings" replace />;
+    }
+  }
 
   return <>{children}</>;
 };

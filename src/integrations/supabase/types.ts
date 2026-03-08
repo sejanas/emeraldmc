@@ -56,17 +56,66 @@ export type Database = {
         }
         Relationships: []
       }
+      booking_updates: {
+        Row: {
+          booking_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          new_value: string | null
+          note: string | null
+          old_value: string | null
+          update_type: string
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          new_value?: string | null
+          note?: string | null
+          old_value?: string | null
+          update_type: string
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          new_value?: string | null
+          note?: string | null
+          old_value?: string | null
+          update_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_updates_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bookings: {
         Row: {
           address: string | null
+          assigned_to: string | null
+          booking_source: string | null
+          cancelled_at: string | null
+          completed_at: string | null
+          confirmed_at: string | null
           created_at: string
           email: string | null
+          extra_phones: string[] | null
           id: string
           notes: string | null
+          patient_id: string | null
           patient_name: string
           phone: string
           preferred_date: string
           preferred_time: string
+          sample_collected_at: string | null
           selected_package: string | null
           selected_tests: string[] | null
           status: string
@@ -74,14 +123,22 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          assigned_to?: string | null
+          booking_source?: string | null
+          cancelled_at?: string | null
+          completed_at?: string | null
+          confirmed_at?: string | null
           created_at?: string
           email?: string | null
+          extra_phones?: string[] | null
           id?: string
           notes?: string | null
+          patient_id?: string | null
           patient_name: string
           phone: string
           preferred_date: string
           preferred_time: string
+          sample_collected_at?: string | null
           selected_package?: string | null
           selected_tests?: string[] | null
           status?: string
@@ -89,14 +146,22 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          assigned_to?: string | null
+          booking_source?: string | null
+          cancelled_at?: string | null
+          completed_at?: string | null
+          confirmed_at?: string | null
           created_at?: string
           email?: string | null
+          extra_phones?: string[] | null
           id?: string
           notes?: string | null
+          patient_id?: string | null
           patient_name?: string
           phone?: string
           preferred_date?: string
           preferred_time?: string
+          sample_collected_at?: string | null
           selected_package?: string | null
           selected_tests?: string[] | null
           status?: string
@@ -612,7 +677,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "admin" | "user"
+      app_role: "admin" | "user" | "booking_manager"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -740,7 +805,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "user"],
+      app_role: ["admin", "user", "booking_manager"],
     },
   },
 } as const
