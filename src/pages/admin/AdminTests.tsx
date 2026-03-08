@@ -102,6 +102,7 @@ const AdminTests = () => {
                 <td className="px-4 py-3">{t.display_order}</td>
                 <td className="px-4 py-3 font-medium">{t.name}</td>
                 <td className="px-4 py-3 text-muted-foreground">{catName(t.category_id)}</td>
+                <td className="px-4 py-3 text-muted-foreground">{t.original_price ? `₹${t.original_price}` : '—'}</td>
                 <td className="px-4 py-3">₹{t.price}</td>
                 <td className="px-4 py-3">{t.is_active ? "✓" : "✗"}</td>
                 <td className="px-4 py-3 text-right space-x-1">
