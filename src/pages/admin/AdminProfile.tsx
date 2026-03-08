@@ -302,6 +302,9 @@ const AdminProfile = () => {
             <h2 className="text-sm font-semibold text-foreground uppercase tracking-wider">Contact Emails</h2>
           </div>
           <p className="text-xs text-muted-foreground mb-3">Additional email addresses for notifications and communication.</p>
+          {emails.length === 0 && (
+            <p className="text-xs text-muted-foreground italic mb-2">No additional emails added.</p>
+          )}
           {emails.map((email, i) => (
             <div key={i} className="flex gap-2 mb-2">
               <div className="flex-1">
@@ -309,19 +312,18 @@ const AdminProfile = () => {
                   type="email"
                   value={email}
                   onChange={(e) => { updateEmail(i, e.target.value); setTouched((t) => ({ ...t, emails: true })); }}
-                  placeholder={`Email ${i + 1}`}
-                  required={i === 0}
+                  placeholder={`Additional email ${i + 1}`}
+                  pattern="[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*"
+                  title="Please enter a valid email address"
                   className={touched.emails && currentErrors.emails?.[i] ? "border-destructive focus-visible:ring-destructive" : ""}
                 />
                 {touched.emails && currentErrors.emails?.[i] && (
                   <p className="text-xs text-destructive mt-0.5">{currentErrors.emails[i]}</p>
                 )}
               </div>
-              {emails.length > 1 && (
-                <Button type="button" variant="ghost" size="icon" onClick={() => removeEmail(i)} className="shrink-0">
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
-              )}
+              <Button type="button" variant="ghost" size="icon" onClick={() => removeEmail(i)} className="shrink-0">
+                <Trash2 className="h-4 w-4 text-destructive" />
+              </Button>
             </div>
           ))}
           <Button type="button" variant="outline" size="sm" onClick={addEmail} className="mt-1">
