@@ -20,6 +20,12 @@ const AdminFaqs = () => {
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(empty);
+  const [search, setSearch] = useState("");
+  const filteredFaqs = useMemo(() => {
+    if (!search.trim()) return faqs ?? [];
+    const q = search.toLowerCase();
+    return (faqs ?? []).filter((f: any) => f.question.toLowerCase().includes(q));
+  }, [faqs, search]);
 
   const openNew = () => { setEditId(null); setForm(empty); setOpen(true); };
   const openEdit = (faq: any) => {
