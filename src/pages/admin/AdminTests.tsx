@@ -15,6 +15,7 @@ import { useCreateTest, useUpdateTest, useDeleteTest } from "@/hooks/useTests";
 
 const AdminTests = () => {
   const { toast } = useToast();
+  const confirm = useConfirm();
   const createTest = useCreateTest();
   const updateTest = useUpdateTest();
   const deleteTest = useDeleteTest();
