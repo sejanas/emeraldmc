@@ -1,0 +1,49 @@
+{
+  "name": "Emerald Medical Care",
+  "type": "ISO Certified Diagnostic Laboratory",
+  "location": {
+    "address": "Sri Vijaya Puram, Port Blair",
+    "city": "Port Blair",
+    "region": "Andaman & Nicobar Islands",
+    "country": "India",
+    "postalCode": "744101"
+  },
+  "contact": {
+    "phone": "+91 7679348684",
+    "email": "shifasmainlandhealthcare@gmail.com",
+    "website": "https://emeraldmedicalcare.com"
+  },
+  "operatingHours": "Monday to Sunday, 6:00 AM – 7:00 PM",
+  "services": [
+    "Complete Blood Count (CBC)",
+    "Lipid Profile",
+    "Thyroid Function Tests (TSH, T3, T4)",
+    "Blood Sugar and HbA1c",
+    "Liver Function Test (LFT)",
+    "Kidney Function Test (KFT)",
+    "Vitamin D and B12 Tests",
+    "Dengue and Malaria Testing",
+    "Comprehensive Health Checkup Packages",
+    "Free Home Sample Collection"
+  ],
+  "serviceAreas": [
+    "Port Blair",
+    "Sri Vijaya Puram",
+    "Wimberlygunj",
+    "Bambooflat",
+    "Ferrargunj"
+  ],
+  "certifications": ["ISO Certified"],
+  "highlights": [
+    "Same-day reports for most tests",
+    "Free home sample collection",
+    "10,000+ tests completed",
+    "5,000+ happy patients",
+    "4.8/5 patient rating",
+    "Experienced pathologists"
+  ],
+  "socialMedia": {
+    "facebook": "https://www.facebook.com/profile.php?id=61588640095513",
+    "instagram": "https://www.instagram.com/shifa_health_care0"
+  }
+}
