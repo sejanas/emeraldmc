@@ -475,6 +475,9 @@ export type Database = {
           approved_by: string | null
           clinic_role: string | null
           created_at: string
+          decline_reason: string | null
+          declined_at: string | null
+          declined_by: string | null
           id: string
           name: string
           role: string
@@ -486,6 +489,9 @@ export type Database = {
           approved_by?: string | null
           clinic_role?: string | null
           created_at?: string
+          decline_reason?: string | null
+          declined_at?: string | null
+          declined_by?: string | null
           id?: string
           name: string
           role?: string
@@ -497,6 +503,9 @@ export type Database = {
           approved_by?: string | null
           clinic_role?: string | null
           created_at?: string
+          decline_reason?: string | null
+          declined_at?: string | null
+          declined_by?: string | null
           id?: string
           name?: string
           role?: string
