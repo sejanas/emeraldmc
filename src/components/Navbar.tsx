@@ -4,6 +4,7 @@ import { Menu, X, Phone } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { businessInfo } from "@/data/siteData";
+import ThemeToggle from "@/components/ThemeToggle";
 
 const navLinks = [
   { to: "/", label: "Home" },
@@ -73,18 +74,22 @@ const Navbar = () => {
             <Phone className="h-4 w-4" />
             {businessInfo.phone}
           </a>
+          <ThemeToggle />
           <Button asChild size="sm">
             <Link to="/book">Book Appointment</Link>
           </Button>
         </div>
 
-        <button
-          onClick={() => setOpen(!open)}
-          className="rounded-md p-2 text-muted-foreground hover:bg-accent md:hidden"
-          aria-label="Toggle menu"
-        >
-          {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </button>
+        <div className="flex items-center gap-1 md:hidden">
+          <ThemeToggle />
+          <button
+            onClick={() => setOpen(!open)}
+            className="rounded-md p-2 text-muted-foreground hover:bg-accent"
+            aria-label="Toggle menu"
+          >
+            {open ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+        </div>
       </div>
 
       <AnimatePresence>
