@@ -484,6 +484,39 @@ export type Database = {
         }
         Relationships: []
       }
+      test_category_map: {
+        Row: {
+          category_id: string
+          id: string
+          test_id: string
+        }
+        Insert: {
+          category_id: string
+          id?: string
+          test_id: string
+        }
+        Update: {
+          category_id?: string
+          id?: string
+          test_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "test_category_map_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "test_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "test_category_map_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tests: {
         Row: {
           category_id: string | null
