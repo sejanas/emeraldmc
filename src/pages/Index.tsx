@@ -60,8 +60,8 @@ const Index = () => {
   const categoriesQuery = useCategories();
   const faqsQuery = useFaqs(true);
 
-  const catName = (id: string | null) =>
-    (categoriesQuery.data ?? []).find((c: any) => c.id === id)?.name ?? "";
+  const getCatNames = (t: any) =>
+    (t.categories ?? []).map((c: any) => c.name).join(", ") || "";
 
   const packages = packagesQuery.data?.packages ?? [];
   const testNames = packagesQuery.data?.testNames ?? {};
