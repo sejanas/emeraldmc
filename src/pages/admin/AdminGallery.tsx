@@ -91,7 +91,7 @@ const AdminGallery = () => {
           </div>
         ))}
       </div>
-      {items.length === 0 && <p className="py-8 text-center text-muted-foreground">No gallery images yet.</p>}
+      {!filteredItems.length && <p className="py-8 text-center text-muted-foreground">{search ? "No images match your search." : "No gallery images yet."}</p>}
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>

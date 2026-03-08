@@ -123,7 +123,7 @@ const AdminTests = () => {
             </tr>
           </thead>
           <tbody>
-            {(testsQuery.data ?? []).map((t: any) => (
+            {filteredTests.map((t: any) => (
               <tr key={t.id} className="border-t border-border">
                 <td className="px-4 py-3">{t.display_order}</td>
                 <td className="px-4 py-3 font-medium">{t.name}</td>
@@ -140,7 +140,7 @@ const AdminTests = () => {
           </tbody>
         </table>
         {testsQuery.isLoading && <p className="p-6 text-center text-muted-foreground">Loading...</p>}
-        {!testsQuery.isLoading && !(testsQuery.data?.length) && <p className="p-6 text-center text-muted-foreground">No tests yet.</p>}
+        {!testsQuery.isLoading && !filteredTests.length && <p className="p-6 text-center text-muted-foreground">{search ? "No tests match your search." : "No tests yet."}</p>}
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>

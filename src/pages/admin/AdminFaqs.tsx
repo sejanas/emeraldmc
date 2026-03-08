@@ -76,7 +76,7 @@ const AdminFaqs = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {(faqs ?? []).map((faq: any) => (
+              {filteredFaqs.map((faq: any) => (
                 <TableRow key={faq.id}>
                   <TableCell className="text-muted-foreground">{faq.display_order}</TableCell>
                   <TableCell className="font-medium text-foreground">{faq.question}</TableCell>
@@ -91,8 +91,8 @@ const AdminFaqs = () => {
                   </TableCell>
                 </TableRow>
               ))}
-              {!(faqs ?? []).length && (
-                <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">No FAQs yet</TableCell></TableRow>
+              {!filteredFaqs.length && (
+                <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">{search ? "No FAQs match your search" : "No FAQs yet"}</TableCell></TableRow>
               )}
             </TableBody>
           </Table>

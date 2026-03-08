@@ -85,7 +85,7 @@ const AdminCategories = () => {
             </tr>
           </thead>
           <tbody>
-            {(categoriesQuery.data ?? []).map((c: any) => (
+            {filteredCategories.map((c: any) => (
               <tr key={c.id} className="border-t border-border">
                 <td className="px-4 py-3">{c.display_order}</td>
                 <td className="px-4 py-3 font-medium">{c.name}</td>
@@ -99,7 +99,7 @@ const AdminCategories = () => {
           </tbody>
         </table>
         {categoriesQuery.isLoading && <p className="p-6 text-center text-muted-foreground">Loading...</p>}
-        {!categoriesQuery.isLoading && !(categoriesQuery.data?.length) && <p className="p-6 text-center text-muted-foreground">No categories yet.</p>}
+        {!categoriesQuery.isLoading && !filteredCategories.length && <p className="p-6 text-center text-muted-foreground">{search ? "No categories match your search." : "No categories yet."}</p>}
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>

@@ -112,7 +112,7 @@ const AdminPackages = () => {
             </tr>
           </thead>
           <tbody>
-            {packages.map((p: any) => (
+            {filteredPackages.map((p: any) => (
               <tr key={p.id} className="border-t border-border">
                 <td className="px-4 py-3">{p.display_order}</td>
                 <td className="px-4 py-3 font-medium">{p.name}</td>
@@ -128,7 +128,7 @@ const AdminPackages = () => {
           </tbody>
         </table>
         {packagesQuery.isLoading && <p className="p-6 text-center text-muted-foreground">Loading...</p>}
-        {!packagesQuery.isLoading && !packages.length && <p className="p-6 text-center text-muted-foreground">No packages yet.</p>}
+        {!packagesQuery.isLoading && !filteredPackages.length && <p className="p-6 text-center text-muted-foreground">{search ? "No packages match your search." : "No packages yet."}</p>}
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
