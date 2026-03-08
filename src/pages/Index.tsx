@@ -10,6 +10,8 @@ import useCategories from "@/hooks/useCategories";
 import ErrorBox from "@/components/ErrorBox";
 import heroImg from "@/assets/hero-lab.png";
 import JsonLd from "@/components/JsonLd";
+import { useFaqs } from "@/hooks/useFaqs";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
