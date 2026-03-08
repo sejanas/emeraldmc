@@ -74,6 +74,7 @@ const Navbar = () => {
             <Phone className="h-4 w-4" />
             {businessInfo.phone}
           </a>
+          <ThemeToggle />
           <Button asChild size="sm">
             <Link to="/book">Book Appointment</Link>
           </Button>
