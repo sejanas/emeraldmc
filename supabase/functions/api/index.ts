@@ -1310,6 +1310,29 @@ Deno.serve(async (req) => {
         return await handlePromoteUser(req);
     }
 
+    // Notifications
+    if (resource === "notifications") {
+      const user = await requireAuth(req);
+      const db = adminDb();
+      if (method === "GET") {
+        const limit = parseInt(url.searchParams.get("limit") || "50");
+        const unreadOnly = url.searchParams.get("unread") === "true";
+        let q = db.from("notifications").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(limit);
+        if (unreadOnly) q = q.eq("is_read", false);
+        const { data, error } = await q;
+        if (error) throw { message: error.message, status: 500 };
+        return json(data);
+      }
+      if (method === "PUT" && id === "read-all") {
+        await db.from("notifications").update({ is_read: true }).eq("user_id", user.id).eq("is_read", false);
+        return json({ success: true });
+      }
+      if (method === "PUT" && id) {
+        await db.from("notifications").update({ is_read: true }).eq("id", id).eq("user_id", user.id);
+        return json({ success: true });
+      }
+    }
+
     // Packages (special)
     if (resource === "packages") {
       if (method === "GET" && !id) return await handlePackagesList(url);
