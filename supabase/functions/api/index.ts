@@ -238,6 +238,15 @@ async function handleSignup(req: Request) {
     entity_name: name,
   });
 
+  // Notify super_admins about new signup
+  await notifyByRole(["super_admin"], {
+    title: "New User Signup",
+    message: `${name} (${clinic_role || "No role"}) has signed up and is awaiting approval`,
+    type: "user_signup",
+    entity_type: "user",
+    entity_id: userId,
+  });
+
   return json({ message: "Account created. Awaiting approval." }, 201);
 }
 
