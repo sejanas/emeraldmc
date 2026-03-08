@@ -18,7 +18,7 @@ const fadeUp = {
 
 const TestsPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(searchParams.get("search") || "");
   const [category, setCategory] = useState(searchParams.get("category") || "All");
   const testsQuery = useTests({ active: true });
   const categoriesQuery = useCategories();
