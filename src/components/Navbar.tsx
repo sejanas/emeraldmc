@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { businessInfo } from "@/data/siteData";
 import ThemeToggle from "@/components/ThemeToggle";
+import logo from "@/assets/logo.png";
 
 const navLinks = [
   { to: "/", label: "Home" },
