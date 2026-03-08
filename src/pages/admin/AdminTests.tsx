@@ -90,6 +90,7 @@ const AdminTests = () => {
               <th className="px-4 py-3 font-medium text-muted-foreground">#</th>
               <th className="px-4 py-3 font-medium text-muted-foreground">Name</th>
               <th className="px-4 py-3 font-medium text-muted-foreground">Category</th>
+              <th className="px-4 py-3 font-medium text-muted-foreground">MRP</th>
               <th className="px-4 py-3 font-medium text-muted-foreground">Price</th>
               <th className="px-4 py-3 font-medium text-muted-foreground">Active</th>
               <th className="px-4 py-3 font-medium text-muted-foreground text-right">Actions</th>
