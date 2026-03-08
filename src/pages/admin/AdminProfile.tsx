@@ -91,9 +91,9 @@ const AdminProfile = () => {
   const validate = useCallback((): FieldErrors => {
     const errs: FieldErrors = {};
     if (!name.trim()) errs.name = "Name is required";
-    const emailErrs = emails.map((e, i) => {
-      if (i === 0 && !e.trim()) return "Required";
-      if (e.trim() && !isValidEmail(e)) return "Invalid email";
+    // Additional emails are all optional, but must be valid if filled
+    const emailErrs = emails.map((e) => {
+      if (e.trim() && !isValidEmail(e)) return "Invalid email format";
       return "";
     });
     if (emailErrs.some(Boolean)) errs.emails = emailErrs;
