@@ -1,8 +1,17 @@
 import { Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import { Phone, Mail, Clock, MapPin, Facebook, Instagram } from "lucide-react";
 import { businessInfo } from "@/data/siteData";
 import VisitorTracker from "@/components/VisitorTracker";
 import useCategories from "@/hooks/useCategories";
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 16 },
+  visible: (i: number) => ({
+    opacity: 1, y: 0,
+    transition: { delay: i * 0.1, duration: 0.5 },
+  }),
+};
 
 const Footer = () => {
   const categoriesQuery = useCategories();
@@ -12,9 +21,9 @@ const Footer = () => {
     <footer className="border-t border-border bg-muted/50">
       <div className="container py-14">
         <div className="grid gap-10 md:grid-cols-4">
-          <div>
-            <Link to="/" className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={0}>
+            <Link to="/" className="flex items-center gap-2 group">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary transition-transform group-hover:scale-110">
                 <span className="text-xs font-bold text-primary-foreground">E</span>
               </div>
               <span className="font-display text-base font-semibold">Emerald Medical</span>
@@ -23,16 +32,16 @@ const Footer = () => {
               Trusted ISO Certified Diagnostic Lab in Sri Vijaya Puram, providing quality healthcare services.
             </p>
             <div className="mt-4 flex gap-3">
-              <a href="https://www.facebook.com/profile.php?id=61588640095513" target="_blank" rel="noopener noreferrer" className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:text-primary hover:border-primary" aria-label="Facebook">
+              <a href="https://www.facebook.com/profile.php?id=61588640095513" target="_blank" rel="noopener noreferrer" className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-all hover:text-primary hover:border-primary hover:scale-110" aria-label="Facebook">
                 <Facebook className="h-4 w-4" />
               </a>
-              <a href="https://www.instagram.com/shifa_health_care0/" target="_blank" rel="noopener noreferrer" className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:text-primary hover:border-primary" aria-label="Instagram">
+              <a href="https://www.instagram.com/shifa_health_care0/" target="_blank" rel="noopener noreferrer" className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-all hover:text-primary hover:border-primary hover:scale-110" aria-label="Instagram">
                 <Instagram className="h-4 w-4" />
               </a>
             </div>
-          </div>
+          </motion.div>
 
-          <div>
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={1}>
             <h4 className="mb-4 text-sm font-semibold text-foreground">Quick Links</h4>
             <nav className="flex flex-col gap-2.5">
               {[
@@ -45,18 +54,18 @@ const Footer = () => {
                 { to: "/faq", label: "FAQs" },
                 { to: "/contact", label: "Contact Us" },
               ].map((l) => (
-                <Link key={l.to} to={l.to} className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                <Link key={l.to} to={l.to} className="text-sm text-muted-foreground hover:text-primary hover:translate-x-1 transition-all">
                   {l.label}
                 </Link>
               ))}
             </nav>
-          </div>
+          </motion.div>
 
-          <div>
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={2}>
             <h4 className="mb-4 text-sm font-semibold text-foreground">Test Categories</h4>
             <nav className="flex flex-col gap-2.5">
               {categories.map((c: any) => (
-                <Link key={c.id} to={`/tests?category=${encodeURIComponent(c.name)}`} className="text-sm text-muted-foreground hover:text-primary transition-colors">
+                <Link key={c.id} to={`/tests?category=${encodeURIComponent(c.name)}`} className="text-sm text-muted-foreground hover:text-primary hover:translate-x-1 transition-all">
                   {c.name}
                 </Link>
               ))}
@@ -64,9 +73,9 @@ const Footer = () => {
                 <span className="text-sm text-muted-foreground">Loading...</span>
               )}
             </nav>
-          </div>
+          </motion.div>
 
-          <div>
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={3}>
             <h4 className="mb-4 text-sm font-semibold text-foreground">Contact Info</h4>
             <div className="flex flex-col gap-3">
               <a href={`tel:${businessInfo.phone}`} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary transition-colors">
@@ -82,13 +91,19 @@ const Footer = () => {
                 <MapPin className="h-4 w-4 shrink-0" /> {businessInfo.address}
               </div>
             </div>
-          </div>
+          </motion.div>
         </div>
 
-        <div className="mt-10 border-t border-border pt-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground">
+        <motion.div
+          initial={{ opacity: 0 }}
+          whileInView={{ opacity: 1 }}
+          viewport={{ once: true }}
+          transition={{ delay: 0.4 }}
+          className="mt-10 border-t border-border pt-6 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-muted-foreground"
+        >
           <span>© {new Date().getFullYear()} Emerald Medical Care. All rights reserved.</span>
           <VisitorTracker />
-        </div>
+        </motion.div>
       </div>
     </footer>
   );

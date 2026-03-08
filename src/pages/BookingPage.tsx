@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { Calendar, Clock, User, Phone, Mail, CheckCircle, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,8 +35,6 @@ const BookingPage = () => {
   const packages = packagesQuery.data?.packages ?? [];
 
   const today = new Date().toISOString().split("T")[0];
-
-  // Determine visual step
   const currentStep = form.date && form.slot ? 2 : form.name && form.phone ? 1 : 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -78,11 +76,20 @@ const BookingPage = () => {
   if (submitted) {
     return (
       <div className="container flex min-h-[60vh] items-center justify-center py-12">
-        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }}
-          className="max-w-md rounded-2xl border border-border bg-card p-10 text-center card-shadow">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-accent">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ type: "spring", stiffness: 200, damping: 20 }}
+          className="max-w-md rounded-2xl border border-border bg-card p-10 text-center card-shadow"
+        >
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.2, type: "spring", stiffness: 300 }}
+            className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-accent"
+          >
             <CheckCircle className="h-8 w-8 text-primary" />
-          </div>
+          </motion.div>
           <h2 className="font-display text-2xl font-bold text-foreground">Booking Submitted!</h2>
           <p className="mt-2 text-muted-foreground">Your appointment request is pending. We'll contact you at <strong>{form.phone}</strong> to confirm.</p>
           <Button className="mt-6" onClick={() => { setSubmitted(false); setForm({ name: "", phone: "", email: "", date: "", slot: "", testOrPackage: "", address: "", notes: "" }); }}>Book Another</Button>
@@ -101,21 +108,39 @@ const BookingPage = () => {
         {steps.map((s, i) => (
           <div key={s.label} className="flex flex-1 items-center">
             <div className="flex flex-col items-center gap-1">
-              <div className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-colors ${
-                i <= currentStep ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-muted-foreground"
-              }`}>
+              <motion.div
+                animate={{
+                  scale: i === currentStep ? 1.1 : 1,
+                  backgroundColor: i <= currentStep ? "hsl(var(--primary))" : "hsl(var(--card))",
+                }}
+                transition={{ type: "spring", stiffness: 300 }}
+                className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-colors ${
+                  i <= currentStep ? "border-primary text-primary-foreground" : "border-border text-muted-foreground"
+                }`}
+              >
                 <s.icon className="h-4 w-4" />
-              </div>
+              </motion.div>
               <span className={`text-xs font-medium ${i <= currentStep ? "text-primary" : "text-muted-foreground"}`}>{s.label}</span>
             </div>
             {i < steps.length - 1 && (
-              <div className={`mx-2 h-0.5 flex-1 rounded-full transition-colors ${i < currentStep ? "bg-primary" : "bg-border"}`} />
+              <motion.div
+                animate={{ scaleX: i < currentStep ? 1 : 0 }}
+                transition={{ duration: 0.4 }}
+                style={{ transformOrigin: "left" }}
+                className={`mx-2 h-0.5 flex-1 rounded-full ${i < currentStep ? "bg-primary" : "bg-border"}`}
+              />
             )}
           </div>
         ))}
       </div>
 
-      <form onSubmit={handleSubmit} className="mx-auto max-w-lg space-y-5 rounded-xl border border-border bg-card p-6 card-shadow md:p-8">
+      <motion.form
+        onSubmit={handleSubmit}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+        className="mx-auto max-w-lg space-y-5 rounded-xl border border-border bg-card p-6 card-shadow md:p-8"
+      >
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
             <Label htmlFor="name" className="flex items-center gap-1.5 mb-1.5"><User className="h-3.5 w-3.5" /> Full Name *</Label>
@@ -168,9 +193,11 @@ const BookingPage = () => {
           <Label htmlFor="notes" className="mb-1.5 block">Notes</Label>
           <Textarea id="notes" value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })} placeholder="Any special requirements..." rows={3} maxLength={500} />
         </div>
-        <Button type="submit" className="w-full" size="lg" disabled={loading}>{loading ? "Submitting..." : "Submit Booking Request"}</Button>
+        <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+          <Button type="submit" className="w-full" size="lg" disabled={loading}>{loading ? "Submitting..." : "Submit Booking Request"}</Button>
+        </motion.div>
         <p className="text-center text-xs text-muted-foreground">Bookings require confirmation. You'll be contacted shortly.</p>
-      </form>
+      </motion.form>
     </div>
   );
 };

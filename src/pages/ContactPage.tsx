@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { Phone, Mail, Clock, MapPin, Send, Facebook, Instagram } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,6 +10,14 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import { businessInfo } from "@/data/siteData";
 import { useToast } from "@/hooks/use-toast";
 import { isValidEmail } from "@/lib/validation";
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 20 },
+  visible: (i: number) => ({
+    opacity: 1, y: 0,
+    transition: { delay: i * 0.1, duration: 0.5, ease: "easeOut" },
+  }),
+};
 
 const contactDetails = [
   { icon: Phone, label: "Phone", value: businessInfo.phone, href: `tel:${businessInfo.phone}` },
@@ -36,10 +45,10 @@ const ContactPage = () => {
       <Breadcrumbs items={[{ label: "Contact Us" }]} />
       <SectionHeading title="Contact Us" subtitle="Get in touch with Emerald Medical Care" />
       <div className="grid gap-8 md:grid-cols-2 max-w-4xl mx-auto">
-        <div className="space-y-6">
-          {contactDetails.map((d) => (
-            <div key={d.label} className="flex items-start gap-4">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent">
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} className="space-y-6">
+          {contactDetails.map((d, i) => (
+            <motion.div key={d.label} variants={fadeUp} custom={i} className="flex items-start gap-4">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-accent transition-transform hover:scale-110">
                 <d.icon className="h-5 w-5 text-primary" />
               </div>
               <div>
@@ -52,25 +61,33 @@ const ContactPage = () => {
                   <p className="text-sm text-muted-foreground">{d.value}</p>
                 )}
               </div>
-            </div>
+            </motion.div>
           ))}
-          <div className="flex gap-3">
-            <a href="https://www.facebook.com/profile.php?id=61588640095513" target="_blank" rel="noopener noreferrer" className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:text-primary hover:border-primary" aria-label="Facebook">
+          <motion.div variants={fadeUp} custom={4} className="flex gap-3">
+            <a href="https://www.facebook.com/profile.php?id=61588640095513" target="_blank" rel="noopener noreferrer" className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-all hover:text-primary hover:border-primary hover:scale-110" aria-label="Facebook">
               <Facebook className="h-5 w-5" />
             </a>
-            <a href="https://www.instagram.com/shifa_health_care0/" target="_blank" rel="noopener noreferrer" className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:text-primary hover:border-primary" aria-label="Instagram">
+            <a href="https://www.instagram.com/shifa_health_care0/" target="_blank" rel="noopener noreferrer" className="flex h-10 w-10 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-all hover:text-primary hover:border-primary hover:scale-110" aria-label="Instagram">
               <Instagram className="h-5 w-5" />
             </a>
-          </div>
-          <div className="mt-4 overflow-hidden rounded-xl border border-border">
+          </motion.div>
+          <motion.div variants={fadeUp} custom={5} className="mt-4 overflow-hidden rounded-xl border border-border">
             <iframe
               src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15628.0!2d92.7365!3d11.6234!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2sSri+Vijaya+Puram!5e0!3m2!1sen!2sin"
               width="100%" height="220" style={{ border: 0 }} allowFullScreen loading="lazy"
               referrerPolicy="no-referrer-when-downgrade" title="Emerald Medical Care Location"
             />
-          </div>
-        </div>
-        <form onSubmit={handleSubmit} className="rounded-xl border border-border bg-card p-6 card-shadow space-y-4">
+          </motion.div>
+        </motion.div>
+
+        <motion.form
+          onSubmit={handleSubmit}
+          initial={{ opacity: 0, x: 30 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="rounded-xl border border-border bg-card p-6 card-shadow space-y-4"
+        >
           <div>
             <Label htmlFor="cname" className="mb-1.5 block">Name *</Label>
             <Input id="cname" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Your name" required maxLength={100} />
@@ -86,7 +103,7 @@ const ContactPage = () => {
           <Button type="submit" className="w-full">
             <Send className="mr-2 h-4 w-4" /> Send Message
           </Button>
-        </form>
+        </motion.form>
       </div>
     </div>
   );
