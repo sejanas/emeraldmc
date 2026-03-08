@@ -55,6 +55,10 @@ const AdminFaqs = () => {
         <h1 className="font-display text-2xl font-bold text-foreground">FAQs</h1>
         <Button onClick={openNew} size="sm"><Plus className="h-4 w-4 mr-1" /> Add FAQ</Button>
       </div>
+      <div className="relative mb-4 max-w-sm">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input placeholder="Search FAQs..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+      </div>
 
       {error && <ErrorBox title="Failed to load FAQs" message={String(error)} onRetry={refetch} />}
 
