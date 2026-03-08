@@ -36,6 +36,7 @@ import AdminProfile from "./pages/admin/AdminProfile";
 import LogoutPage from "./pages/LogoutPage";
 
 const App = () => (
+  <ThemeProvider>
   <TooltipProvider>
       <AuthProvider>
         <ConfirmProvider>
