@@ -106,6 +106,33 @@ async function logActivity(params: {
     });
 }
 
+// Helper to notify users by role
+async function notifyByRole(
+  roles: string[],
+  notification: { title: string; message?: string; type?: string; entity_type?: string; entity_id?: string }
+) {
+  const db = adminDb();
+  // Get all user_ids with matching roles from user_profiles
+  const { data: profiles } = await db
+    .from("user_profiles")
+    .select("user_id")
+    .in("role", roles)
+    .eq("status", "active");
+
+  if (!profiles?.length) return;
+
+  const rows = profiles.map((p: any) => ({
+    user_id: p.user_id,
+    title: notification.title,
+    message: notification.message || null,
+    type: notification.type || "info",
+    entity_type: notification.entity_type || null,
+    entity_id: notification.entity_id || null,
+  }));
+
+  await db.from("notifications").insert(rows);
+}
+
 // ── AUTH ──
 
 async function handleLogin(req: Request) {
