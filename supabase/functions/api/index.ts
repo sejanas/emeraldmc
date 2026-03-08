@@ -1,3 +1,4 @@
+// API Edge Function — v2
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
