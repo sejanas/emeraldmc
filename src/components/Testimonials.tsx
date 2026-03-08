@@ -15,20 +15,39 @@ const testimonials = [
   },
   {
     name: "Anand Verma",
-    rating: 4,
-    text: "Affordable pricing with no hidden charges. Home sample collection service was very convenient. Will definitely visit again.",
+    rating: 5,
+    text: "Very accurate reports and quick service. Home sample collection was very convenient. Will definitely visit again.",
   },
   {
     name: "Meena Devi",
     rating: 5,
-    text: "Got my health checkup package done here. Everything was smooth and well-organized. The reports were detailed and easy to understand.",
+    text: "Professional staff and clean laboratory. Got my health checkup package done here. Everything was smooth and well-organized.",
   },
 ];
+
+const avgRating = (testimonials.reduce((sum, t) => sum + t.rating, 0) / testimonials.length).toFixed(1);
 
 const Testimonials = () => (
   <section className="bg-section-gradient py-20">
     <div className="container">
       <SectionHeading title="What Our Patients Say" subtitle="Real feedback from our valued patients" />
+
+      {/* Rating Summary */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true }}
+        className="mx-auto mb-10 flex items-center justify-center gap-3"
+      >
+        <div className="flex gap-0.5">
+          {Array.from({ length: 5 }).map((_, j) => (
+            <Star key={j} className="h-5 w-5 fill-primary text-primary" />
+          ))}
+        </div>
+        <span className="font-display text-2xl font-bold text-foreground">{avgRating} / 5</span>
+        <span className="text-sm text-muted-foreground">• 120+ reviews</span>
+      </motion.div>
+
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 max-w-6xl mx-auto">
         {testimonials.map((t, i) => (
           <motion.div

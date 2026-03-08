@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { Phone } from "lucide-react";
+import { Phone, MessageCircle, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { businessInfo } from "@/data/siteData";
 
@@ -16,6 +16,9 @@ const MobileCTA = () => {
   }, []);
 
   if (pathname === "/book") return null;
+
+  const phone = businessInfo.phone.replace(/[^0-9]/g, "");
+  const waUrl = `https://wa.me/${phone}?text=${encodeURIComponent("Hello, I want to book a health test.")}`;
 
   return (
     <AnimatePresence>
@@ -34,9 +37,27 @@ const MobileCTA = () => {
             >
               <Phone className="h-4 w-4 text-primary" />
             </a>
+            <a
+              href={waUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border bg-card"
+              aria-label="WhatsApp"
+            >
+              <MessageCircle className="h-4 w-4 text-[#25D366]" />
+            </a>
             <Button asChild className="flex-1" size="sm">
-              <Link to="/book">Book Appointment</Link>
+              <Link to="/book">Book Test</Link>
             </Button>
+            <a
+              href={businessInfo.mapUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border bg-card"
+              aria-label="Get Directions"
+            >
+              <MapPin className="h-4 w-4 text-primary" />
+            </a>
           </div>
         </motion.div>
       )}
