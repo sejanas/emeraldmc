@@ -205,7 +205,7 @@ const Index = () => {
                       >
                         <div>
                           <p className="text-sm font-medium text-foreground">{t.name}</p>
-                          <p className="text-xs text-muted-foreground">{catName(t.category_id)} · {t.report_time}</p>
+                          <p className="text-xs text-muted-foreground">{getCatNames(t)} · {t.report_time}</p>
                         </div>
                         <span className="shrink-0 ml-3 text-right">
                           {t.original_price && t.original_price > t.price && (
