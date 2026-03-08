@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useFaqs, useFaqsMutations } from "@/hooks/useFaqs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Search } from "lucide-react";
 import RichTextEditor from "@/components/RichTextEditor";
 import { useConfirm } from "@/components/ConfirmDialog";
 import ErrorBox from "@/components/ErrorBox";
@@ -20,6 +20,12 @@ const AdminFaqs = () => {
   const [open, setOpen] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [form, setForm] = useState(empty);
+  const [search, setSearch] = useState("");
+  const filteredFaqs = useMemo(() => {
+    if (!search.trim()) return faqs ?? [];
+    const q = search.toLowerCase();
+    return (faqs ?? []).filter((f: any) => f.question.toLowerCase().includes(q));
+  }, [faqs, search]);
 
   const openNew = () => { setEditId(null); setForm(empty); setOpen(true); };
   const openEdit = (faq: any) => {
@@ -49,6 +55,10 @@ const AdminFaqs = () => {
         <h1 className="font-display text-2xl font-bold text-foreground">FAQs</h1>
         <Button onClick={openNew} size="sm"><Plus className="h-4 w-4 mr-1" /> Add FAQ</Button>
       </div>
+      <div className="relative mb-4 max-w-sm">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input placeholder="Search FAQs..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+      </div>
 
       {error && <ErrorBox title="Failed to load FAQs" message={String(error)} onRetry={refetch} />}
 
@@ -66,7 +76,7 @@ const AdminFaqs = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {(faqs ?? []).map((faq: any) => (
+              {filteredFaqs.map((faq: any) => (
                 <TableRow key={faq.id}>
                   <TableCell className="text-muted-foreground">{faq.display_order}</TableCell>
                   <TableCell className="font-medium text-foreground">{faq.question}</TableCell>
@@ -81,8 +91,8 @@ const AdminFaqs = () => {
                   </TableCell>
                 </TableRow>
               ))}
-              {!(faqs ?? []).length && (
-                <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">No FAQs yet</TableCell></TableRow>
+              {!filteredFaqs.length && (
+                <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">{search ? "No FAQs match your search" : "No FAQs yet"}</TableCell></TableRow>
               )}
             </TableBody>
           </Table>

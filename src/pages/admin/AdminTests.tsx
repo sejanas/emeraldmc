@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,7 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Search } from "lucide-react";
 import { useConfirm } from "@/components/ConfirmDialog";
 import useCategories from "@/hooks/useCategories";
 import useTests from "@/hooks/useTests";
@@ -25,6 +25,7 @@ const AdminTests = () => {
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<any>(null);
   const [saving, setSaving] = useState(false);
+  const [search, setSearch] = useState("");
   const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>([]);
   const [form, setForm] = useState({
     name: "", slug: "", description: "", price: 0, original_price: 0, sample_type: "Blood",
@@ -88,11 +89,25 @@ const AdminTests = () => {
   const getCatNames = (t: any) =>
     (t.categories ?? []).map((c: any) => c.name).join(", ") || "—";
 
+  const allTests = testsQuery.data ?? [];
+  const filteredTests = useMemo(() => {
+    if (!search.trim()) return allTests;
+    const q = search.toLowerCase();
+    return allTests.filter((t: any) =>
+      t.name.toLowerCase().includes(q) ||
+      (t.categories ?? []).some((c: any) => c.name.toLowerCase().includes(q))
+    );
+  }, [allTests, search]);
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="font-display text-2xl font-bold text-foreground">Tests</h1>
         <Button size="sm" onClick={openNew}><Plus className="mr-1 h-4 w-4" /> Add</Button>
+      </div>
+      <div className="relative mb-4 max-w-sm">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input placeholder="Search tests..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
       </div>
       <div className="rounded-xl border border-border bg-card overflow-x-auto">
         <table className="w-full text-sm">
@@ -108,7 +123,7 @@ const AdminTests = () => {
             </tr>
           </thead>
           <tbody>
-            {(testsQuery.data ?? []).map((t: any) => (
+            {filteredTests.map((t: any) => (
               <tr key={t.id} className="border-t border-border">
                 <td className="px-4 py-3">{t.display_order}</td>
                 <td className="px-4 py-3 font-medium">{t.name}</td>
@@ -125,7 +140,7 @@ const AdminTests = () => {
           </tbody>
         </table>
         {testsQuery.isLoading && <p className="p-6 text-center text-muted-foreground">Loading...</p>}
-        {!testsQuery.isLoading && !(testsQuery.data?.length) && <p className="p-6 text-center text-muted-foreground">No tests yet.</p>}
+        {!testsQuery.isLoading && !filteredTests.length && <p className="p-6 text-center text-muted-foreground">{search ? "No tests match your search." : "No tests yet."}</p>}
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>

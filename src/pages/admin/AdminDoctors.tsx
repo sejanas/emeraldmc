@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Search } from "lucide-react";
 import { useConfirm } from "@/components/ConfirmDialog";
 import ImageUpload from "@/components/ImageUpload";
 import useDoctors from "@/hooks/useDoctors";
@@ -70,14 +70,26 @@ const AdminDoctors = () => {
     }
   };
 
+  const [search, setSearch] = useState("");
+  const allDoctors = doctorsQuery.data ?? [];
+  const filteredDoctors = useMemo(() => {
+    if (!search.trim()) return allDoctors;
+    const q = search.toLowerCase();
+    return allDoctors.filter((d: any) => d.name.toLowerCase().includes(q) || d.specialization.toLowerCase().includes(q));
+  }, [allDoctors, search]);
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="font-display text-2xl font-bold text-foreground">Doctors</h1>
         <Button size="sm" onClick={openNew}><Plus className="mr-1 h-4 w-4" /> Add</Button>
       </div>
+      <div className="relative mb-4 max-w-sm">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input placeholder="Search doctors..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+      </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {(doctorsQuery.data ?? []).map((d: any) => (
+        {filteredDoctors.map((d: any) => (
           <div key={d.id} className="rounded-xl border border-border bg-card overflow-hidden card-shadow">
             {d.profile_image && <img src={d.profile_image} alt={d.name} className="aspect-square w-full object-cover" />}
             <div className="p-4">

@@ -1,10 +1,10 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Search } from "lucide-react";
 import { useConfirm } from "@/components/ConfirmDialog";
 import useCategories from "@/hooks/useCategories";
 import { useCreateCategory, useUpdateCategory, useDeleteCategory } from "@/hooks/useCategoriesMutations";
@@ -56,11 +56,23 @@ const AdminCategories = () => {
     }
   };
 
+  const [search, setSearch] = useState("");
+  const allCategories = categoriesQuery.data ?? [];
+  const filteredCategories = useMemo(() => {
+    if (!search.trim()) return allCategories;
+    const q = search.toLowerCase();
+    return allCategories.filter((c: any) => c.name.toLowerCase().includes(q) || c.slug.toLowerCase().includes(q));
+  }, [allCategories, search]);
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
         <h1 className="font-display text-2xl font-bold text-foreground">Test Categories</h1>
         <Button size="sm" onClick={openNew}><Plus className="mr-1 h-4 w-4" /> Add</Button>
+      </div>
+      <div className="relative mb-4 max-w-sm">
+        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <Input placeholder="Search categories..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
       </div>
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         <table className="w-full text-sm">
@@ -73,7 +85,7 @@ const AdminCategories = () => {
             </tr>
           </thead>
           <tbody>
-            {(categoriesQuery.data ?? []).map((c: any) => (
+            {filteredCategories.map((c: any) => (
               <tr key={c.id} className="border-t border-border">
                 <td className="px-4 py-3">{c.display_order}</td>
                 <td className="px-4 py-3 font-medium">{c.name}</td>
@@ -87,7 +99,7 @@ const AdminCategories = () => {
           </tbody>
         </table>
         {categoriesQuery.isLoading && <p className="p-6 text-center text-muted-foreground">Loading...</p>}
-        {!categoriesQuery.isLoading && !(categoriesQuery.data?.length) && <p className="p-6 text-center text-muted-foreground">No categories yet.</p>}
+        {!categoriesQuery.isLoading && !filteredCategories.length && <p className="p-6 text-center text-muted-foreground">{search ? "No categories match your search." : "No categories yet."}</p>}
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
