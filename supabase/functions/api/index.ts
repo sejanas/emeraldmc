@@ -339,19 +339,29 @@ async function crudCreate(
 ) {
   const { user } = await requireRole(req, ADMIN_ROLES);
   const body = await req.json();
+  const { category_ids, ...rest } = body;
   const slug =
-    body.slug ||
-    (body[nameField] || "")
+    rest.slug ||
+    (rest[nameField] || "")
       .toLowerCase()
       .replace(/\s+/g, "-")
       .replace(/[^a-z0-9-]/g, "");
 
   const { data, error } = await adminDb()
     .from(table)
-    .insert({ ...body, slug, created_by: user.id, updated_by: user.id })
+    .insert({ ...rest, slug, created_by: user.id, updated_by: user.id })
     .select()
     .single();
   if (error) throw { message: error.message, status: 500 };
+
+  // Sync test_category_map for tests
+  if (table === "tests" && category_ids?.length) {
+    const db = adminDb();
+    await db.from("test_category_map").delete().eq("test_id", data.id);
+    await db.from("test_category_map").insert(
+      category_ids.map((cid: string) => ({ test_id: data.id, category_id: cid }))
+    );
+  }
 
   await logActivity({
     event_type: `${entityType}.created`,
