@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { Search, Clock, Droplets, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import SectionHeading from "@/components/SectionHeading";
 import { api } from "@/lib/api";
 
@@ -17,6 +18,7 @@ const TestsPage = () => {
   const [category, setCategory] = useState("All");
   const [tests, setTests] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     Promise.all([
@@ -25,6 +27,7 @@ const TestsPage = () => {
     ]).then(([t, c]) => {
       setTests(t);
       setCategories(c);
+      setLoading(false);
     });
   }, []);
 
@@ -53,23 +56,39 @@ const TestsPage = () => {
         </div>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {filtered.map((t, i) => (
-          <motion.div key={t.id} initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={i}
-            className="rounded-xl border border-border bg-card p-5 transition-shadow hover:card-shadow-hover">
-            <span className="inline-block rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium text-primary">{catName(t.category_id)}</span>
-            <h3 className="mt-2 font-display text-lg font-semibold text-foreground">{t.name}</h3>
-            <p className="mt-1 text-sm text-muted-foreground">{t.description}</p>
-            <div className="mt-3 flex flex-wrap gap-3 text-xs text-muted-foreground">
-              <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {t.report_time}</span>
-              <span className="flex items-center gap-1"><Droplets className="h-3 w-3" /> {t.sample_type}</span>
-              {t.fasting_required && <span className="flex items-center gap-1 text-destructive"><AlertCircle className="h-3 w-3" /> Fasting</span>}
-            </div>
-            <div className="mt-4 flex items-center justify-between">
-              <span className="font-display text-xl font-bold text-primary">₹{t.price}</span>
-              <Button asChild size="sm"><Link to="/book">Book Now</Link></Button>
-            </div>
-          </motion.div>
-        ))}
+        {loading
+          ? Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="rounded-xl border border-border bg-card p-5">
+                <Skeleton className="inline-block rounded-full h-5 w-24" />
+                <div className="mt-2"><Skeleton className="h-5 w-3/4" /></div>
+                <div className="mt-2"><Skeleton className="h-3 w-full" /></div>
+                <div className="mt-3 flex flex-wrap gap-3 text-xs">
+                  <Skeleton className="h-3 w-16" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
+                <div className="mt-4 flex items-center justify-between">
+                  <Skeleton className="h-8 w-24" />
+                  <Skeleton className="h-8 w-20 rounded-full" />
+                </div>
+              </div>
+            ))
+          : filtered.map((t, i) => (
+              <motion.div key={t.id} initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={i}
+                className="rounded-xl border border-border bg-card p-5 transition-shadow hover:card-shadow-hover">
+                <span className="inline-block rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium text-primary">{catName(t.category_id)}</span>
+                <h3 className="mt-2 font-display text-lg font-semibold text-foreground">{t.name}</h3>
+                <p className="mt-1 text-sm text-muted-foreground">{t.description}</p>
+                <div className="mt-3 flex flex-wrap gap-3 text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {t.report_time}</span>
+                  <span className="flex items-center gap-1"><Droplets className="h-3 w-3" /> {t.sample_type}</span>
+                  {t.fasting_required && <span className="flex items-center gap-1 text-destructive"><AlertCircle className="h-3 w-3" /> Fasting</span>}
+                </div>
+                <div className="mt-4 flex items-center justify-between">
+                  <span className="font-display text-xl font-bold text-primary">₹{t.price}</span>
+                  <Button asChild size="sm"><Link to="/book">Book Now</Link></Button>
+                </div>
+              </motion.div>
+            ))}
       </div>
       {filtered.length === 0 && <p className="py-12 text-center text-muted-foreground">No tests found matching your criteria.</p>}
     </div>

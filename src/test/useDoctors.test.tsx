@@ -3,19 +3,13 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import useDoctors from '@/hooks/useDoctors';
 
-vi.mock('@/integrations/supabase/client', () => ({
-  supabase: {
-    from: () => {
-      const result = { data: [ { id: 'd1', name: 'Dr. One', specialization: 'Pathology', profile_image: null } ] };
-      const chainable: any = {
-        eq: () => chainable,
-        order: () => chainable,
-        limit: () => Promise.resolve(result),
-        then: (res: any) => Promise.resolve(result).then(res),
-      };
-      return { select: () => chainable };
-    }
-  }
+vi.mock('@/lib/api', () => ({
+  api: {
+    get: (_path: string) =>
+      Promise.resolve([
+        { id: 'd1', name: 'Dr. One', specialization: 'Pathology', profile_image: null },
+      ]),
+  },
 }));
 
 function TestComp() {
