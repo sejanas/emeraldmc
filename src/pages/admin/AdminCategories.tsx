@@ -80,7 +80,7 @@ const AdminCategories = () => {
                 <td className="px-4 py-3 text-muted-foreground">{c.slug}</td>
                 <td className="px-4 py-3 text-right space-x-1">
                   <Button variant="ghost" size="icon" onClick={() => openEdit(c)}><Pencil className="h-4 w-4" /></Button>
-                  <Button variant="ghost" size="icon" onClick={() => remove(c.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                  <Button variant="ghost" size="icon" onClick={() => remove(c.id, c.name)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                 </td>
               </tr>
             ))}

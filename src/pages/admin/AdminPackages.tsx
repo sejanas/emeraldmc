@@ -111,7 +111,7 @@ const AdminPackages = () => {
                 <td className="px-4 py-3">{p.is_popular ? "⭐" : "—"}</td>
                 <td className="px-4 py-3 text-right space-x-1">
                   <Button variant="ghost" size="icon" onClick={() => openEdit(p)}><Pencil className="h-4 w-4" /></Button>
-                  <Button variant="ghost" size="icon" onClick={() => remove(p.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                  <Button variant="ghost" size="icon" onClick={() => remove(p.id, p.name)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                 </td>
               </tr>
             ))}

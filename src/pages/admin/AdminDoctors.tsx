@@ -85,7 +85,7 @@ const AdminDoctors = () => {
               <p className="text-xs text-muted-foreground mt-1">{d.qualification}</p>
               <div className="mt-3 flex gap-1">
                 <Button variant="ghost" size="sm" onClick={() => openEdit(d)}><Pencil className="mr-1 h-3.5 w-3.5" /> Edit</Button>
-                <Button variant="ghost" size="sm" onClick={() => remove(d.id)}><Trash2 className="mr-1 h-3.5 w-3.5 text-destructive" /> Delete</Button>
+                <Button variant="ghost" size="sm" onClick={() => remove(d.id, d.name)}><Trash2 className="mr-1 h-3.5 w-3.5 text-destructive" /> Delete</Button>
               </div>
             </div>
           </div>

@@ -71,7 +71,7 @@ const AdminGallery = () => {
             <img src={g.image_url} alt={g.title} className="aspect-video w-full object-cover" />
             <div className="absolute inset-0 bg-foreground/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
               <Button variant="secondary" size="sm" onClick={() => openEdit(g)}><Pencil className="h-3.5 w-3.5" /></Button>
-              <Button variant="destructive" size="sm" onClick={() => remove(g.id)}><Trash2 className="h-3.5 w-3.5" /></Button>
+              <Button variant="destructive" size="sm" onClick={() => remove(g.id, g.title)}><Trash2 className="h-3.5 w-3.5" /></Button>
             </div>
             <div className="p-3">
               <p className="text-sm font-medium text-foreground">{g.title}</p>

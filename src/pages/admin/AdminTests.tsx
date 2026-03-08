@@ -105,7 +105,7 @@ const AdminTests = () => {
                 <td className="px-4 py-3">{t.is_active ? "✓" : "✗"}</td>
                 <td className="px-4 py-3 text-right space-x-1">
                   <Button variant="ghost" size="icon" onClick={() => openEdit(t)}><Pencil className="h-4 w-4" /></Button>
-                  <Button variant="ghost" size="icon" onClick={() => remove(t.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                  <Button variant="ghost" size="icon" onClick={() => remove(t.id, t.name)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                 </td>
               </tr>
             ))}
