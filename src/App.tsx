@@ -27,6 +27,7 @@ import AdminGallery from "./pages/admin/AdminGallery";
 import AdminBookings from "./pages/admin/AdminBookings";
 import AdminFaqs from "./pages/admin/AdminFaqs";
 import FaqPage from "./pages/FaqPage";
+import ReportsPage from "./pages/ReportsPage";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminActivityLogs from "./pages/admin/AdminActivityLogs";
 import AdminVisitors from "./pages/admin/AdminVisitors";
