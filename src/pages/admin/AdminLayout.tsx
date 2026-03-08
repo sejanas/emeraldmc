@@ -17,6 +17,7 @@ const AdminLayout = () => {
     { to: "/admin/gallery", icon: Image, label: "Gallery" },
     { to: "/admin/bookings", icon: CalendarCheck, label: "Bookings" },
     { to: "/admin/faqs", icon: HelpCircle, label: "FAQs" },
+    { to: "/admin/visitors", icon: Eye, label: "Visitors" },
     { to: "/admin/activity-logs", icon: Activity, label: "Activity Logs" },
     { to: "/admin/profile", icon: UserCircle, label: "My Profile" },
     ...(isSuperAdmin ? [{ to: "/admin/users", icon: Shield, label: "Users" }] : []),

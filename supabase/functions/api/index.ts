@@ -842,7 +842,8 @@ async function handleResubmit(req: Request) {
 async function handleDashboardCounts(req: Request) {
   await requireRole(req, ["admin", "super_admin"]);
   const db = adminDb();
-  const [cats, tests, pkgs, docs, gal, vis, bk, fq] = await Promise.all([
+  const todayStart = new Date().toISOString().slice(0, 10) + "T00:00:00Z";
+  const [cats, tests, pkgs, docs, gal, vis, bk, fq, visToday] = await Promise.all([
     db.from("test_categories").select("id", { count: "exact", head: true }),
     db.from("tests").select("id", { count: "exact", head: true }).is("deleted_at", null),
     db.from("packages").select("id", { count: "exact", head: true }).is("deleted_at", null),
@@ -851,7 +852,24 @@ async function handleDashboardCounts(req: Request) {
     db.from("visitors").select("id", { count: "exact", head: true }),
     db.from("bookings").select("id", { count: "exact", head: true }),
     db.from("faqs").select("id", { count: "exact", head: true }).is("deleted_at", null),
+    db.from("visitors").select("id", { count: "exact", head: true }).gte("visited_at", todayStart),
   ]);
+
+  // Top 5 locations
+  const { data: locData } = await db.from("visitors").select("country, region, city").not("country", "is", null).limit(1000);
+  const locAgg: Record<string, number> = {};
+  (locData ?? []).forEach((r: any) => {
+    const key = `${r.country || "Unknown"}||${r.region || ""}||${r.city || ""}`;
+    locAgg[key] = (locAgg[key] || 0) + 1;
+  });
+  const topLocations = Object.entries(locAgg)
+    .map(([key, count]) => {
+      const [country, region, city] = key.split("||");
+      return { country, region, city, count };
+    })
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 5);
+
   return json({
     categories: cats.count ?? 0,
     tests: tests.count ?? 0,
@@ -861,6 +879,8 @@ async function handleDashboardCounts(req: Request) {
     visitors: vis.count ?? 0,
     bookings: bk.count ?? 0,
     faqs: fq.count ?? 0,
+    visitors_today: visToday.count ?? 0,
+    top_locations: topLocations,
   });
 }
 
