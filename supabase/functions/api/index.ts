@@ -257,7 +257,7 @@ async function crudList(table: string, url: URL, softDelete = true) {
   const limit = url.searchParams.get("limit");
   if (limit) q = q.limit(parseInt(limit));
 
-  if (url.searchParams.get("active") === "true" && table === "tests")
+  if (url.searchParams.get("active") === "true" && (table === "tests" || table === "faqs"))
     q = q.eq("is_active", true);
 
   const { data, error } = await q;
