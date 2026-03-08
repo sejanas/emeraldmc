@@ -19,6 +19,7 @@ interface AuthContextType {
   profile: Profile | null;
   isAdmin: boolean;
   isSuperAdmin: boolean;
+  isBookingManager: boolean;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (data: {
@@ -119,8 +120,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const isAdmin =
-    profile?.role === "admin" || profile?.role === "super_admin";
+    !!profile && ["admin", "super_admin", "booking_manager"].includes(profile.role);
   const isSuperAdmin = profile?.role === "super_admin";
+  const isBookingManager = profile?.role === "booking_manager";
 
   return (
     <AuthContext.Provider
@@ -130,6 +132,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         profile,
         isAdmin,
         isSuperAdmin,
+        isBookingManager,
         loading,
         signIn,
         signUp,

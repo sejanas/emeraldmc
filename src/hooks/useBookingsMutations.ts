@@ -36,4 +36,40 @@ export function useUpdateBookingStatus() {
   });
 }
 
+export function useAddBookingUpdate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...body }: { id: string; [key: string]: any }) =>
+      api.post(`/bookings/${id}/updates`, body),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ['bookings'] });
+      qc.invalidateQueries({ queryKey: ['booking-updates'] });
+    },
+  });
+}
+
+export function useRescheduleBooking() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...body }: { id: string; preferred_date?: string; preferred_time?: string }) =>
+      api.put(`/bookings/${id}/reschedule`, body),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ['bookings'] });
+      qc.invalidateQueries({ queryKey: ['booking-updates'] });
+    },
+  });
+}
+
+export function useUpdateBookingInfo() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...body }: { id: string; patient_id?: string; extra_phones?: string[]; notes?: string }) =>
+      api.put(`/bookings/${id}/info`, body),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ['bookings'] });
+      qc.invalidateQueries({ queryKey: ['booking-updates'] });
+    },
+  });
+}
+
 export default useCreateBooking;

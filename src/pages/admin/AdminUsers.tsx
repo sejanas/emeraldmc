@@ -1,16 +1,23 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import useAdminUsers from "@/hooks/useAdminUsers";
 import useAdminUserAction from "@/hooks/useAdminUserAction";
 import { useConfirm } from "@/components/ConfirmDialog";
-import { CheckCircle, XCircle, ArrowUpCircle, Activity } from "lucide-react";
+import { CheckCircle, XCircle, Activity } from "lucide-react";
 
 const statusColors: Record<string, string> = {
   active: "bg-primary/10 text-primary",
   pending: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400",
   revoked: "bg-destructive/10 text-destructive",
   declined: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400",
+};
+
+const roleColors: Record<string, string> = {
+  booking_manager: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+  admin: "bg-accent text-accent-foreground",
+  super_admin: "bg-primary/10 text-primary",
 };
 
 const AdminUsers = () => {
@@ -73,16 +80,6 @@ const AdminUsers = () => {
     if (result.confirmed) action("revoke-user", user_id, "revoked");
   };
 
-  const handlePromote = async (user_id: string, name: string) => {
-    const result = await confirm({
-      title: "Promote to Super Admin",
-      description: `Promote "${name}" to Super Admin? This grants full administrative access including user management.`,
-      confirmLabel: "Promote",
-      variant: "destructive",
-    });
-    if (result.confirmed) action("promote-user", user_id, "promoted");
-  };
-
   const handleReactivate = async (user_id: string, name: string) => {
     const result = await confirm({
       title: "Reactivate User",
@@ -90,6 +87,18 @@ const AdminUsers = () => {
       confirmLabel: "Reactivate",
     });
     if (result.confirmed) action("approve-user", user_id, "reactivated");
+  };
+
+  const handleRoleChange = async (user_id: string, name: string, newRole: string) => {
+    const result = await confirm({
+      title: "Change Role",
+      description: `Change role for "${name}" to ${newRole}?`,
+      confirmLabel: "Change",
+      variant: "destructive",
+    });
+    if (result.confirmed) {
+      action("promote-user", { user_id, target_role: newRole }, `role changed to ${newRole}`);
+    }
   };
 
   return (
@@ -114,7 +123,22 @@ const AdminUsers = () => {
                 <td className="px-4 py-3 font-medium">{u.name}</td>
                 <td className="px-4 py-3 text-muted-foreground">{u.clinic_role || "—"}</td>
                 <td className="px-4 py-3">
-                  <span className="rounded-full bg-accent px-2 py-0.5 text-xs font-medium">{u.role}</span>
+                  {u.status === "active" && u.role !== "super_admin" ? (
+                    <Select value={u.role} onValueChange={(v) => handleRoleChange(u.user_id, u.name, v)}>
+                      <SelectTrigger className="h-7 w-[150px] text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="booking_manager">Booking Manager</SelectItem>
+                        <SelectItem value="admin">Admin</SelectItem>
+                        <SelectItem value="super_admin">Super Admin</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${roleColors[u.role] || "bg-accent text-accent-foreground"}`}>
+                      {u.role}
+                    </span>
+                  )}
                 </td>
                 <td className="px-4 py-3">
                   <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${statusColors[u.status] || "bg-muted text-muted-foreground"}`}>{u.status}</span>
@@ -145,14 +169,9 @@ const AdminUsers = () => {
                     </>
                   )}
                   {u.status === "active" && u.role !== "super_admin" && (
-                    <>
-                      <Button variant="ghost" size="sm" onClick={() => handlePromote(u.user_id, u.name)}>
-                        <ArrowUpCircle className="h-4 w-4 text-primary mr-1" /> Promote
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleRevoke(u.user_id, u.name)}>
-                        <XCircle className="h-4 w-4 text-destructive mr-1" /> Revoke
-                      </Button>
-                    </>
+                    <Button variant="ghost" size="sm" onClick={() => handleRevoke(u.user_id, u.name)}>
+                      <XCircle className="h-4 w-4 text-destructive mr-1" /> Revoke
+                    </Button>
                   )}
                   {u.status === "revoked" && (
                     <Button variant="ghost" size="sm" onClick={() => handleReactivate(u.user_id, u.name)}>
