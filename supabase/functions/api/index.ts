@@ -1020,14 +1020,12 @@ Deno.serve(async (req) => {
         const page = body.page || "/";
         const ua = body.user_agent || "unknown";
 
-        // Create a daily hash from user_agent + page to deduplicate
         const encoder = new TextEncoder();
-        const dateStr = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+        const dateStr = new Date().toISOString().slice(0, 10);
         const raw = `${ua}|${page}|${dateStr}`;
         const hashBuf = await crypto.subtle.digest("SHA-256", encoder.encode(raw));
         const ipHash = Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 32);
 
-        // Check if this visitor already tracked today for this page
         const db = adminDb();
         const todayStart = `${dateStr}T00:00:00Z`;
         const { count: existing } = await db
@@ -1037,11 +1035,32 @@ Deno.serve(async (req) => {
           .gte("visited_at", todayStart);
 
         if ((existing ?? 0) === 0) {
+          // Resolve geolocation from IP
+          let city: string | null = null;
+          let region: string | null = null;
+          let country: string | null = null;
+          try {
+            const forwarded = req.headers.get("x-forwarded-for") || req.headers.get("cf-connecting-ip") || "";
+            const ip = forwarded.split(",")[0].trim();
+            if (ip && ip !== "127.0.0.1" && ip !== "::1") {
+              const geoRes = await fetch(`https://ipapi.co/${ip}/json/`, { signal: AbortSignal.timeout(3000) });
+              if (geoRes.ok) {
+                const geo = await geoRes.json();
+                city = geo.city || null;
+                region = geo.region || null;
+                country = geo.country_name || null;
+              }
+            }
+          } catch { /* ignore geo failures */ }
+
           await db.from("visitors").insert({
             page,
             referrer: body.referrer || null,
             user_agent: ua,
             ip_hash: ipHash,
+            city,
+            region,
+            country,
           });
         }
         return json({ success: true });
@@ -1051,6 +1070,107 @@ Deno.serve(async (req) => {
           .from("visitors")
           .select("id", { count: "exact", head: true });
         return json({ count: count ?? 0 });
+      }
+
+      // Admin-only analytics endpoints
+      if (method === "GET" && id === "analytics") {
+        await requireRole(req, ["admin", "super_admin"]);
+        const db = adminDb();
+        let q = db.from("visitors").select("*").order("visited_at", { ascending: false });
+        const from = url.searchParams.get("from");
+        const to = url.searchParams.get("to");
+        if (from) q = q.gte("visited_at", from);
+        if (to) q = q.lte("visited_at", to);
+        const pageFilter = url.searchParams.get("page");
+        if (pageFilter) q = q.eq("page", pageFilter);
+        const countryFilter = url.searchParams.get("country");
+        if (countryFilter) q = q.eq("country", countryFilter);
+        const regionFilter = url.searchParams.get("region");
+        if (regionFilter) q = q.eq("region", regionFilter);
+        const cityFilter = url.searchParams.get("city");
+        if (cityFilter) q = q.eq("city", cityFilter);
+        const limit = parseInt(url.searchParams.get("limit") || "100");
+        const offset = parseInt(url.searchParams.get("offset") || "0");
+        q = q.range(offset, offset + limit - 1);
+        const { data, error, count } = await q;
+        if (error) throw { message: error.message, status: 500 };
+        return json({ data: data ?? [], total: count });
+      }
+
+      if (method === "GET" && id === "locations") {
+        await requireRole(req, ["admin", "super_admin"]);
+        const db = adminDb();
+        let q = db.from("visitors").select("country, region, city, visited_at");
+        const from = url.searchParams.get("from");
+        const to = url.searchParams.get("to");
+        if (from) q = q.gte("visited_at", from);
+        if (to) q = q.lte("visited_at", to);
+        const countryFilter = url.searchParams.get("country");
+        if (countryFilter) q = q.eq("country", countryFilter);
+        const { data, error } = await q;
+        if (error) throw { message: error.message, status: 500 };
+
+        // Aggregate in memory
+        const agg: Record<string, number> = {};
+        (data ?? []).forEach((r: any) => {
+          const key = `${r.country || "Unknown"}||${r.region || "Unknown"}||${r.city || "Unknown"}`;
+          agg[key] = (agg[key] || 0) + 1;
+        });
+        const locations = Object.entries(agg)
+          .map(([key, count]) => {
+            const [country, region, city] = key.split("||");
+            return { country, region, city, count };
+          })
+          .sort((a, b) => b.count - a.count);
+        return json(locations);
+      }
+
+      if (method === "GET" && id === "daily") {
+        await requireRole(req, ["admin", "super_admin"]);
+        const db = adminDb();
+        let q = db.from("visitors").select("visited_at, country, page");
+        const from = url.searchParams.get("from");
+        const to = url.searchParams.get("to");
+        if (from) q = q.gte("visited_at", from);
+        if (to) q = q.lte("visited_at", to);
+        const countryFilter = url.searchParams.get("country");
+        if (countryFilter) q = q.eq("country", countryFilter);
+        const pageFilter = url.searchParams.get("page");
+        if (pageFilter) q = q.eq("page", pageFilter);
+        const { data, error } = await q;
+        if (error) throw { message: error.message, status: 500 };
+
+        const daily: Record<string, number> = {};
+        (data ?? []).forEach((r: any) => {
+          const day = (r.visited_at || "").slice(0, 10);
+          if (day) daily[day] = (daily[day] || 0) + 1;
+        });
+        const result = Object.entries(daily)
+          .map(([date, count]) => ({ date, count }))
+          .sort((a, b) => a.date.localeCompare(b.date));
+        return json(result);
+      }
+
+      if (method === "GET" && id === "filters") {
+        await requireRole(req, ["admin", "super_admin"]);
+        const db = adminDb();
+        const { data } = await db.from("visitors").select("country, region, city, page");
+        const countries = new Set<string>();
+        const regions = new Set<string>();
+        const cities = new Set<string>();
+        const pages = new Set<string>();
+        (data ?? []).forEach((r: any) => {
+          if (r.country) countries.add(r.country);
+          if (r.region) regions.add(r.region);
+          if (r.city) cities.add(r.city);
+          if (r.page) pages.add(r.page);
+        });
+        return json({
+          countries: [...countries].sort(),
+          regions: [...regions].sort(),
+          cities: [...cities].sort(),
+          pages: [...pages].sort(),
+        });
       }
     }
 
