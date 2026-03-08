@@ -754,7 +754,7 @@ async function handleBookingUpdates(req: Request, id: string) {
 
 async function handleBookingReschedule(req: Request, id: string) {
   const { user } = await requireRole(req, BOOKING_ROLES);
-  const { preferred_date, preferred_time } = await req.json();
+  const { preferred_date, preferred_time, reason } = await req.json();
   if (!preferred_date && !preferred_time) return errRes("preferred_date or preferred_time required");
 
   const db = adminDb();
@@ -771,6 +771,7 @@ async function handleBookingReschedule(req: Request, id: string) {
     update_type: "date_change",
     old_value: `${booking.preferred_date} ${booking.preferred_time}`,
     new_value: `${preferred_date || booking.preferred_date} ${preferred_time || booking.preferred_time}`,
+    note: reason || null,
     created_by: user.id,
   });
 
@@ -780,6 +781,7 @@ async function handleBookingReschedule(req: Request, id: string) {
     entity_type: "booking",
     entity_id: id,
     entity_name: booking.patient_name,
+    changes: { reason: reason || null },
   });
   return json({ success: true });
 }
