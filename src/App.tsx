@@ -81,6 +81,7 @@ const App = () => (
               <Route path="visitors" element={<AdminVisitors />} />
               <Route path="activity-logs" element={<AdminActivityLogs />} />
               <Route path="profile" element={<AdminProfile />} />
+              <Route path="theme" element={<AdminThemeSettings />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>

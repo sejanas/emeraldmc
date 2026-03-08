@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { ArrowLeft } from "lucide-react";
 
 const AdminLogin = () => {
   const { signIn } = useAuth();
@@ -50,6 +51,14 @@ const AdminLogin = () => {
         <p className="text-center text-sm text-muted-foreground">
           Need an account? <Link to="/admin/signup" className="text-primary hover:underline">Sign up</Link>
         </p>
+        <div className="pt-2 border-t border-border">
+          <Button variant="ghost" size="sm" className="w-full gap-2 text-muted-foreground" asChild>
+            <Link to="/">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Website
+            </Link>
+          </Button>
+        </div>
       </form>
     </div>
   );
