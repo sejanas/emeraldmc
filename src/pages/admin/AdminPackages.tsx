@@ -64,8 +64,14 @@ const AdminPackages = () => {
     } finally { setSaving(false); }
   };
 
-  const remove = async (id: string) => {
-    if (!confirm("Delete this package?")) return;
+  const remove = async (id: string, name: string) => {
+    const result = await confirm({
+      title: "Delete Package",
+      description: `Are you sure you want to delete "${name}"?`,
+      confirmLabel: "Delete",
+      variant: "destructive",
+    });
+    if (!result.confirmed) return;
     try {
       await deletePackage.mutateAsync(id);
       toast({ title: "Package deleted" });
