@@ -31,11 +31,11 @@ const AdminLogin = () => {
     <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
       <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-5 rounded-xl border border-border bg-card p-8 card-shadow">
         <div className="text-center">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary">
-            <span className="text-lg font-bold text-primary-foreground">E</span>
+          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary p-1.5">
+            <img src={loginLogo} alt="Shifa's Mainland Healthcare" className="h-full w-full object-contain" />
           </div>
           <h1 className="font-display text-2xl font-bold text-foreground">Admin Login</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Emerald Medical Care</p>
+          <p className="mt-1 text-sm text-muted-foreground">Shifa's Mainland Healthcare</p>
         </div>
         <div>
           <Label htmlFor="email">Email</Label>
