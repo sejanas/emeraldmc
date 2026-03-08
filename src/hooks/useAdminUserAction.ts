@@ -4,7 +4,10 @@ import { api } from '@/lib/api';
 export default function useAdminUserAction(endpoint: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (user_id: string) => api.post(`/admin/${endpoint}`, { user_id }),
+    mutationFn: (payload: any) => {
+      const body = typeof payload === 'string' ? { user_id: payload } : payload;
+      return api.post(`/admin/${endpoint}`, body);
+    },
     onSettled: () => qc.invalidateQueries({ queryKey: ['admin', 'users'] }),
   });
 }

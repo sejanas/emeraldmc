@@ -631,6 +631,49 @@ async function handleApproveUser(req: Request) {
   return json({ success: true });
 }
 
+async function handleDeclineUser(req: Request) {
+  const { user } = await requireRole(req, ["super_admin"]);
+  const { user_id, decline_reason } = await req.json();
+  if (!user_id) return errRes("user_id required");
+
+  const db = adminDb();
+  const { data: profile } = await db
+    .from("user_profiles")
+    .select("name")
+    .eq("user_id", user_id)
+    .single();
+
+  // Try with audit columns first (requires migration 20260308120000).
+  // If columns don't exist yet, fall back to status-only update so the
+  // action always succeeds even before the migration is deployed.
+  const fullUpdate = await db
+    .from("user_profiles")
+    .update({ status: "declined", declined_by: user.id, declined_at: new Date().toISOString(), decline_reason: decline_reason ?? null })
+    .eq("user_id", user_id);
+
+  if (fullUpdate.error) {
+    // 42703 = undefined_column; fall back to bare status update
+    if (fullUpdate.error.code === "42703") {
+      const { error: fallbackError } = await db
+        .from("user_profiles")
+        .update({ status: "declined" })
+        .eq("user_id", user_id);
+      if (fallbackError) throw { message: fallbackError.message, status: 500 };
+    } else {
+      throw { message: fullUpdate.error.message, status: 500 };
+    }
+  }
+
+  await logActivity({
+    event_type: "admin.declined",
+    user_id: user.id,
+    entity_type: "user",
+    entity_id: user_id,
+    entity_name: profile?.name,
+  });
+  return json({ success: true });
+}
+
 async function handleRevokeUser(req: Request) {
   const { user } = await requireRole(req, ["super_admin"]);
   const { user_id } = await req.json();
@@ -699,14 +742,98 @@ async function handleActivityLogs(req: Request, url: URL) {
     .order("created_at", { ascending: false })
     .limit(200);
 
-  if (profile.role !== "super_admin") q = q.eq("user_id", user.id);
+  // Super admins can filter by a specific user_id; regular admins see only own logs
+  const filterUserId = url.searchParams.get("user_id");
+  if (profile.role === "super_admin" && filterUserId) {
+    q = q.eq("user_id", filterUserId);
+  } else if (profile.role !== "super_admin") {
+    q = q.eq("user_id", user.id);
+  }
 
   const entityType = url.searchParams.get("entity_type");
   if (entityType) q = q.eq("entity_type", entityType);
 
+  const eventType = url.searchParams.get("event_type");
+  if (eventType) q = q.eq("event_type", eventType);
+
   const { data, error } = await q;
   if (error) throw { message: error.message, status: 500 };
   return json(data);
+}
+
+async function handleUpdateProfile(req: Request) {
+  const user = await requireAuth(req);
+  const { name, clinic_role, phones, emails } = await req.json();
+
+  if (!name?.trim()) return errRes("Name is required");
+
+  const db = adminDb();
+  const { error: profileError } = await db
+    .from("user_profiles")
+    .update({ name: name.trim(), clinic_role: clinic_role?.trim() || null })
+    .eq("user_id", user.id);
+  if (profileError) throw { message: profileError.message, status: 500 };
+
+  if (Array.isArray(phones)) {
+    await db.from("user_phones").delete().eq("user_id", user.id);
+    const validPhones = phones.filter((p: string) => p?.trim());
+    if (validPhones.length) {
+      await db.from("user_phones").insert(validPhones.map((p: string) => ({ user_id: user.id, phone: p.trim() })));
+    }
+  }
+
+  if (Array.isArray(emails)) {
+    const validEmails = emails.filter((e: string) => e?.trim());
+    if (!validEmails.length) return errRes("At least one email is required");
+    await db.from("user_emails").delete().eq("user_id", user.id);
+    await db.from("user_emails").insert(validEmails.map((e: string) => ({ user_id: user.id, email: e.trim() })));
+  }
+
+  await logActivity({
+    event_type: "user.profile_updated",
+    user_id: user.id,
+    entity_type: "user",
+    entity_id: user.id,
+    entity_name: name.trim(),
+  });
+  return json({ success: true });
+}
+
+async function handleResubmit(req: Request) {
+  const user = await requireAuth(req);
+  const db = adminDb();
+  const { data: profile } = await db
+    .from("user_profiles")
+    .select("status, declined_at")
+    .eq("user_id", user.id)
+    .single();
+
+  if (!profile) return errRes("Profile not found", 404);
+  if (profile.status !== "declined") return errRes("Account is not in declined state");
+
+  // Enforce 5-minute cooling period from declined_at (if column exists)
+  if (profile.declined_at) {
+    const declinedAt = new Date(profile.declined_at).getTime();
+    const cooldownMs = 5 * 60 * 1000;
+    if (Date.now() - declinedAt < cooldownMs) {
+      const remainingSec = Math.ceil((declinedAt + cooldownMs - Date.now()) / 1000);
+      return errRes(`Please wait ${remainingSec} seconds before resubmitting`, 429);
+    }
+  }
+
+  const { error } = await db
+    .from("user_profiles")
+    .update({ status: "pending" })
+    .eq("user_id", user.id);
+  if (error) throw { message: error.message, status: 500 };
+
+  await logActivity({
+    event_type: "user.resubmitted",
+    user_id: user.id,
+    entity_type: "user",
+    entity_id: user.id,
+  });
+  return json({ success: true });
 }
 
 // ── DASHBOARD ──
@@ -767,6 +894,8 @@ Deno.serve(async (req) => {
       if (id === "login" && method === "POST") return await handleLogin(req);
       if (id === "signup" && method === "POST") return await handleSignup(req);
       if (id === "me" && method === "GET") return await handleMe(req);
+      if (id === "profile" && method === "PUT") return await handleUpdateProfile(req);
+      if (id === "resubmit" && method === "POST") return await handleResubmit(req);
     }
 
     // Dashboard
@@ -787,6 +916,8 @@ Deno.serve(async (req) => {
       }
       if (id === "approve-user" && method === "POST")
         return await handleApproveUser(req);
+      if (id === "decline-user" && method === "POST")
+        return await handleDeclineUser(req);
       if (id === "revoke-user" && method === "POST")
         return await handleRevokeUser(req);
       if (id === "promote-user" && method === "POST")

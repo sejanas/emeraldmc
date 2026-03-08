@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
+import { ConfirmProvider } from "@/components/ConfirmDialog";
 import AdminRoute from "@/components/AdminRoute";
 import Layout from "@/components/Layout";
 import Index from "./pages/Index";
@@ -26,11 +27,13 @@ import AdminGallery from "./pages/admin/AdminGallery";
 import AdminBookings from "./pages/admin/AdminBookings";
 import AdminUsers from "./pages/admin/AdminUsers";
 import AdminActivityLogs from "./pages/admin/AdminActivityLogs";
+import AdminProfile from "./pages/admin/AdminProfile";
 import LogoutPage from "./pages/LogoutPage";
 
 const App = () => (
   <TooltipProvider>
       <AuthProvider>
+        <ConfirmProvider>
         <Toaster />
         <Sonner />
         <BrowserRouter>
@@ -58,10 +61,12 @@ const App = () => (
               <Route path="bookings" element={<AdminBookings />} />
               <Route path="users" element={<AdminUsers />} />
               <Route path="activity-logs" element={<AdminActivityLogs />} />
+              <Route path="profile" element={<AdminProfile />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
+        </ConfirmProvider>
       </AuthProvider>
   </TooltipProvider>
 );
