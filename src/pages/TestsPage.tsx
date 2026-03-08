@@ -5,7 +5,9 @@ import { Search, Clock, Droplets, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import SectionHeading from "@/components/SectionHeading";
+import Breadcrumbs from "@/components/Breadcrumbs";
 import useCategories from "@/hooks/useCategories";
 import useTests from "@/hooks/useTests";
 
@@ -21,7 +23,6 @@ const TestsPage = () => {
   const testsQuery = useTests({ active: true });
   const categoriesQuery = useCategories();
 
-  // Sync category from URL params
   useEffect(() => {
     const urlCat = searchParams.get("category");
     if (urlCat) setCategory(urlCat);
@@ -50,20 +51,31 @@ const TestsPage = () => {
 
   return (
     <div className="container py-12">
+      <Breadcrumbs items={[{ label: "Diagnostic Tests" }]} />
       <SectionHeading title="Diagnostic Tests" subtitle="Browse our comprehensive range of diagnostic tests with transparent pricing" />
-      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center">
+
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <Input placeholder="Search tests..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
         </div>
-        <div className="flex flex-wrap gap-2">
-          {["All", ...categories.map((c: any) => c.name)].map((c) => (
-            <button key={c} onClick={() => handleCategoryChange(c)}
-              className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${category === c ? "bg-primary text-primary-foreground" : "bg-accent text-accent-foreground hover:bg-accent/80"}`}
-            >{c}</button>
-          ))}
+        <div className="flex items-center gap-2 flex-wrap">
+          {!testsQuery.isLoading && (
+            <Badge variant="secondary" className="text-xs">
+              Showing {filtered.length} test{filtered.length !== 1 ? "s" : ""}
+            </Badge>
+          )}
         </div>
       </div>
+
+      <div className="mb-6 flex flex-wrap gap-2">
+        {["All", ...categories.map((c: any) => c.name)].map((c) => (
+          <button key={c} onClick={() => handleCategoryChange(c)}
+            className={`rounded-full px-3 py-1.5 text-xs font-medium transition-colors ${category === c ? "bg-primary text-primary-foreground" : "bg-accent text-accent-foreground hover:bg-accent/80"}`}
+          >{c}</button>
+        ))}
+      </div>
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {testsQuery.isLoading
           ? Array.from({ length: 6 }).map((_, i) => (
@@ -83,7 +95,7 @@ const TestsPage = () => {
             ))
             : filtered.map((t: any, i: number) => (
               <motion.div key={t.id} initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={i}
-                className="rounded-xl border border-border bg-card p-5 transition-shadow hover:card-shadow-hover">
+                className="rounded-xl border border-border bg-card p-5 transition-all hover:card-shadow-hover hover:scale-[1.01]">
                 <span className="inline-block rounded-full bg-accent px-2.5 py-0.5 text-xs font-medium text-primary">{catName(t.category_id)}</span>
                 <h3 className="mt-2 font-display text-lg font-semibold text-foreground">{t.name}</h3>
                 <p className="mt-1 text-sm text-muted-foreground">{t.description}</p>
@@ -99,7 +111,13 @@ const TestsPage = () => {
               </motion.div>
             ))}
       </div>
-      {filtered.length === 0 && <p className="py-12 text-center text-muted-foreground">No tests found matching your criteria.</p>}
+      {!testsQuery.isLoading && filtered.length === 0 && (
+        <div className="py-16 text-center">
+          <Search className="mx-auto h-12 w-12 text-muted-foreground/30" />
+          <p className="mt-4 text-lg font-medium text-muted-foreground">No tests found</p>
+          <p className="text-sm text-muted-foreground">Try adjusting your search or filter criteria</p>
+        </div>
+      )}
     </div>
   );
 };

@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import SectionHeading from "@/components/SectionHeading";
+import Breadcrumbs from "@/components/Breadcrumbs";
 import { businessInfo } from "@/data/siteData";
 import { useToast } from "@/hooks/use-toast";
 import { isValidEmail } from "@/lib/validation";
@@ -32,6 +33,7 @@ const ContactPage = () => {
 
   return (
     <div className="container py-12">
+      <Breadcrumbs items={[{ label: "Contact Us" }]} />
       <SectionHeading title="Contact Us" subtitle="Get in touch with Emerald Medical Care" />
       <div className="grid gap-8 md:grid-cols-2 max-w-4xl mx-auto">
         <div className="space-y-6">
@@ -52,21 +54,14 @@ const ContactPage = () => {
               </div>
             </div>
           ))}
-
           <div className="mt-4 overflow-hidden rounded-xl border border-border">
             <iframe
               src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15628.0!2d92.7365!3d11.6234!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2sSri+Vijaya+Puram!5e0!3m2!1sen!2sin"
-              width="100%"
-              height="220"
-              style={{ border: 0 }}
-              allowFullScreen
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              title="Emerald Medical Care Location"
+              width="100%" height="220" style={{ border: 0 }} allowFullScreen loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade" title="Emerald Medical Care Location"
             />
           </div>
         </div>
-
         <form onSubmit={handleSubmit} className="rounded-xl border border-border bg-card p-6 card-shadow space-y-4">
           <div>
             <Label htmlFor="cname" className="mb-1.5 block">Name *</Label>
@@ -74,17 +69,7 @@ const ContactPage = () => {
           </div>
           <div>
             <Label htmlFor="cemail" className="mb-1.5 block">Email *</Label>
-            <Input
-              id="cemail"
-              type="email"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              placeholder="your@email.com"
-              required
-              maxLength={255}
-              pattern="[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*"
-              title="Please enter a valid email address"
-            />
+            <Input id="cemail" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="your@email.com" required maxLength={255} />
           </div>
           <div>
             <Label htmlFor="cmsg" className="mb-1.5 block">Message *</Label>

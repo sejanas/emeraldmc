@@ -114,6 +114,15 @@
   }
 }
 
+/* WhatsApp pulse animation */
+@keyframes whatsapp-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.5); }
+  50% { box-shadow: 0 0 0 12px rgba(37, 211, 102, 0); }
+}
+.animate-whatsapp-pulse {
+  animation: whatsapp-pulse 2s ease-in-out 3;
+}
+
 /* react-phone-input-2 theme overrides */
 .react-tel-input .form-control {
   background: hsl(var(--background)) !important;

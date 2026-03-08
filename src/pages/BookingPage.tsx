@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import SectionHeading from "@/components/SectionHeading";
+import Breadcrumbs from "@/components/Breadcrumbs";
 import { bookingSlots } from "@/data/siteData";
 import useTests from "@/hooks/useTests";
 import usePackages from "@/hooks/usePackages";
@@ -14,6 +15,12 @@ import { useCreateBooking } from "@/hooks/useBookingsMutations";
 import { useToast } from "@/hooks/use-toast";
 import PhoneInputField from "@/components/PhoneInputField";
 import { isValidEmail, isValidPhone } from "@/lib/validation";
+
+const steps = [
+  { label: "Patient Details", icon: User },
+  { label: "Schedule", icon: Calendar },
+  { label: "Confirm", icon: CheckCircle },
+];
 
 const BookingPage = () => {
   const { toast } = useToast();
@@ -28,6 +35,9 @@ const BookingPage = () => {
   const packages = packagesQuery.data?.packages ?? [];
 
   const today = new Date().toISOString().split("T")[0];
+
+  // Determine visual step
+  const currentStep = form.date && form.slot ? 2 : form.name && form.phone ? 1 : 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,7 +93,28 @@ const BookingPage = () => {
 
   return (
     <div className="container py-12">
+      <Breadcrumbs items={[{ label: "Book Appointment" }]} />
       <SectionHeading title="Book an Appointment" subtitle="Select your preferred date, time, and test." />
+
+      {/* Step Progress */}
+      <div className="mx-auto mb-8 flex max-w-lg items-center justify-between">
+        {steps.map((s, i) => (
+          <div key={s.label} className="flex flex-1 items-center">
+            <div className="flex flex-col items-center gap-1">
+              <div className={`flex h-10 w-10 items-center justify-center rounded-full border-2 transition-colors ${
+                i <= currentStep ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-muted-foreground"
+              }`}>
+                <s.icon className="h-4 w-4" />
+              </div>
+              <span className={`text-xs font-medium ${i <= currentStep ? "text-primary" : "text-muted-foreground"}`}>{s.label}</span>
+            </div>
+            {i < steps.length - 1 && (
+              <div className={`mx-2 h-0.5 flex-1 rounded-full transition-colors ${i < currentStep ? "bg-primary" : "bg-border"}`} />
+            )}
+          </div>
+        ))}
+      </div>
+
       <form onSubmit={handleSubmit} className="mx-auto max-w-lg space-y-5 rounded-xl border border-border bg-card p-6 card-shadow md:p-8">
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
@@ -97,16 +128,7 @@ const BookingPage = () => {
         </div>
         <div>
           <Label htmlFor="email" className="flex items-center gap-1.5 mb-1.5"><Mail className="h-3.5 w-3.5" /> Email</Label>
-          <Input
-            id="email"
-            type="email"
-            value={form.email}
-            onChange={(e) => setForm({ ...form, email: e.target.value })}
-            placeholder="your@email.com"
-            maxLength={255}
-            pattern="[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*"
-            title="Please enter a valid email address"
-          />
+          <Input id="email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="your@email.com" maxLength={255} />
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>

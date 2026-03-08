@@ -1,6 +1,7 @@
 import { useFaqs } from "@/hooks/useFaqs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import SectionHeading from "@/components/SectionHeading";
+import Breadcrumbs from "@/components/Breadcrumbs";
 import ErrorBox from "@/components/ErrorBox";
 
 const FaqPage = () => {
@@ -8,6 +9,7 @@ const FaqPage = () => {
 
   return (
     <section className="container py-16">
+      <Breadcrumbs items={[{ label: "FAQs" }]} />
       <SectionHeading title="Frequently Asked Questions" subtitle="Find answers to common questions about our services" />
 
       {error && <ErrorBox title="Failed to load FAQs" message={String(error)} onRetry={refetch} />}
@@ -31,10 +33,7 @@ const FaqPage = () => {
               {faq.question}
             </AccordionTrigger>
             <AccordionContent>
-              <div
-                className="prose prose-sm dark:prose-invert max-w-none"
-                dangerouslySetInnerHTML={{ __html: faq.answer }}
-              />
+              <div className="prose prose-sm dark:prose-invert max-w-none" dangerouslySetInnerHTML={{ __html: faq.answer }} />
             </AccordionContent>
           </AccordionItem>
         ))}
