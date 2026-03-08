@@ -84,6 +84,7 @@ const AdminLayout = () => {
               ))}
             </div>
           </div>
+          <NotificationBell />
           <ThemeToggle />
           <Button variant="ghost" size="icon" onClick={signOut} className="shrink-0">
             <LogOut className="h-4 w-4" />
