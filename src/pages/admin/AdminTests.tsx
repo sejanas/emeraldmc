@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import { useConfirm } from "@/components/ConfirmDialog";
 import useCategories from "@/hooks/useCategories";
 import useTests from "@/hooks/useTests";
 import { useCreateTest, useUpdateTest, useDeleteTest } from "@/hooks/useTests";

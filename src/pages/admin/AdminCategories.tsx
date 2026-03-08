@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2 } from "lucide-react";
+import { useConfirm } from "@/components/ConfirmDialog";
 import useCategories from "@/hooks/useCategories";
 import { useCreateCategory, useUpdateCategory, useDeleteCategory } from "@/hooks/useCategoriesMutations";
 
