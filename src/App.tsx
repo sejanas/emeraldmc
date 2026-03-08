@@ -79,6 +79,7 @@ const App = () => (
         </ConfirmProvider>
       </AuthProvider>
   </TooltipProvider>
+  </ThemeProvider>
 );
 
 export default App;
