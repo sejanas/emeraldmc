@@ -23,10 +23,10 @@ const Footer = () => {
               Trusted ISO Certified Diagnostic Lab in Sri Vijaya Puram, providing quality healthcare services.
             </p>
             <div className="mt-4 flex gap-3">
-              <a href="#" className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:text-primary hover:border-primary" aria-label="Facebook">
+              <a href="https://www.facebook.com/profile.php?id=61588640095513" target="_blank" rel="noopener noreferrer" className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:text-primary hover:border-primary" aria-label="Facebook">
                 <Facebook className="h-4 w-4" />
               </a>
-              <a href="#" className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:text-primary hover:border-primary" aria-label="Instagram">
+              <a href="https://www.instagram.com/shifa_health_care0/" target="_blank" rel="noopener noreferrer" className="flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-card text-muted-foreground transition-colors hover:text-primary hover:border-primary" aria-label="Instagram">
                 <Instagram className="h-4 w-4" />
               </a>
             </div>
