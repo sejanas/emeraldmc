@@ -349,7 +349,7 @@ async function crudUpdate(
     user_id: user.id,
     entity_type: entityType,
     entity_id: id,
-    entity_name: data[nameField],
+    entity_name: (data as Record<string, any>)[nameField],
     changes: Object.keys(changes).length ? changes : undefined,
   });
   return json(data);
