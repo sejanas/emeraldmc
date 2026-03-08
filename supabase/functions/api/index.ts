@@ -1369,7 +1369,10 @@ Deno.serve(async (req) => {
     // Bookings
     if (resource === "bookings") {
       if (method === "POST" && !id) return await handleBookingCreate(req);
-      // Patient history
+      // Public booking tracking (no auth required)
+      if (method === "GET" && id === "track")
+        return await handlePublicBookingTrack(url);
+      // Patient history (admin)
       if (method === "GET" && id === "patient-history")
         return await handlePatientHistory(req, url);
       // Bulk status update (before individual ID routes)
