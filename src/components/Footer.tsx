@@ -39,6 +39,7 @@ const Footer = () => {
                 { to: "/tests", label: "Our Tests" },
                 { to: "/packages", label: "Health Packages" },
                 { to: "/doctors", label: "Our Doctors" },
+                { to: "/reports", label: "Download Reports" },
                 { to: "/book", label: "Book Appointment" },
                 { to: "/gallery", label: "Gallery" },
                 { to: "/faq", label: "FAQs" },
