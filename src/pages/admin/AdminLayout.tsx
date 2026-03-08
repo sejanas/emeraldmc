@@ -4,6 +4,7 @@ import { LayoutDashboard, List, FlaskConical, Package, Users, Image, LogOut, Cal
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import ThemeToggle from "@/components/ThemeToggle";
+import NotificationBell from "@/components/NotificationBell";
 
 const AdminLayout = () => {
   const { signOut, profile, isSuperAdmin, isBookingManager } = useAuth();
