@@ -435,9 +435,9 @@ const Index = () => {
           )}
           {packages.map((pkg: any, i: number) => (
             <motion.div key={pkg.id} initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={i}
-              className={`relative rounded-xl border p-6 transition-all hover:card-shadow-hover hover:scale-[1.02] ${pkg.is_popular ? "border-primary bg-accent/50" : "border-border bg-card"}`}>
+              className={`relative flex flex-col rounded-xl border p-6 transition-all hover:card-shadow-hover hover:scale-[1.02] ${pkg.is_popular ? "border-primary ring-2 ring-primary/20 bg-accent/50" : "border-border bg-card"}`}>
               {pkg.is_popular && (
-                <span className="absolute -top-3 left-4 inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground"><Star className="h-3 w-3" /> Popular</span>
+                <span className="absolute -top-3 left-4 inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground shadow-sm"><Star className="h-3 w-3" /> Popular</span>
               )}
               <h3 className="font-display text-lg font-semibold text-foreground">{pkg.name}</h3>
               <p className="mt-1 text-sm text-muted-foreground">{pkg.description}</p>
@@ -445,7 +445,7 @@ const Index = () => {
               {pkg.discounted_price && pkg.discounted_price < pkg.original_price && (
                 <p className="text-sm text-muted-foreground line-through">₹{pkg.original_price}</p>
               )}
-              <ul className="mt-4 space-y-1.5">
+              <ul className="mt-4 flex-1 space-y-1.5">
                 {(testNames[pkg.id] ?? []).map((t: string) => (
                   <li key={t} className="flex items-center gap-2 text-xs text-muted-foreground"><CheckCircle className="h-3.5 w-3.5 text-primary shrink-0" /> {t}</li>
                 ))}
