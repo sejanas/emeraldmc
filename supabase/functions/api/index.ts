@@ -487,11 +487,13 @@ async function handlePackagesList(url: URL) {
     .from("package_tests")
     .select("package_id, test_id, tests(name)");
   const testNames: Record<string, string[]> = {};
+  const testIds: Record<string, string[]> = {};
   (pt ?? []).forEach((r: any) => {
     (testNames[r.package_id] ??= []).push(r.tests?.name ?? "");
+    (testIds[r.package_id] ??= []).push(r.test_id);
   });
 
-  return json({ packages, testNames });
+  return json({ packages, testNames, testIds });
 }
 
 async function handlePackageSave(req: Request, id?: string) {

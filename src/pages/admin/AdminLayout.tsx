@@ -1,10 +1,11 @@
 import { NavLink, Outlet } from "react-router-dom";
 import ErrorBoundary from "@/components/ErrorBoundary";
-import { LayoutDashboard, List, FlaskConical, Package, Users, Image, LogOut, CalendarCheck, Shield, Activity, UserCircle, HelpCircle, Eye, Palette } from "lucide-react";
+import { LayoutDashboard, List, FlaskConical, Package, Users, Image, LogOut, CalendarCheck, Shield, Activity, UserCircle, HelpCircle, Eye, Palette, FileText, Award, Settings } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import ThemeToggle from "@/components/ThemeToggle";
 import NotificationBell from "@/components/NotificationBell";
+import SessionTimeoutDialog from "@/components/SessionTimeoutDialog";
 
 const AdminLayout = () => {
   const { signOut, profile, isSuperAdmin, isBookingManager } = useAuth();
@@ -17,12 +18,15 @@ const AdminLayout = () => {
     { to: "/admin/doctors", icon: Users, label: "Doctors", roles: ["admin", "super_admin"] },
     { to: "/admin/gallery", icon: Image, label: "Gallery", roles: ["admin", "super_admin"] },
     { to: "/admin/bookings", icon: CalendarCheck, label: "Bookings", roles: ["admin", "super_admin", "booking_manager"] },
+    { to: "/admin/blog", icon: FileText, label: "Blog", roles: ["admin", "super_admin"] },
     { to: "/admin/faqs", icon: HelpCircle, label: "FAQs", roles: ["admin", "super_admin"] },
+    { to: "/admin/certifications", icon: Award, label: "Certifications", roles: ["admin", "super_admin"] },
     { to: "/admin/visitors", icon: Eye, label: "Visitors", roles: ["admin", "super_admin"] },
     { to: "/admin/activity-logs", icon: Activity, label: "Activity Logs", roles: ["admin", "super_admin"] },
     { to: "/admin/profile", icon: UserCircle, label: "My Profile", roles: ["admin", "super_admin", "booking_manager"] },
     { to: "/admin/users", icon: Shield, label: "Users", roles: ["super_admin"] },
     { to: "/admin/theme", icon: Palette, label: "Theme", roles: ["super_admin"] },
+    { to: "/admin/settings", icon: Settings, label: "Settings", roles: ["super_admin"] },
   ];
 
   const userRole = profile?.role || "booking_manager";
@@ -30,10 +34,11 @@ const AdminLayout = () => {
 
   return (
     <div className="flex h-screen bg-muted/30">
+      <SessionTimeoutDialog />
       <aside className="hidden w-56 shrink-0 border-r border-border bg-card md:flex md:flex-col h-screen overflow-auto">
         <div className="flex h-14 items-center gap-2 border-b border-border px-4">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary">
-            <span className="text-xs font-bold text-primary-foreground">E</span>
+            <span className="text-xs font-bold text-primary-foreground">S</span>
           </div>
           <span className="font-display text-sm font-semibold flex-1">Admin Panel</span>
           <NotificationBell />
@@ -71,7 +76,7 @@ const AdminLayout = () => {
       <div className="flex flex-1 flex-col overflow-hidden">
         <header className="flex h-14 items-center gap-2 border-b border-border bg-card px-4 md:hidden">
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary shrink-0">
-            <span className="text-xs font-bold text-primary-foreground">E</span>
+            <span className="text-xs font-bold text-primary-foreground">S</span>
           </div>
           <span className="font-display text-sm font-semibold shrink-0">Admin</span>
           <div className="flex-1 overflow-x-auto mx-2">

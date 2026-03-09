@@ -35,6 +35,9 @@ import AdminActivityLogs from "./pages/admin/AdminActivityLogs";
 import AdminVisitors from "./pages/admin/AdminVisitors";
 import AdminProfile from "./pages/admin/AdminProfile";
 import AdminThemeSettings from "./pages/admin/AdminThemeSettings";
+import AdminBlog from "./pages/admin/AdminBlog";
+import AdminCertifications from "./pages/admin/AdminCertifications";
+import AdminSettings from "./pages/admin/AdminSettings";
 import LogoutPage from "./pages/LogoutPage";
 import BlogPage from "./pages/BlogPage";
 import BlogArticlePage from "./pages/BlogArticlePage";
@@ -77,11 +80,14 @@ const App = () => (
               <Route path="gallery" element={<AdminGallery />} />
               <Route path="bookings" element={<AdminBookings />} />
               <Route path="faqs" element={<AdminFaqs />} />
+              <Route path="blog" element={<AdminBlog />} />
+              <Route path="certifications" element={<AdminCertifications />} />
               <Route path="users" element={<AdminUsers />} />
               <Route path="visitors" element={<AdminVisitors />} />
               <Route path="activity-logs" element={<AdminActivityLogs />} />
               <Route path="profile" element={<AdminProfile />} />
               <Route path="theme" element={<AdminThemeSettings />} />
+              <Route path="settings" element={<AdminSettings />} />
             </Route>
             <Route path="*" element={<NotFound />} />
           </Routes>
