@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef, useEffect } from "react";
+import PageMeta from "@/components/PageMeta";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight, Shield, Clock, FlaskConical, Users, Star, CheckCircle, Award, Home, Search, ClipboardList, Microscope, FileDown, MapPin, BadgeCheck } from "lucide-react";
