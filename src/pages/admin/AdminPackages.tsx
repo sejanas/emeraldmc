@@ -39,8 +39,9 @@ const AdminPackages = () => {
   const openEdit = (pkg: any) => {
     setEditing(pkg);
     setForm({ name: pkg.name, slug: pkg.slug, description: pkg.description || "", original_price: pkg.original_price, discounted_price: pkg.discounted_price, is_popular: pkg.is_popular, display_order: pkg.display_order });
-    // Get test IDs for this package from testNames
-    setSelectedTests([]);
+    // Get test IDs for this package from API response
+    const pkgTestIds = packagesQuery.data?.testIds?.[pkg.id] ?? [];
+    setSelectedTests(pkgTestIds);
     setOpen(true);
   };
 
