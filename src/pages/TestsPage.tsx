@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import PageMeta from "@/components/PageMeta";
 import { Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Search, Clock, Droplets, AlertCircle } from "lucide-react";
