@@ -315,6 +315,65 @@ const Index = () => {
       {/* Stats Counter */}
       <StatsCounter />
 
+      {/* Certifications */}
+      {certifications.length > 0 && (
+        <section className="container py-16">
+          <SectionHeading title="Our Certifications" subtitle="Trusted quality standards and accreditations" />
+          <div className="flex flex-wrap justify-center gap-6">
+            {certifications.map((cert: any, i: number) => (
+              <motion.button
+                key={cert.id}
+                type="button"
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true }}
+                variants={fadeUp}
+                custom={i}
+                onClick={() => setCertPreview(cert)}
+                className="group flex flex-col items-center gap-3 rounded-xl border border-border bg-card p-6 transition-all hover:card-shadow-hover hover:scale-[1.03] focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                {cert.image_url ? (
+                  <img src={cert.image_url} alt={cert.name} className="h-20 w-auto object-contain" />
+                ) : (
+                  <div className="flex h-20 w-20 items-center justify-center rounded-full bg-accent">
+                    <BadgeCheck className="h-10 w-10 text-primary" />
+                  </div>
+                )}
+                <span className="font-medium text-foreground text-sm text-center">{cert.name}</span>
+                {cert.issuing_authority && (
+                  <span className="text-xs text-muted-foreground">{cert.issuing_authority}</span>
+                )}
+              </motion.button>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {/* Certification Preview Dialog */}
+      <Dialog open={!!certPreview} onOpenChange={(o) => !o && setCertPreview(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogTitle className="sr-only">{certPreview?.name}</DialogTitle>
+          {certPreview && (
+            <div className="text-center">
+              {certPreview.image_url ? (
+                <img src={certPreview.image_url} alt={certPreview.name} className="mx-auto max-h-80 object-contain rounded-lg" />
+              ) : (
+                <div className="mx-auto flex h-32 w-32 items-center justify-center rounded-full bg-accent">
+                  <BadgeCheck className="h-16 w-16 text-primary" />
+                </div>
+              )}
+              <h3 className="mt-4 font-display text-xl font-semibold text-foreground">{certPreview.name}</h3>
+              {certPreview.issuing_authority && (
+                <p className="text-sm text-muted-foreground mt-1">{certPreview.issuing_authority}</p>
+              )}
+              {certPreview.description && (
+                <p className="text-sm text-muted-foreground mt-3">{certPreview.description}</p>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
       {/* Popular Tests */}
       <section className="bg-section-gradient py-20">
         <div className="container">
