@@ -1,4 +1,5 @@
 import { useState } from "react";
+import PageMeta from "@/components/PageMeta";
 import { motion } from "framer-motion";
 import { Phone, Mail, Clock, MapPin, Send, Facebook, Instagram } from "lucide-react";
 import { Button } from "@/components/ui/button";
