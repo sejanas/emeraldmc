@@ -56,6 +56,84 @@ export type Database = {
         }
         Relationships: []
       }
+      blogs: {
+        Row: {
+          author: string | null
+          author_credentials: string | null
+          category: string | null
+          content: string | null
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          display_order: number | null
+          excerpt: string | null
+          external_url: string | null
+          featured_image: string | null
+          id: string
+          meta_description: string | null
+          meta_title: string | null
+          published_at: string | null
+          read_time: string | null
+          scheduled_at: string | null
+          slug: string
+          status: string
+          tags: string[] | null
+          title: string
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          author?: string | null
+          author_credentials?: string | null
+          category?: string | null
+          content?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          display_order?: number | null
+          excerpt?: string | null
+          external_url?: string | null
+          featured_image?: string | null
+          id?: string
+          meta_description?: string | null
+          meta_title?: string | null
+          published_at?: string | null
+          read_time?: string | null
+          scheduled_at?: string | null
+          slug: string
+          status?: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          author?: string | null
+          author_credentials?: string | null
+          category?: string | null
+          content?: string | null
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          display_order?: number | null
+          excerpt?: string | null
+          external_url?: string | null
+          featured_image?: string | null
+          id?: string
+          meta_description?: string | null
+          meta_title?: string | null
+          published_at?: string | null
+          read_time?: string | null
+          scheduled_at?: string | null
+          slug?: string
+          status?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       booking_updates: {
         Row: {
           booking_id: string
@@ -169,6 +247,54 @@ export type Database = {
         }
         Relationships: []
       }
+      certifications: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          description: string | null
+          display_order: number | null
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          issuing_authority: string | null
+          name: string
+          slug: string
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          issuing_authority?: string | null
+          name: string
+          slug: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          issuing_authority?: string | null
+          name?: string
+          slug?: string
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       doctors: {
         Row: {
           bio: string | null
@@ -177,6 +303,7 @@ export type Database = {
           deleted_at: string | null
           display_order: number
           experience_years: number | null
+          extra_fields: Json | null
           id: string
           name: string
           profile_image: string | null
@@ -193,6 +320,7 @@ export type Database = {
           deleted_at?: string | null
           display_order?: number
           experience_years?: number | null
+          extra_fields?: Json | null
           id?: string
           name: string
           profile_image?: string | null
@@ -209,6 +337,7 @@ export type Database = {
           deleted_at?: string | null
           display_order?: number
           experience_years?: number | null
+          extra_fields?: Json | null
           id?: string
           name?: string
           profile_image?: string | null
