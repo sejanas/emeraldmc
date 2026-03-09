@@ -1279,6 +1279,73 @@ async function handleResubmit(req: Request) {
   return json({ success: true });
 }
 
+// ── CHANGE PASSWORD ──
+
+async function handleChangePassword(req: Request) {
+  const user = await requireAuth(req);
+  const { current_password, new_password } = await req.json();
+  if (!current_password || !new_password) return errRes("Current and new password required");
+  if (new_password.length < 8) return errRes("Password must be at least 8 characters");
+  if (!/[A-Z]/.test(new_password)) return errRes("Must contain at least 1 uppercase letter");
+  if (!/[0-9]/.test(new_password)) return errRes("Must contain at least 1 number");
+  if (!/[^a-zA-Z0-9]/.test(new_password)) return errRes("Must contain at least 1 special character");
+
+  const client = createClient(SB_URL, SB_ANON);
+  const { error: signInError } = await client.auth.signInWithPassword({ email: user.email!, password: current_password });
+  if (signInError) return errRes("Current password is incorrect", 401);
+
+  const { error } = await adminDb().auth.admin.updateUserById(user.id, { password: new_password });
+  if (error) throw { message: error.message, status: 500 };
+
+  await logActivity({ event_type: "user.password_changed", user_id: user.id, entity_type: "user", entity_id: user.id });
+  return json({ success: true });
+}
+
+// ── BLOGS (public listing) ──
+
+async function handleBlogsList(req: Request, url: URL) {
+  const db = adminDb();
+  let q = db.from("blogs").select("*").is("deleted_at", null);
+  if (url.searchParams.get("all") === "true") {
+    await requireRole(req, ADMIN_ROLES);
+  } else {
+    q = q.eq("status", "published");
+  }
+  q = q.order("published_at", { ascending: false, nullsFirst: false });
+  const limit = url.searchParams.get("limit");
+  if (limit) q = q.limit(parseInt(limit));
+  const { data, error } = await q;
+  if (error) throw { message: error.message, status: 500 };
+  return json(data);
+}
+
+// ── SETTINGS ──
+
+async function handleSettingsGet(url: URL) {
+  const db = adminDb();
+  const key = url.searchParams.get("key");
+  if (key) {
+    const { data } = await db.from("site_settings").select("*").eq("key", key).maybeSingle();
+    return json(data ?? { key, value: null });
+  }
+  const { data } = await db.from("site_settings").select("*");
+  return json(data);
+}
+
+async function handleSettingsUpdate(req: Request) {
+  const { user } = await requireRole(req, ["super_admin"]);
+  const { key, value } = await req.json();
+  if (!key) return errRes("key required");
+  const db = adminDb();
+  const { error } = await db.from("site_settings").upsert(
+    { key, value, updated_by: user.id, updated_at: new Date().toISOString() },
+    { onConflict: "key" }
+  );
+  if (error) throw { message: error.message, status: 500 };
+  await logActivity({ event_type: "settings.updated", user_id: user.id, entity_type: "setting", entity_name: key });
+  return json({ success: true });
+}
+
 // ── DASHBOARD ──
 
 async function handleDashboardCounts(req: Request) {
