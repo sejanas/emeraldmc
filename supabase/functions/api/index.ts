@@ -1782,6 +1782,69 @@ Deno.serve(async (req) => {
       return json({ url: data.publicUrl });
     }
 
+    // Dynamic Sitemap
+    if (resource === "sitemap" && method === "GET") {
+      const db = adminDb();
+      const BASE = "https://emeraldmedicalcare.com";
+      const today = new Date().toISOString().slice(0, 10);
+
+      // Static pages
+      const staticPages = [
+        { loc: "/", changefreq: "weekly", priority: "1.0" },
+        { loc: "/tests", changefreq: "weekly", priority: "0.9" },
+        { loc: "/packages", changefreq: "weekly", priority: "0.9" },
+        { loc: "/doctors", changefreq: "monthly", priority: "0.8" },
+        { loc: "/book", changefreq: "monthly", priority: "0.8" },
+        { loc: "/gallery", changefreq: "monthly", priority: "0.6" },
+        { loc: "/faq", changefreq: "monthly", priority: "0.7" },
+        { loc: "/contact", changefreq: "monthly", priority: "0.7" },
+        { loc: "/reports", changefreq: "monthly", priority: "0.6" },
+        { loc: "/blog", changefreq: "weekly", priority: "0.8" },
+      ];
+
+      // Dynamic: tests
+      const { data: tests } = await db.from("tests").select("slug, updated_at").eq("is_active", true).is("deleted_at", null);
+      // Dynamic: blogs
+      const { data: blogs } = await db.from("blogs").select("slug, updated_at").eq("status", "published").is("deleted_at", null);
+      // Dynamic: doctors
+      const { data: doctors } = await db.from("doctors").select("slug, updated_at").is("deleted_at", null);
+
+      let urls = staticPages.map(p =>
+        `  <url><loc>${BASE}${p.loc}</loc><changefreq>${p.changefreq}</changefreq><priority>${p.priority}</priority></url>`
+      );
+
+      (tests ?? []).forEach((t: any) => {
+        const lastmod = t.updated_at ? t.updated_at.slice(0, 10) : today;
+        urls.push(`  <url><loc>${BASE}/tests/${t.slug}</loc><lastmod>${lastmod}</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>`);
+      });
+
+      (blogs ?? []).forEach((b: any) => {
+        const lastmod = b.updated_at ? b.updated_at.slice(0, 10) : today;
+        urls.push(`  <url><loc>${BASE}/blog/${b.slug}</loc><lastmod>${lastmod}</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>`);
+      });
+
+      (doctors ?? []).forEach((d: any) => {
+        const lastmod = d.updated_at ? d.updated_at.slice(0, 10) : today;
+        urls.push(`  <url><loc>${BASE}/doctors/${d.slug}</loc><lastmod>${lastmod}</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>`);
+      });
+
+      // Location pages
+      const locationTests = ["blood-test", "cbc-test", "thyroid-test", "diabetes-test"];
+      locationTests.forEach(t => {
+        urls.push(`  <url><loc>${BASE}/${t}-port-blair</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>`);
+      });
+
+      const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${urls.join("\n")}
+</urlset>`;
+
+      return new Response(xml, {
+        status: 200,
+        headers: { ...corsHeaders, "Content-Type": "application/xml; charset=utf-8", "Cache-Control": "public, max-age=3600" },
+      });
+    }
+
     return errRes("Not found", 404);
   } catch (e: any) {
     return json({ error: e.message ?? "Internal error" }, e.status ?? 500);
