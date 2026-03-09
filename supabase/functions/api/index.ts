@@ -1569,6 +1569,12 @@ Deno.serve(async (req) => {
         softDelete: true,
         nameField: "question",
       },
+      certifications: {
+        table: "certifications",
+        entity: "certification",
+        softDelete: true,
+        nameField: "name",
+      },
     };
 
     if (crudConfig[resource]) {
