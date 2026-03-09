@@ -1467,6 +1467,21 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Settings
+    if (resource === "settings") {
+      if (method === "GET") return await handleSettingsGet(url);
+      if (method === "PUT") return await handleSettingsUpdate(req);
+    }
+
+    // Blogs (custom listing + CRUD)
+    if (resource === "blogs") {
+      if (method === "GET" && !id) return await handleBlogsList(req, url);
+      if (method === "GET" && id) return await crudGet("blogs", id);
+      if (method === "POST") return await crudCreate(req, "blogs", "blog", "title");
+      if (method === "PUT" && id) return await crudUpdate(req, "blogs", id, "blog", "title");
+      if (method === "DELETE" && id) return await crudDelete(req, "blogs", id, "blog", true, "title");
+    }
+
     // Packages (special)
     if (resource === "packages") {
       if (method === "GET" && !id) return await handlePackagesList(url);
