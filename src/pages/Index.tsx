@@ -53,6 +53,7 @@ const serviceAreas = ["Port Blair", "Wimberlygunj", "Bambooflat", "Ferrargunj"];
 const Index = () => {
   const [heroSearch, setHeroSearch] = useState("");
   const [showResults, setShowResults] = useState(false);
+  const [certPreview, setCertPreview] = useState<any>(null);
   const searchRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const testsQuery = useTests({ limit: 6 });
@@ -61,12 +62,14 @@ const Index = () => {
   const packagesQuery = usePackages();
   const categoriesQuery = useCategories();
   const faqsQuery = useFaqs(true);
+  const certificationsQuery = useCertifications();
 
   const getCatNames = (t: any) =>
     (t.categories ?? []).map((c: any) => c.name).join(", ") || "";
 
   const packages = packagesQuery.data?.packages ?? [];
   const testNames = packagesQuery.data?.testNames ?? {};
+  const certifications = (certificationsQuery.data ?? []).filter((c: any) => c.is_active !== false);
 
   const q = heroSearch.trim().toLowerCase();
 
