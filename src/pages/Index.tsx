@@ -115,6 +115,10 @@ const Index = () => {
 
   return (
     <>
+      <PageMeta
+        title="Shifa's Mainland Healthcare – ISO Certified Diagnostic Lab in Sri Vijaya Puram"
+        description="ISO certified diagnostic laboratory in Sri Vijaya Puram, Port Blair. 50+ health tests, affordable packages, expert doctors, and free home sample collection."
+      />
       <JsonLd />
 
       {/* Hero */}
