@@ -1415,6 +1415,7 @@ Deno.serve(async (req) => {
       if (id === "me" && method === "GET") return await handleMe(req);
       if (id === "profile" && method === "PUT") return await handleUpdateProfile(req);
       if (id === "resubmit" && method === "POST") return await handleResubmit(req);
+      if (id === "change-password" && method === "POST") return await handleChangePassword(req);
     }
 
     // Dashboard
