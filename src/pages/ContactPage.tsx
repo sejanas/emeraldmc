@@ -1,4 +1,5 @@
 import { useState } from "react";
+import PageMeta from "@/components/PageMeta";
 import { motion } from "framer-motion";
 import { Phone, Mail, Clock, MapPin, Send, Facebook, Instagram } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,7 @@ const ContactPage = () => {
 
   return (
     <div className="container py-12">
+      <PageMeta title="Contact Us – Shifa's Mainland Healthcare" description="Get in touch with Shifa's Mainland Healthcare in Sri Vijaya Puram. Call, email, or visit us for diagnostic test inquiries." />
       <Breadcrumbs items={[{ label: "Contact Us" }]} />
       <SectionHeading title="Contact Us" subtitle="Get in touch with Emerald Medical Care" />
       <div className="grid gap-8 md:grid-cols-2 max-w-4xl mx-auto">

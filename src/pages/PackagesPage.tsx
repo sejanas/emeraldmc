@@ -4,6 +4,7 @@ import { Star, CheckCircle, ArrowRight, Percent } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import SectionHeading from "@/components/SectionHeading";
 import Breadcrumbs from "@/components/Breadcrumbs";
+import PageMeta from "@/components/PageMeta";
 import usePackages from "@/hooks/usePackages";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -20,12 +21,16 @@ const PackagesPage = () => {
 
   return (
     <div className="container py-12">
+      <PageMeta
+        title="Health Packages – Affordable Checkup Plans"
+        description="Choose from our curated health checkup packages including Basic, Comprehensive, Diabetes Care, and Thyroid Profile packages at affordable prices."
+      />
       <Breadcrumbs items={[{ label: "Health Packages" }]} />
       <SectionHeading title="Health Packages" subtitle="Choose from our curated health checkup packages designed for comprehensive care" />
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {packagesQuery.isLoading
           ? Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="relative flex flex-col rounded-xl border p-6">
+              <div key={i} className="relative flex flex-col rounded-xl border border-border p-6">
                 <Skeleton className="h-6 w-32" />
                 <div className="mt-2"><Skeleton className="h-4 w-full" /></div>
                 <div className="mt-4"><Skeleton className="h-10 w-32" /></div>
@@ -40,34 +45,44 @@ const PackagesPage = () => {
           : packages.map((pkg, i) => {
               const hasDiscount = pkg.discounted_price && pkg.discounted_price < pkg.original_price;
               const discountPct = hasDiscount ? Math.round(((pkg.original_price - pkg.discounted_price!) / pkg.original_price) * 100) : 0;
+              const tests = testNames[pkg.id] ?? [];
 
               return (
                 <motion.div key={pkg.id} initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={i}
-                  className={`relative flex flex-col rounded-xl border p-6 transition-all hover:card-shadow-hover hover:scale-[1.02] ${pkg.is_popular ? "border-primary bg-accent/50" : "border-border bg-card"}`}>
+                  className={`relative flex flex-col rounded-xl border p-6 transition-all hover:card-shadow-hover hover:scale-[1.02] ${pkg.is_popular ? "border-primary ring-2 ring-primary/20 bg-accent/50" : "border-border bg-card"}`}>
                   {pkg.is_popular && (
-                    <span className="absolute -top-3 left-4 inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground">
+                    <span className="absolute -top-3 left-4 inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground shadow-sm">
                       <Star className="h-3 w-3" /> Most Popular
                     </span>
                   )}
                   {hasDiscount && (
-                    <span className="absolute -top-3 right-4 inline-flex items-center gap-1 rounded-full bg-destructive px-3 py-1 text-xs font-medium text-destructive-foreground">
+                    <span className="absolute -top-3 right-4 inline-flex items-center gap-1 rounded-full bg-destructive px-3 py-1 text-xs font-semibold text-destructive-foreground shadow-sm">
                       <Percent className="h-3 w-3" /> {discountPct}% OFF
                     </span>
                   )}
                   <h3 className="font-display text-xl font-semibold text-foreground">{pkg.name}</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">{pkg.description}</p>
-                  <p className="mt-4 font-display text-4xl font-bold text-primary">₹{pkg.discounted_price ?? pkg.original_price}</p>
-                  {hasDiscount && <p className="text-sm text-muted-foreground line-through">₹{pkg.original_price}</p>}
-                  <ul className="mt-5 flex-1 space-y-2">
-                    {(testNames[pkg.id] ?? []).map((t: string) => (
-                      <li key={t} className="flex items-start gap-2 text-sm text-muted-foreground">
-                        <CheckCircle className="mt-0.5 h-4 w-4 text-primary shrink-0" /> {t}
-                      </li>
-                    ))}
-                  </ul>
-                  <Button asChild className="mt-6 w-full" variant={pkg.is_popular ? "default" : "outline"}>
-                    <Link to="/book">Book Now <ArrowRight className="ml-2 h-4 w-4" /></Link>
-                  </Button>
+                  <p className="mt-1 text-sm text-muted-foreground leading-relaxed">{pkg.description}</p>
+                  <div className="mt-4 flex items-baseline gap-2">
+                    <span className="font-display text-4xl font-bold text-primary">₹{pkg.discounted_price ?? pkg.original_price}</span>
+                    {hasDiscount && <span className="text-sm text-muted-foreground line-through">₹{pkg.original_price}</span>}
+                  </div>
+                  {tests.length > 0 && (
+                    <div className="mt-5 border-t border-border pt-4">
+                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Includes {tests.length} Tests</p>
+                      <ul className="flex-1 space-y-2">
+                        {tests.map((t: string) => (
+                          <li key={t} className="flex items-start gap-2 text-sm text-muted-foreground">
+                            <CheckCircle className="mt-0.5 h-4 w-4 text-primary shrink-0" /> {t}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  <div className="mt-auto pt-6">
+                    <Button asChild className="w-full" variant={pkg.is_popular ? "default" : "outline"}>
+                      <Link to="/book">Book Now <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                    </Button>
+                  </div>
                 </motion.div>
               );
             })}

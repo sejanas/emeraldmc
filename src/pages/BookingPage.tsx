@@ -1,4 +1,5 @@
 import { useState } from "react";
+import PageMeta from "@/components/PageMeta";
 import { motion, AnimatePresence } from "framer-motion";
 import { Calendar, Clock, User, Phone, Mail, CheckCircle, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -100,6 +101,7 @@ const BookingPage = () => {
 
   return (
     <div className="container py-12">
+      <PageMeta title="Book Health Test Appointment" description="Book a diagnostic test appointment at Shifa's Mainland Healthcare. Choose from 50+ tests and health packages with free home sample collection." />
       <Breadcrumbs items={[{ label: "Book Appointment" }]} />
       <SectionHeading title="Book an Appointment" subtitle="Select your preferred date, time, and test." />
 

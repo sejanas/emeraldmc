@@ -1,4 +1,5 @@
 import { useState } from "react";
+import PageMeta from "@/components/PageMeta";
 import { motion, AnimatePresence } from "framer-motion";
 import { FileDown, Search, Clock, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -79,6 +80,7 @@ const ReportsPage = () => {
 
   return (
     <div className="container py-12">
+      <PageMeta title="Track Your Booking" description="Track the status of your diagnostic test booking at Shifa's Mainland Healthcare using your phone number." />
       <Breadcrumbs items={[{ label: "Track Booking" }]} />
       <SectionHeading title="Track Your Booking" subtitle="Enter your details to check the status of your diagnostic booking" />
 
