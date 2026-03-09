@@ -2,6 +2,7 @@ import { motion } from "framer-motion";
 import SectionHeading from "@/components/SectionHeading";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import ErrorBox from "@/components/ErrorBox";
+import PageMeta from "@/components/PageMeta";
 import useDoctors from "@/hooks/useDoctors";
 import { Badge } from "@/components/ui/badge";
 
