@@ -54,6 +54,7 @@ const TestsPage = () => {
 
   return (
     <div className="container py-12">
+      <PageMeta title="Diagnostic Tests – Prices & Details" description="Browse 50+ diagnostic tests with transparent pricing at Shifa's Mainland Healthcare. CBC, thyroid, diabetes, liver function tests and more." />
       <Breadcrumbs items={[{ label: "Diagnostic Tests" }]} />
       <SectionHeading title="Diagnostic Tests" subtitle="Browse our comprehensive range of diagnostic tests with transparent pricing" />
 

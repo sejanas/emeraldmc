@@ -11,6 +11,7 @@ const DoctorsPage = () => {
 
   return (
     <div className="container py-12">
+      <PageMeta title="Our Doctors – Expert Healthcare Professionals" description="Meet the qualified pathologists and physicians at Shifa's Mainland Healthcare in Sri Vijaya Puram, Port Blair." />
       <Breadcrumbs items={[{ label: "Our Doctors" }]} />
       <SectionHeading title="Our Expert Doctors" subtitle="Meet the qualified healthcare professionals at Emerald Medical Care" />
       <div className="grid gap-8 sm:grid-cols-3 max-w-4xl mx-auto">
