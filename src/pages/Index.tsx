@@ -141,7 +141,7 @@ const Index = () => {
             </div>
           </motion.div>
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, delay: 0.2 }}>
-            <img src={heroImg} alt="Shifa's Mainland Healthcare - ISO certified diagnostic laboratory in Sri Vijaya Puram" className="w-full rounded-2xl card-shadow object-cover" loading="eager" />
+            <img src={heroImg} alt="Shifa's Mainland Healthcare - ISO certified diagnostic laboratory in Sri Vijaya Puram" width={960} height={540} className="w-full rounded-2xl card-shadow object-cover" loading="eager" />
           </motion.div>
         </div>
       </section>
@@ -338,7 +338,7 @@ const Index = () => {
                 className="group flex flex-col items-center gap-3 rounded-xl border border-border bg-card p-6 transition-all hover:card-shadow-hover hover:scale-[1.03] focus:outline-none focus:ring-2 focus:ring-primary"
               >
                 {cert.image_url ? (
-                  <img src={cert.image_url} alt={cert.name} className="h-20 w-auto object-contain" />
+                  <img src={cert.image_url} alt={cert.name} width={107} height={80} className="h-20 w-auto object-contain" loading="lazy" />
                 ) : (
                   <div className="flex h-20 w-20 items-center justify-center rounded-full bg-accent">
                     <BadgeCheck className="h-10 w-10 text-primary" />
