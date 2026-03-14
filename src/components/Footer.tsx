@@ -25,7 +25,7 @@ const Footer = () => {
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={0}>
             <Link to="/" className="flex items-center gap-3 group">
               <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-primary p-1 transition-transform group-hover:scale-110">
-                <img src={logo} alt="Shifa's Mainland Healthcare" className="h-full w-full object-contain" />
+                <img src={logo} alt="Shifa's Mainland Healthcare" width={64} height={64} className="h-full w-full object-contain" />
               </div>
               <div className="flex flex-col leading-tight">
                 <span className="font-display text-base font-bold uppercase tracking-wide">Shifa's Mainland</span>
