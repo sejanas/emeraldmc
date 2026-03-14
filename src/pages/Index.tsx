@@ -338,7 +338,7 @@ const Index = () => {
                 className="group flex flex-col items-center gap-3 rounded-xl border border-border bg-card p-6 transition-all hover:card-shadow-hover hover:scale-[1.03] focus:outline-none focus:ring-2 focus:ring-primary"
               >
                 {cert.image_url ? (
-                  <img src={cert.image_url} alt={cert.name} className="h-20 w-auto object-contain" />
+                  <img src={cert.image_url} alt={cert.name} width={107} height={80} className="h-20 w-auto object-contain" loading="lazy" />
                 ) : (
                   <div className="flex h-20 w-20 items-center justify-center rounded-full bg-accent">
                     <BadgeCheck className="h-10 w-10 text-primary" />
