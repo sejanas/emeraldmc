@@ -6,6 +6,10 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ConfirmProvider } from "@/components/ConfirmDialog";
 import { ThemeProvider } from "@/hooks/useTheme";
+
+import { SpeedInsights } from "@vercel/speed-insights/react"
+import { Analytics } from "@vercel/analytics/react"
+
 import AdminRoute from "@/components/AdminRoute";
 import Layout from "@/components/Layout";
 import Index from "./pages/Index";
@@ -45,56 +49,60 @@ import LocationTestPage from "./pages/LocationTestPage";
 
 const App = () => (
   <ThemeProvider>
-  <TooltipProvider>
-      <AuthProvider>
-        <ConfirmProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route element={<Layout />}>
-              <Route path="/" element={<Index />} />
-              <Route path="/tests" element={<TestsPage />} />
-              <Route path="/tests/:slug" element={<TestDetailPage />} />
-              <Route path="/packages" element={<PackagesPage />} />
-              <Route path="/doctors" element={<DoctorsPage />} />
-              <Route path="/book" element={<BookingPage />} />
-              <Route path="/gallery" element={<GalleryPage />} />
-              <Route path="/faq" element={<FaqPage />} />
-              <Route path="/contact" element={<ContactPage />} />
-              <Route path="/reports" element={<ReportsPage />} />
-              <Route path="/blog" element={<BlogPage />} />
-              <Route path="/blog/:slug" element={<BlogArticlePage />} />
-              <Route path="/:slug" element={<LocationTestPage />} />
-            </Route>
-            <Route path="/logout" element={<LogoutPage />} />
-            <Route path="/admin/logout" element={<LogoutPage />} />
-            <Route path="/admin/login" element={<AdminLogin />} />
-            <Route path="/admin/signup" element={<AdminSignup />} />
-            <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
-              <Route index element={<AdminDashboard />} />
-              <Route path="categories" element={<AdminCategories />} />
-              <Route path="tests" element={<AdminTests />} />
-              <Route path="packages" element={<AdminPackages />} />
-              <Route path="doctors" element={<AdminDoctors />} />
-              <Route path="gallery" element={<AdminGallery />} />
-              <Route path="bookings" element={<AdminBookings />} />
-              <Route path="faqs" element={<AdminFaqs />} />
-              <Route path="blog" element={<AdminBlog />} />
-              <Route path="certifications" element={<AdminCertifications />} />
-              <Route path="users" element={<AdminUsers />} />
-              <Route path="visitors" element={<AdminVisitors />} />
-              <Route path="activity-logs" element={<AdminActivityLogs />} />
-              <Route path="profile" element={<AdminProfile />} />
-              <Route path="theme" element={<AdminThemeSettings />} />
-              <Route path="settings" element={<AdminSettings />} />
-            </Route>
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
-        </ConfirmProvider>
-      </AuthProvider>
-  </TooltipProvider>
+    <TooltipProvider>
+        <AuthProvider>
+          <ConfirmProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <Routes>
+              <Route element={<Layout />}>
+                <Route path="/" element={<Index />} />
+                <Route path="/tests" element={<TestsPage />} />
+                <Route path="/tests/:slug" element={<TestDetailPage />} />
+                <Route path="/packages" element={<PackagesPage />} />
+                <Route path="/doctors" element={<DoctorsPage />} />
+                <Route path="/book" element={<BookingPage />} />
+                <Route path="/gallery" element={<GalleryPage />} />
+                <Route path="/faq" element={<FaqPage />} />
+                <Route path="/contact" element={<ContactPage />} />
+                <Route path="/reports" element={<ReportsPage />} />
+                <Route path="/blog" element={<BlogPage />} />
+                <Route path="/blog/:slug" element={<BlogArticlePage />} />
+                <Route path="/:slug" element={<LocationTestPage />} />
+              </Route>
+              <Route path="/logout" element={<LogoutPage />} />
+              <Route path="/admin/logout" element={<LogoutPage />} />
+              <Route path="/admin/login" element={<AdminLogin />} />
+              <Route path="/admin/signup" element={<AdminSignup />} />
+              <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
+                <Route index element={<AdminDashboard />} />
+                <Route path="categories" element={<AdminCategories />} />
+                <Route path="tests" element={<AdminTests />} />
+                <Route path="packages" element={<AdminPackages />} />
+                <Route path="doctors" element={<AdminDoctors />} />
+                <Route path="gallery" element={<AdminGallery />} />
+                <Route path="bookings" element={<AdminBookings />} />
+                <Route path="faqs" element={<AdminFaqs />} />
+                <Route path="blog" element={<AdminBlog />} />
+                <Route path="certifications" element={<AdminCertifications />} />
+                <Route path="users" element={<AdminUsers />} />
+                <Route path="visitors" element={<AdminVisitors />} />
+                <Route path="activity-logs" element={<AdminActivityLogs />} />
+                <Route path="profile" element={<AdminProfile />} />
+                <Route path="theme" element={<AdminThemeSettings />} />
+                <Route path="settings" element={<AdminSettings />} />
+              </Route>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+          </ConfirmProvider>
+        </AuthProvider>
+    </TooltipProvider>
+
+    {/* Vercel Monitoring */}
+    <Analytics />
+    <SpeedInsights />
   </ThemeProvider>
 );
 
