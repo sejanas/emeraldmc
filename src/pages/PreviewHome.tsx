@@ -1,5 +1,5 @@
 import { Suspense, lazy } from "react";
-import Index from "./pages/Index";
+import Index from "./Index";
 
 const PreviewHome = () => {
   return (
