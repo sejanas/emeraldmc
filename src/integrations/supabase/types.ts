@@ -249,6 +249,8 @@ export type Database = {
       }
       certifications: {
         Row: {
+          authority_logo: string | null
+          certificate_id: string | null
           created_at: string
           created_by: string | null
           deleted_at: string | null
@@ -257,13 +259,17 @@ export type Database = {
           id: string
           image_url: string | null
           is_active: boolean | null
+          is_verified: boolean | null
           issuing_authority: string | null
           name: string
           slug: string
           updated_at: string | null
           updated_by: string | null
+          valid_till: string | null
         }
         Insert: {
+          authority_logo?: string | null
+          certificate_id?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -272,13 +278,17 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean | null
+          is_verified?: boolean | null
           issuing_authority?: string | null
           name: string
           slug: string
           updated_at?: string | null
           updated_by?: string | null
+          valid_till?: string | null
         }
         Update: {
+          authority_logo?: string | null
+          certificate_id?: string | null
           created_at?: string
           created_by?: string | null
           deleted_at?: string | null
@@ -287,11 +297,13 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean | null
+          is_verified?: boolean | null
           issuing_authority?: string | null
           name?: string
           slug?: string
           updated_at?: string | null
           updated_by?: string | null
+          valid_till?: string | null
         }
         Relationships: []
       }
@@ -511,11 +523,15 @@ export type Database = {
           discount_percent: number | null
           discounted_price: number | null
           display_order: number
+          featured_test_ids: string[] | null
           id: string
           image_url: string | null
+          instructions: string | null
           is_popular: boolean
           name: string
           original_price: number
+          savings_override: number | null
+          show_test_count: boolean | null
           slug: string
           updated_at: string | null
           updated_by: string | null
@@ -528,11 +544,15 @@ export type Database = {
           discount_percent?: number | null
           discounted_price?: number | null
           display_order?: number
+          featured_test_ids?: string[] | null
           id?: string
           image_url?: string | null
+          instructions?: string | null
           is_popular?: boolean
           name: string
           original_price?: number
+          savings_override?: number | null
+          show_test_count?: boolean | null
           slug: string
           updated_at?: string | null
           updated_by?: string | null
@@ -545,11 +565,15 @@ export type Database = {
           discount_percent?: number | null
           discounted_price?: number | null
           display_order?: number
+          featured_test_ids?: string[] | null
           id?: string
           image_url?: string | null
+          instructions?: string | null
           is_popular?: boolean
           name?: string
           original_price?: number
+          savings_override?: number | null
+          show_test_count?: boolean | null
           slug?: string
           updated_at?: string | null
           updated_by?: string | null
@@ -653,6 +677,7 @@ export type Database = {
           created_by: string | null
           deleted_at: string | null
           description: string | null
+          discount_override: number | null
           discounted_price: number | null
           display_order: number
           fasting_required: boolean
@@ -664,6 +689,7 @@ export type Database = {
           price: number
           report_time: string
           sample_type: string
+          show_on_homepage: boolean | null
           slug: string
           updated_at: string | null
           updated_by: string | null
@@ -674,6 +700,7 @@ export type Database = {
           created_by?: string | null
           deleted_at?: string | null
           description?: string | null
+          discount_override?: number | null
           discounted_price?: number | null
           display_order?: number
           fasting_required?: boolean
@@ -685,6 +712,7 @@ export type Database = {
           price?: number
           report_time?: string
           sample_type?: string
+          show_on_homepage?: boolean | null
           slug: string
           updated_at?: string | null
           updated_by?: string | null
@@ -695,6 +723,7 @@ export type Database = {
           created_by?: string | null
           deleted_at?: string | null
           description?: string | null
+          discount_override?: number | null
           discounted_price?: number | null
           display_order?: number
           fasting_required?: boolean
@@ -706,6 +735,7 @@ export type Database = {
           price?: number
           report_time?: string
           sample_type?: string
+          show_on_homepage?: boolean | null
           slug?: string
           updated_at?: string | null
           updated_by?: string | null

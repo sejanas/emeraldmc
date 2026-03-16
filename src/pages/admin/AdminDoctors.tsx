@@ -3,10 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, Search, ChevronDown } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, ChevronDown, Eye, EyeOff, GripVertical } from "lucide-react";
 import { useConfirm } from "@/components/ConfirmDialog";
 import ImageUpload from "@/components/ImageUpload";
 import useDoctors from "@/hooks/useDoctors";
@@ -33,7 +34,7 @@ const AdminDoctors = () => {
   const [extraOpen, setExtraOpen] = useState(false);
   const [form, setForm] = useState({
     name: "", specialization: "", qualification: "", experience_years: 0,
-    bio: "", profile_image: "", display_order: 0,
+    bio: "", profile_image: "", display_order: 0, is_active: true,
   });
   const [extraFields, setExtraFields] = useState<ExtraFields>({
     languages: "", availability: "", consultation_fee: null, education: "", awards: "",
@@ -41,7 +42,7 @@ const AdminDoctors = () => {
 
   const openNew = () => {
     setEditing(null);
-    setForm({ name: "", specialization: "", qualification: "", experience_years: 0, bio: "", profile_image: "", display_order: doctorsQuery.data?.length ?? 0 });
+    setForm({ name: "", specialization: "", qualification: "", experience_years: 0, bio: "", profile_image: "", display_order: doctorsQuery.data?.length ?? 0, is_active: true });
     setExtraFields({ languages: "", availability: "", consultation_fee: null, education: "", awards: "" });
     setExtraOpen(false);
     setOpen(true);
@@ -49,7 +50,12 @@ const AdminDoctors = () => {
 
   const openEdit = (d: any) => {
     setEditing(d);
-    setForm({ name: d.name, specialization: d.specialization, qualification: d.qualification || "", experience_years: d.experience_years ?? 0, bio: d.bio || "", profile_image: d.profile_image || "", display_order: d.display_order });
+    setForm({
+      name: d.name, specialization: d.specialization, qualification: d.qualification || "",
+      experience_years: d.experience_years ?? 0, bio: d.bio || "",
+      profile_image: d.profile_image || "", display_order: d.display_order,
+      is_active: d.is_active !== false,
+    });
     const ef = d.extra_fields || {};
     setExtraFields({
       languages: ef.languages || "",
@@ -122,15 +128,22 @@ const AdminDoctors = () => {
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {filteredDoctors.map((d: any) => (
-          <div key={d.id} className="rounded-xl border border-border bg-card overflow-hidden card-shadow">
-            {d.profile_image && <img src={d.profile_image} alt={d.name} className="aspect-square w-full object-cover" />}
+          <div key={d.id} className={`rounded-xl border bg-card overflow-hidden card-shadow ${d.is_active !== false ? "border-border" : "border-border opacity-60"}`}>
+            <div className="flex items-center gap-2 px-4 pt-3">
+              <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
+              <span className="text-xs text-muted-foreground">#{d.display_order}</span>
+              {d.is_active !== false ? <Eye className="h-3.5 w-3.5 text-primary" /> : <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />}
+            </div>
+            {d.profile_image && <img src={d.profile_image} alt={d.name} className="aspect-square w-full object-cover mt-2" />}
+            {!d.profile_image && (
+              <div className="aspect-square w-full bg-muted flex items-center justify-center mt-2">
+                <span className="text-4xl text-muted-foreground">{d.name?.[0]}</span>
+              </div>
+            )}
             <div className="p-4">
               <h3 className="font-display font-semibold text-foreground">{d.name}</h3>
               <p className="text-sm text-primary">{d.specialization}</p>
               <p className="text-xs text-muted-foreground mt-1">{d.qualification}</p>
-              {d.extra_fields?.consultation_fee && (
-                <p className="text-xs text-muted-foreground">Fee: ₹{d.extra_fields.consultation_fee}</p>
-              )}
               <div className="mt-3 flex gap-1">
                 <Button variant="ghost" size="sm" onClick={() => openEdit(d)}><Pencil className="mr-1 h-3.5 w-3.5" /> Edit</Button>
                 <Button variant="ghost" size="sm" onClick={() => remove(d.id, d.name)}><Trash2 className="mr-1 h-3.5 w-3.5 text-destructive" /> Delete</Button>
@@ -140,14 +153,15 @@ const AdminDoctors = () => {
         ))}
       </div>
       {doctorsQuery.isLoading && <p className="py-8 text-center text-muted-foreground">Loading...</p>}
+      {!doctorsQuery.isLoading && !filteredDoctors.length && <p className="py-8 text-center text-muted-foreground">{search ? "No doctors match." : "No doctors yet."}</p>}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader><DialogTitle>{editing ? "Edit Doctor" : "New Doctor"}</DialogTitle></DialogHeader>
           <div className="space-y-4">
-            <div><Label>Profile Image</Label><div className="mt-1"><ImageUpload value={form.profile_image} onChange={(url) => setForm({ ...form, profile_image: url })} folder="doctors" aspectRatio="1:1" /></div></div>
-            <div><Label>Name</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="mt-1" /></div>
+            <div><Label>Photo</Label><div className="mt-1"><ImageUpload value={form.profile_image} onChange={(url) => setForm({ ...form, profile_image: url })} folder="doctors" aspectRatio="1:1" /></div></div>
+            <div><Label>Doctor Name *</Label><Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} className="mt-1" /></div>
             <div className="grid grid-cols-2 gap-4">
-              <div><Label>Specialization</Label><Input value={form.specialization} onChange={(e) => setForm({ ...form, specialization: e.target.value })} className="mt-1" /></div>
+              <div><Label>Specialization *</Label><Input value={form.specialization} onChange={(e) => setForm({ ...form, specialization: e.target.value })} className="mt-1" /></div>
               <div><Label>Qualification</Label><Input value={form.qualification} onChange={(e) => setForm({ ...form, qualification: e.target.value })} className="mt-1" /></div>
             </div>
             <div className="grid grid-cols-2 gap-4">
@@ -155,8 +169,8 @@ const AdminDoctors = () => {
               <div><Label>Display Order</Label><Input type="number" value={form.display_order} onChange={(e) => setForm({ ...form, display_order: +e.target.value })} className="mt-1" /></div>
             </div>
             <div><Label>Bio</Label><Textarea value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} className="mt-1" /></div>
+            <div className="flex items-center gap-2"><Switch checked={form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: v })} /> <Label>Visible</Label></div>
 
-            {/* Extra Fields Section */}
             <Collapsible open={extraOpen} onOpenChange={setExtraOpen}>
               <CollapsibleTrigger asChild>
                 <Button type="button" variant="ghost" className="w-full justify-between text-muted-foreground">

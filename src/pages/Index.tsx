@@ -2,13 +2,18 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import PageMeta from "@/components/PageMeta";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, Shield, Clock, FlaskConical, Users, Star, CheckCircle, Award, Home, Search, ClipboardList, Microscope, FileDown, MapPin, BadgeCheck } from "lucide-react";
+import { ArrowRight, Shield, Clock, FlaskConical, Users, Star, CheckCircle, Award, Home, Search, ClipboardList, Microscope, FileDown, MapPin, BadgeCheck, Info, Percent } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Skeleton } from "@/components/ui/skeleton";
 import SectionHeading from "@/components/SectionHeading";
 import StatsCounter from "@/components/StatsCounter";
 import Testimonials from "@/components/Testimonials";
+import HorizontalScroll from "@/components/HorizontalScroll";
+import CertificatePreview from "@/components/CertificatePreview";
+import PackageTestsModal from "@/components/PackageTestsModal";
 import useTests from "@/hooks/useTests";
 import useDoctors from "@/hooks/useDoctors";
 import usePackages from "@/hooks/usePackages";
@@ -19,6 +24,7 @@ import heroImg from "@/assets/hero-lab.png";
 import JsonLd from "@/components/JsonLd";
 import { useFaqs } from "@/hooks/useFaqs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -55,9 +61,12 @@ const Index = () => {
   const [heroSearch, setHeroSearch] = useState("");
   const [showResults, setShowResults] = useState(false);
   const [certPreview, setCertPreview] = useState<any>(null);
+  const [pkgTestsModal, setPkgTestsModal] = useState<{ name: string; tests: string[] } | null>(null);
+  const [instructionsModal, setInstructionsModal] = useState<{ name: string; text: string } | null>(null);
   const searchRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
-  const testsQuery = useTests({ limit: 6 });
+  const isMobile = useIsMobile();
+  const testsQuery = useTests({ limit: 12 });
   const allTestsQuery = useTests();
   const doctorsQuery = useDoctors(3);
   const packagesQuery = usePackages();
@@ -71,6 +80,15 @@ const Index = () => {
   const packages = packagesQuery.data?.packages ?? [];
   const testNames = packagesQuery.data?.testNames ?? {};
   const certifications = (certificationsQuery.data ?? []).filter((c: any) => c.is_active !== false);
+
+  // Filter tests that should show on homepage
+  const homepageTests = useMemo(() => {
+    const allTests = testsQuery.data ?? [];
+    const withHomepage = allTests.filter((t: any) => t.show_on_homepage);
+    // If admin hasn't set show_on_homepage, fall back to first 6
+    if (withHomepage.length >= 6) return withHomepage;
+    return allTests.slice(0, 6);
+  }, [testsQuery.data]);
 
   const q = heroSearch.trim().toLowerCase();
 
@@ -94,7 +112,6 @@ const Index = () => {
 
   const hasResults = matchedTests.length > 0 || matchedPackages.length > 0;
 
-  // Close dropdown on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (searchRef.current && !searchRef.current.contains(e.target as Node)) {
@@ -111,6 +128,21 @@ const Index = () => {
       setShowResults(false);
       navigate(`/tests?search=${encodeURIComponent(heroSearch.trim())}`);
     }
+  };
+
+  const getDiscountPct = (t: any) => {
+    if (t.discount_override && t.discount_override > 0) return Math.round(t.discount_override);
+    if (t.original_price && t.original_price > t.price) {
+      return Math.round(((t.original_price - t.price) / t.original_price) * 100);
+    }
+    return 0;
+  };
+
+  const getSavings = (pkg: any) => {
+    if (pkg.savings_override && pkg.savings_override > 0) return pkg.savings_override;
+    const price = pkg.discounted_price ?? pkg.original_price;
+    if (pkg.original_price > price) return pkg.original_price - price;
+    return 0;
   };
 
   return (
@@ -193,7 +225,6 @@ const Index = () => {
             </div>
           </motion.form>
 
-          {/* Inline Search Results */}
           {showResults && q && (
             <div className="absolute z-50 mt-2 w-full rounded-xl border border-border bg-card shadow-lg max-h-[400px] overflow-y-auto">
               {!hasResults && (
@@ -201,7 +232,6 @@ const Index = () => {
                   No tests or packages found for "{heroSearch.trim()}"
                 </div>
               )}
-
               {matchedTests.length > 0 && (
                 <div className="p-3">
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">Tests</p>
@@ -228,7 +258,6 @@ const Index = () => {
                   </div>
                 </div>
               )}
-
               {matchedPackages.length > 0 && (
                 <div className="p-3 border-t border-border">
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2 px-1">Packages</p>
@@ -260,7 +289,6 @@ const Index = () => {
                   </div>
                 </div>
               )}
-
               {hasResults && (
                 <div className="border-t border-border p-2">
                   <Button
@@ -335,7 +363,7 @@ const Index = () => {
                 variants={fadeUp}
                 custom={i}
                 onClick={() => setCertPreview(cert)}
-                className="group flex flex-col items-center gap-3 rounded-xl border border-border bg-card p-6 transition-all hover:card-shadow-hover hover:scale-[1.03] focus:outline-none focus:ring-2 focus:ring-primary"
+                className="group flex flex-col items-center gap-3 rounded-xl border border-border bg-card p-6 transition-all hover:card-shadow-hover hover:scale-[1.03] focus:outline-none focus:ring-2 focus:ring-primary w-48"
               >
                 {cert.image_url ? (
                   <img src={cert.image_url} alt={cert.name} width={107} height={80} className="h-20 w-auto object-contain" loading="lazy" />
@@ -348,136 +376,275 @@ const Index = () => {
                 {cert.issuing_authority && (
                   <span className="text-xs text-muted-foreground">{cert.issuing_authority}</span>
                 )}
+                {cert.authority_logo && (
+                  <img src={cert.authority_logo} alt="Authority" className="h-6 object-contain" loading="lazy" />
+                )}
+                <div className="flex items-center gap-1">
+                  {cert.is_verified && (
+                    <span className="inline-flex items-center gap-1 text-xs font-medium text-primary">
+                      <BadgeCheck className="h-3.5 w-3.5" /> Verified
+                    </span>
+                  )}
+                </div>
+                {cert.valid_till && (
+                  <span className="text-[10px] text-muted-foreground">
+                    Valid till: {new Date(cert.valid_till).getFullYear()}
+                  </span>
+                )}
               </motion.button>
             ))}
           </div>
         </section>
       )}
 
-      {/* Certification Preview Dialog */}
-      <Dialog open={!!certPreview} onOpenChange={(o) => !o && setCertPreview(null)}>
-        <DialogContent className="max-w-lg">
-          <DialogTitle className="sr-only">{certPreview?.name}</DialogTitle>
-          {certPreview && (
-            <div className="text-center">
-              {certPreview.image_url ? (
-                <img src={certPreview.image_url} alt={certPreview.name} className="mx-auto max-h-80 object-contain rounded-lg" />
-              ) : (
-                <div className="mx-auto flex h-32 w-32 items-center justify-center rounded-full bg-accent">
-                  <BadgeCheck className="h-16 w-16 text-primary" />
-                </div>
-              )}
-              <h3 className="mt-4 font-display text-xl font-semibold text-foreground">{certPreview.name}</h3>
-              {certPreview.issuing_authority && (
-                <p className="text-sm text-muted-foreground mt-1">{certPreview.issuing_authority}</p>
-              )}
-              {certPreview.description && (
-                <p className="text-sm text-muted-foreground mt-3">{certPreview.description}</p>
-              )}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Certification Preview */}
+      <CertificatePreview cert={certPreview} open={!!certPreview} onClose={() => setCertPreview(null)} />
 
-      {/* Popular Tests */}
+      {/* Popular Tests - Horizontal Scroll */}
       <section className="bg-section-gradient py-20">
         <div className="container">
           <SectionHeading title="Popular Tests" subtitle="Browse our most frequently requested diagnostic tests" />
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {testsQuery.error && (
-              <div className="col-span-3 p-4">
-                <ErrorBox title="Failed to load tests" message={String(testsQuery.error)} onRetry={() => testsQuery.refetch()} />
-              </div>
-            )}
-            {testsQuery.isLoading && Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="flex items-start justify-between rounded-xl border border-border bg-card p-5">
-                <div className="flex-1">
-                  <div className="h-4 w-24 mb-2"><div className="animate-pulse rounded bg-muted h-4 w-full" /></div>
-                  <div className="h-5 w-40 mb-2"><div className="animate-pulse rounded bg-muted h-5 w-full" /></div>
+          {testsQuery.error && (
+            <div className="max-w-md mx-auto mb-6">
+              <ErrorBox title="Failed to load tests" message={String(testsQuery.error)} onRetry={() => testsQuery.refetch()} />
+            </div>
+          )}
+          {testsQuery.isLoading ? (
+            <HorizontalScroll>
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="min-w-[260px] max-w-[300px] snap-start flex-shrink-0 rounded-xl border border-border bg-card p-5">
+                  <Skeleton className="h-4 w-24 mb-3" />
+                  <Skeleton className="h-5 w-40 mb-3" />
+                  <Skeleton className="h-4 w-32 mb-4" />
+                  <div className="flex items-baseline gap-2">
+                    <Skeleton className="h-7 w-16" />
+                    <Skeleton className="h-4 w-12" />
+                  </div>
                 </div>
-              </div>
-            ))}
-            {(testsQuery.data ?? []).map((t: any, i: number) => (
-              <motion.div key={t.id} initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={i}
-                className="flex items-start justify-between rounded-xl border border-border bg-card p-5 transition-all hover:card-shadow-hover hover:scale-[1.01]">
-                <div>
-                  <p className="text-xs font-medium text-primary">{getCatNames(t)}</p>
-                  <h3 className="mt-1 font-semibold text-foreground">{t.name}</h3>
-                  <p className="mt-1 text-xs text-muted-foreground">{t.report_time} • {t.sample_type}</p>
-                </div>
-                <div className="text-right shrink-0 ml-4">
-                  {t.original_price && t.original_price > t.price && (
-                    <p className="text-xs text-muted-foreground line-through">₹{t.original_price}</p>
-                  )}
-                  <p className="font-display text-lg font-bold text-primary">₹{t.price}</p>
-                  <Button asChild size="sm" variant="outline" className="mt-1 h-7 text-xs"><Link to="/book">Book</Link></Button>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+              ))}
+            </HorizontalScroll>
+          ) : (
+            <HorizontalScroll>
+              {homepageTests.map((t: any, i: number) => {
+                const discountPct = getDiscountPct(t);
+                return (
+                  <motion.div
+                    key={t.id}
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true }}
+                    variants={fadeUp}
+                    custom={i}
+                    className="min-w-[260px] max-w-[300px] snap-start flex-shrink-0 rounded-xl border border-border bg-card p-5 transition-all hover:card-shadow-hover hover:scale-[1.01] flex flex-col"
+                  >
+                    <h3 className="font-semibold text-foreground text-base">{t.name}</h3>
+                    <p className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Clock className="h-3.5 w-3.5 text-primary" />
+                      Report: {t.report_time}
+                    </p>
+                    <div className="mt-auto pt-4">
+                      <div className="flex items-baseline gap-2">
+                        <span className="font-display text-xl font-bold text-primary">₹{t.price}</span>
+                        {t.original_price && t.original_price > t.price && (
+                          <span className="text-sm text-muted-foreground line-through">₹{t.original_price}</span>
+                        )}
+                      </div>
+                      {discountPct > 0 && (
+                        <span className="inline-flex items-center gap-1 mt-1 rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-semibold text-destructive">
+                          <Percent className="h-3 w-3" /> {discountPct}% OFF
+                        </span>
+                      )}
+                    </div>
+                    <Button asChild size="sm" variant="outline" className="mt-3 w-full">
+                      <Link to="/book">Book Now</Link>
+                    </Button>
+                  </motion.div>
+                );
+              })}
+            </HorizontalScroll>
+          )}
           <div className="mt-8 text-center">
             <Button asChild variant="outline"><Link to="/tests">View All Tests <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
           </div>
         </div>
       </section>
 
-      {/* Health Packages */}
+      {/* Health Packages - Horizontal Scroll */}
       <section className="container py-20">
         <SectionHeading title="Health Packages" subtitle="Comprehensive health checkup packages at affordable prices" />
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {packagesQuery.isLoading && Array.from({ length: 4 }).map((_, i) => (
-            <div key={`pkg-skel-${i}`} className="relative rounded-xl border p-6">
-              <div className="h-5 w-32 mb-3 bg-muted animate-pulse" />
-              <div className="h-4 w-full mb-3 bg-muted animate-pulse" />
-              <div className="h-8 w-full bg-muted animate-pulse" />
-            </div>
-          ))}
-          {packagesQuery.error && (
-            <div className="col-span-4 p-6">
-              <ErrorBox title="Failed to load packages" message={String(packagesQuery.error)} onRetry={() => packagesQuery.refetch()} />
-            </div>
-          )}
-          {packages.map((pkg: any, i: number) => (
-            <motion.div key={pkg.id} initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={i}
-              className={`relative flex flex-col rounded-xl border p-6 transition-all hover:card-shadow-hover hover:scale-[1.02] ${pkg.is_popular ? "border-primary ring-2 ring-primary/20 bg-accent/50" : "border-border bg-card"}`}>
-              {pkg.is_popular && (
-                <span className="absolute -top-3 left-4 inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground shadow-sm"><Star className="h-3 w-3" /> Popular</span>
-              )}
-              <h3 className="font-display text-lg font-semibold text-foreground">{pkg.name}</h3>
-              <p className="mt-1 text-sm text-muted-foreground">{pkg.description}</p>
-              <p className="mt-3 font-display text-3xl font-bold text-primary">₹{pkg.discounted_price ?? pkg.original_price}</p>
-              {pkg.discounted_price && pkg.discounted_price < pkg.original_price && (
-                <p className="text-sm text-muted-foreground line-through">₹{pkg.original_price}</p>
-              )}
-              <ul className="mt-4 flex-1 space-y-1.5">
-                {(testNames[pkg.id] ?? []).map((t: string) => (
-                  <li key={t} className="flex items-center gap-2 text-xs text-muted-foreground"><CheckCircle className="h-3.5 w-3.5 text-primary shrink-0" /> {t}</li>
-                ))}
-              </ul>
-              <Button asChild className="mt-5 w-full" size="sm" variant={pkg.is_popular ? "default" : "outline"}><Link to="/book">Book Now</Link></Button>
-            </motion.div>
-          ))}
-        </div>
+        {packagesQuery.error && (
+          <div className="max-w-md mx-auto mb-6">
+            <ErrorBox title="Failed to load packages" message={String(packagesQuery.error)} onRetry={() => packagesQuery.refetch()} />
+          </div>
+        )}
+        {packagesQuery.isLoading ? (
+          <HorizontalScroll>
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="min-w-[280px] max-w-[320px] snap-start flex-shrink-0 rounded-xl border border-border p-6">
+                <Skeleton className="h-6 w-32 mb-2" />
+                <Skeleton className="h-4 w-full mb-4" />
+                <Skeleton className="h-10 w-28 mb-4" />
+                <div className="space-y-2">
+                  <Skeleton className="h-3 w-full" />
+                  <Skeleton className="h-3 w-5/6" />
+                  <Skeleton className="h-3 w-3/4" />
+                </div>
+                <Skeleton className="mt-6 h-10 w-full" />
+              </div>
+            ))}
+          </HorizontalScroll>
+        ) : (
+          <HorizontalScroll>
+            {packages.map((pkg: any, i: number) => {
+              const allTests = testNames[pkg.id] ?? [];
+              const featuredIds: string[] = pkg.featured_test_ids ?? [];
+              // Show featured tests if set, otherwise first 5
+              const displayTests = featuredIds.length > 0
+                ? allTests.filter((_: string, idx: number) => idx < 5) // simplified - use name matching
+                : allTests.slice(0, 5);
+              const extraCount = allTests.length - displayTests.length;
+              const savings = getSavings(pkg);
+              const price = pkg.discounted_price ?? pkg.original_price;
+
+              return (
+                <motion.div
+                  key={pkg.id}
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true }}
+                  variants={fadeUp}
+                  custom={i}
+                  className={`min-w-[280px] max-w-[320px] snap-start flex-shrink-0 relative flex flex-col rounded-xl border p-6 transition-all hover:card-shadow-hover hover:scale-[1.02] ${pkg.is_popular ? "border-primary ring-2 ring-primary/20 bg-accent/50" : "border-border bg-card"}`}
+                >
+                  {pkg.is_popular && (
+                    <span className="absolute -top-3 left-4 inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground shadow-sm">
+                      <Star className="h-3 w-3" /> Popular
+                    </span>
+                  )}
+                  <div className="flex items-start justify-between">
+                    <h3 className="font-display text-lg font-semibold text-foreground">{pkg.name}</h3>
+                    {pkg.instructions && (
+                      isMobile ? (
+                        <button
+                          type="button"
+                          onClick={() => setInstructionsModal({ name: pkg.name, text: pkg.instructions })}
+                          className="shrink-0 ml-2 text-muted-foreground hover:text-primary transition-colors"
+                        >
+                          <Info className="h-4 w-4" />
+                        </button>
+                      ) : (
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <button type="button" className="shrink-0 ml-2 text-muted-foreground hover:text-primary transition-colors">
+                              <Info className="h-4 w-4" />
+                            </button>
+                          </PopoverTrigger>
+                          <PopoverContent className="max-w-xs text-sm">
+                            <p className="font-medium text-foreground mb-1">Instructions</p>
+                            <p className="text-muted-foreground whitespace-pre-line">{pkg.instructions}</p>
+                          </PopoverContent>
+                        </Popover>
+                      )
+                    )}
+                  </div>
+                  {pkg.description && (
+                    <p className="mt-1 text-sm text-muted-foreground line-clamp-3">{pkg.description}</p>
+                  )}
+                  <div className="mt-3">
+                    <div className="flex items-baseline gap-2">
+                      <span className="font-display text-3xl font-bold text-primary">₹{price}</span>
+                      {pkg.discounted_price && pkg.discounted_price < pkg.original_price && (
+                        <span className="text-sm text-muted-foreground line-through">₹{pkg.original_price}</span>
+                      )}
+                    </div>
+                    {savings > 0 && (
+                      <p className="text-xs font-semibold text-primary mt-0.5">Save ₹{savings}</p>
+                    )}
+                  </div>
+                  {pkg.show_test_count !== false && allTests.length > 0 && (
+                    <p className="mt-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      {allTests.length} Tests Included
+                    </p>
+                  )}
+                  {displayTests.length > 0 && (
+                    <ul className="mt-2 flex-1 space-y-1.5">
+                      {displayTests.map((t: string) => (
+                        <li key={t} className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <CheckCircle className="h-3.5 w-3.5 text-primary shrink-0" /> {t}
+                        </li>
+                      ))}
+                      {extraCount > 0 && (
+                        <li>
+                          <button
+                            type="button"
+                            onClick={() => setPkgTestsModal({ name: pkg.name, tests: allTests })}
+                            className="text-xs font-medium text-primary hover:underline"
+                          >
+                            +{extraCount} more tests
+                          </button>
+                        </li>
+                      )}
+                    </ul>
+                  )}
+                  <Button asChild className="mt-5 w-full" size="sm" variant={pkg.is_popular ? "default" : "outline"}>
+                    <Link to="/book">Book Now</Link>
+                  </Button>
+                </motion.div>
+              );
+            })}
+          </HorizontalScroll>
+        )}
       </section>
+
+      {/* Package Tests Modal */}
+      <PackageTestsModal
+        packageName={pkgTestsModal?.name ?? ""}
+        tests={pkgTestsModal?.tests ?? []}
+        open={!!pkgTestsModal}
+        onClose={() => setPkgTestsModal(null)}
+      />
+
+      {/* Instructions Modal (mobile) */}
+      <Dialog open={!!instructionsModal} onOpenChange={(o) => !o && setInstructionsModal(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogTitle>{instructionsModal?.name} — Instructions</DialogTitle>
+          <p className="text-sm text-muted-foreground whitespace-pre-line mt-2">{instructionsModal?.text}</p>
+        </DialogContent>
+      </Dialog>
 
       {/* Doctors */}
       <section className="bg-section-gradient py-20">
         <div className="container">
           <SectionHeading title="Our Expert Doctors" subtitle="Meet our team of qualified healthcare professionals" />
-          <div className="grid gap-6 sm:grid-cols-3 max-w-3xl mx-auto">
-            {(doctorsQuery.data ?? []).map((d: any, i: number) => (
-              <motion.div key={d.id} initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={i}
-                className="overflow-hidden rounded-xl border border-border bg-card text-center card-shadow transition-all hover:card-shadow-hover hover:scale-[1.02]">
-                {d.profile_image && <img src={d.profile_image} alt={d.name} className="aspect-square w-full object-cover" loading="lazy" />}
-                <div className="p-4">
-                  <h3 className="font-display text-base font-semibold text-foreground">{d.name}</h3>
-                  <p className="text-sm text-primary">{d.specialization}</p>
-                  {d.qualification && <p className="text-xs text-muted-foreground mt-1">{d.qualification}</p>}
-                  {d.experience_years && <p className="text-xs text-muted-foreground mt-0.5">{d.experience_years} Years Experience</p>}
+          {doctorsQuery.isLoading ? (
+            <div className="grid gap-6 sm:grid-cols-3 max-w-3xl mx-auto">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="overflow-hidden rounded-xl border border-border bg-card text-center">
+                  <Skeleton className="aspect-square w-full" />
+                  <div className="p-4 space-y-2">
+                    <Skeleton className="h-4 w-32 mx-auto" />
+                    <Skeleton className="h-3 w-24 mx-auto" />
+                    <Skeleton className="h-3 w-20 mx-auto" />
+                  </div>
                 </div>
-              </motion.div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className={`grid gap-6 max-w-3xl mx-auto ${(doctorsQuery.data?.length ?? 0) >= 3 ? "sm:grid-cols-3" : "sm:grid-cols-2 justify-items-center"}`}>
+              {(doctorsQuery.data ?? []).map((d: any, i: number) => (
+                <motion.div key={d.id} initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={i}
+                  className="overflow-hidden rounded-xl border border-border bg-card text-center card-shadow transition-all hover:card-shadow-hover hover:scale-[1.02] w-full max-w-[280px]">
+                  {d.profile_image && <img src={d.profile_image} alt={d.name} className="aspect-square w-full object-cover" loading="lazy" />}
+                  <div className="p-4">
+                    <h3 className="font-display text-base font-semibold text-foreground">{d.name}</h3>
+                    <p className="text-sm text-primary">{d.specialization}</p>
+                    {d.qualification && <p className="text-xs text-muted-foreground mt-1">{d.qualification}</p>}
+                    {d.experience_years && <p className="text-xs text-muted-foreground mt-0.5">{d.experience_years} Years Experience</p>}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

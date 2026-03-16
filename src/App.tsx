@@ -51,6 +51,7 @@ const AdminVisitors = lazy(() => import("./pages/admin/AdminVisitors"));
 const AdminProfile = lazy(() => import("./pages/admin/AdminProfile"));
 const AdminThemeSettings = lazy(() => import("./pages/admin/AdminThemeSettings"));
 const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
+const PreviewHome = lazy(() => import("./pages/PreviewHome"));
 
 const PageLoader = () => (
   <div className="flex min-h-[50vh] items-center justify-center">
@@ -81,6 +82,7 @@ const App = () => (
                   <Route path="/reports" element={<ReportsPage />} />
                   <Route path="/blog" element={<BlogPage />} />
                   <Route path="/blog/:slug" element={<BlogArticlePage />} />
+                  <Route path="/preview/home" element={<PreviewHome />} />
                   <Route path="/:slug" element={<LocationTestPage />} />
                 </Route>
                 <Route path="/logout" element={<LogoutPage />} />
