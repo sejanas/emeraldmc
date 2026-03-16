@@ -141,7 +141,7 @@ const Index = () => {
             </div>
           </motion.div>
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, delay: 0.2 }}>
-            <img src={heroImg} alt="Shifa's Mainland Healthcare - ISO certified diagnostic laboratory in Sri Vijaya Puram" width={960} height={540} className="w-full rounded-2xl card-shadow object-cover" loading="eager" />
+            <img src={heroImg} alt="Shifa's Mainland Healthcare - ISO certified diagnostic laboratory in Sri Vijaya Puram" width={960} height={540} className="w-full rounded-2xl card-shadow object-cover" loading="eager" fetchPriority="high" />
           </motion.div>
         </div>
       </section>
