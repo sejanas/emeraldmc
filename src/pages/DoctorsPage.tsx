@@ -16,7 +16,7 @@ const DoctorsPage = () => {
       <PageMeta title="Our Doctors – Expert Healthcare Professionals" description="Meet the qualified pathologists and physicians at Shifa's Mainland Healthcare in Sri Vijaya Puram, Port Blair." />
       <Breadcrumbs items={[{ label: "Our Doctors" }]} />
       <SectionHeading title="Our Expert Doctors" subtitle="Meet the qualified healthcare professionals at Emerald Medical Care" />
-      <div className={`grid gap-8 max-w-4xl mx-auto ${doctors.length >= 3 ? "sm:grid-cols-3" : "sm:grid-cols-2 justify-items-center"}`}>
+      <div className={`grid gap-8 max-w-4xl mx-auto ${doctors.length >= 3 ? "sm:grid-cols-3" : doctors.length === 1 ? "grid-cols-1 place-items-center" : "sm:grid-cols-2 justify-items-center"}`}>
         {doctorsQuery.error && (
           <div className="col-span-3 p-6">
             <ErrorBox title="Failed to load doctors" message={String(doctorsQuery.error)} onRetry={() => doctorsQuery.refetch()} />

@@ -2,11 +2,11 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import PageMeta from "@/components/PageMeta";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, Shield, Clock, FlaskConical, Users, Star, CheckCircle, Award, Home, Search, ClipboardList, Microscope, FileDown, MapPin, BadgeCheck, Info, Percent } from "lucide-react";
+import { ArrowRight, Shield, Clock, FlaskConical, Users, Star, CheckCircle, Award, Home, Search, ClipboardList, Microscope, FileDown, MapPin, BadgeCheck, Info, Percent, Droplets } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Skeleton } from "@/components/ui/skeleton";
 import SectionHeading from "@/components/SectionHeading";
 import StatsCounter from "@/components/StatsCounter";
@@ -61,7 +61,7 @@ const Index = () => {
   const [heroSearch, setHeroSearch] = useState("");
   const [showResults, setShowResults] = useState(false);
   const [certPreview, setCertPreview] = useState<any>(null);
-  const [pkgTestsModal, setPkgTestsModal] = useState<{ name: string; tests: string[] } | null>(null);
+  const [pkgTestsModal, setPkgTestsModal] = useState<{ name: string; tests: string[]; subCounts?: Record<string, number> } | null>(null);
   const [instructionsModal, setInstructionsModal] = useState<{ name: string; text: string } | null>(null);
   const searchRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
@@ -79,16 +79,24 @@ const Index = () => {
 
   const packages = packagesQuery.data?.packages ?? [];
   const testNames = packagesQuery.data?.testNames ?? {};
+  const testSubCounts: Record<string, Record<string, number>> = packagesQuery.data?.testSubCounts ?? {};
   const certifications = (certificationsQuery.data ?? []).filter((c: any) => c.is_active !== false);
 
-  // Filter tests that should show on homepage
+  // Filter active packages for display
+  const activePackages = useMemo(() => packages.filter((p: any) => p.is_active !== false), [packages]);
+
+  // Filter tests that should show on homepage — enforce even count, min 6, 2-row grid
   const homepageTests = useMemo(() => {
     const allTests = testsQuery.data ?? [];
     const withHomepage = allTests.filter((t: any) => t.show_on_homepage);
-    // If admin hasn't set show_on_homepage, fall back to first 6
-    if (withHomepage.length >= 6) return withHomepage;
-    return allTests.slice(0, 6);
+    const base = withHomepage.length >= 6 ? withHomepage : allTests.slice(0, Math.max(allTests.length, 6));
+    // Enforce even count so 2-row grid has no orphans
+    const count = base.length % 2 === 0 ? base.length : base.length - 1;
+    return base.slice(0, Math.max(count, 6));
   }, [testsQuery.data]);
+
+  // State for description modal on packages
+  const [descModal, setDescModal] = useState<{ name: string; text: string } | null>(null);
 
   const q = heroSearch.trim().toLowerCase();
 
@@ -410,55 +418,73 @@ const Index = () => {
             </div>
           )}
           {testsQuery.isLoading ? (
-            <HorizontalScroll>
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="min-w-[260px] max-w-[300px] snap-start flex-shrink-0 rounded-xl border border-border bg-card p-5">
-                  <Skeleton className="h-4 w-24 mb-3" />
-                  <Skeleton className="h-5 w-40 mb-3" />
-                  <Skeleton className="h-4 w-32 mb-4" />
-                  <div className="flex items-baseline gap-2">
-                    <Skeleton className="h-7 w-16" />
-                    <Skeleton className="h-4 w-12" />
-                  </div>
+            <HorizontalScroll forwardOnly>
+              {Array.from({ length: 4 }).map((_, colIdx) => (
+                <div key={colIdx} className="flex flex-col gap-4 flex-shrink-0 snap-start w-[240px] sm:w-[270px]">
+                  {[0, 1].map(r => (
+                    <div key={r} className="rounded-xl border border-border bg-card p-5">
+                      <Skeleton className="h-4 w-24 mb-3" />
+                      <Skeleton className="h-5 w-40 mb-3" />
+                      <Skeleton className="h-4 w-32 mb-4" />
+                      <div className="flex items-baseline gap-2">
+                        <Skeleton className="h-7 w-16" />
+                        <Skeleton className="h-4 w-12" />
+                      </div>
+                    </div>
+                  ))}
                 </div>
               ))}
             </HorizontalScroll>
           ) : (
-            <HorizontalScroll>
-              {homepageTests.map((t: any, i: number) => {
-                const discountPct = getDiscountPct(t);
+            <HorizontalScroll forwardOnly>
+              {Array.from({ length: Math.ceil(homepageTests.length / 2) }).map((_, colIdx) => {
+                const pair = homepageTests.slice(colIdx * 2, colIdx * 2 + 2);
                 return (
-                  <motion.div
-                    key={t.id}
-                    initial="hidden"
-                    whileInView="visible"
-                    viewport={{ once: true }}
-                    variants={fadeUp}
-                    custom={i}
-                    className="min-w-[260px] max-w-[300px] snap-start flex-shrink-0 rounded-xl border border-border bg-card p-5 transition-all hover:card-shadow-hover hover:scale-[1.01] flex flex-col"
-                  >
-                    <h3 className="font-semibold text-foreground text-base">{t.name}</h3>
-                    <p className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <Clock className="h-3.5 w-3.5 text-primary" />
-                      Report: {t.report_time}
-                    </p>
-                    <div className="mt-auto pt-4">
-                      <div className="flex items-baseline gap-2">
-                        <span className="font-display text-xl font-bold text-primary">₹{t.price}</span>
-                        {t.original_price && t.original_price > t.price && (
-                          <span className="text-sm text-muted-foreground line-through">₹{t.original_price}</span>
-                        )}
-                      </div>
-                      {discountPct > 0 && (
-                        <span className="inline-flex items-center gap-1 mt-1 rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-semibold text-destructive">
-                          <Percent className="h-3 w-3" /> {discountPct}% OFF
-                        </span>
-                      )}
-                    </div>
-                    <Button asChild size="sm" variant="outline" className="mt-3 w-full">
-                      <Link to="/book">Book Now</Link>
-                    </Button>
-                  </motion.div>
+                  <div key={colIdx} className="flex flex-col gap-4 flex-shrink-0 snap-start w-[240px] sm:w-[270px]">
+                    {pair.map((t: any, rowIdx: number) => {
+                      const discountPct = getDiscountPct(t);
+                      const animIdx = colIdx * 2 + rowIdx;
+                      return (
+                        <motion.div
+                          key={t.id}
+                          initial="hidden"
+                          whileInView="visible"
+                          viewport={{ once: true }}
+                          variants={fadeUp}
+                          custom={animIdx}
+                          className="rounded-xl border border-border bg-card p-5 transition-all hover:card-shadow-hover hover:scale-[1.01] flex flex-col flex-1"
+                        >
+                          <h3 className="font-semibold text-foreground text-base">{t.name}</h3>
+                          <p className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <Clock className="h-3.5 w-3.5 text-primary" />
+                            Report: {t.report_time}
+                          </p>
+                          {t.sample_type && (
+                            <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                              <Droplets className="h-3.5 w-3.5 text-primary" />
+                              Sample: {t.sample_type}
+                            </p>
+                          )}
+                          <div className="mt-auto pt-4">
+                            <div className="flex items-baseline gap-2">
+                              <span className="font-display text-xl font-bold text-primary">₹{t.price}</span>
+                              {t.original_price && t.original_price > t.price && (
+                                <span className="text-sm text-muted-foreground line-through">₹{t.original_price}</span>
+                              )}
+                            </div>
+                            {discountPct > 0 && (
+                              <span className="inline-flex items-center gap-1 mt-1 rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-semibold text-destructive">
+                                <Percent className="h-3 w-3" /> {discountPct}% OFF
+                              </span>
+                            )}
+                          </div>
+                          <Button asChild size="sm" variant="outline" className="mt-3 w-full">
+                            <Link to="/book">Book Now</Link>
+                          </Button>
+                        </motion.div>
+                      );
+                    })}
+                  </div>
                 );
               })}
             </HorizontalScroll>
@@ -478,9 +504,9 @@ const Index = () => {
           </div>
         )}
         {packagesQuery.isLoading ? (
-          <HorizontalScroll>
+          <HorizontalScroll forwardOnly className="pt-5">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="min-w-[280px] max-w-[320px] snap-start flex-shrink-0 rounded-xl border border-border p-6">
+              <div key={i} className="w-[300px] flex-shrink-0 snap-start rounded-xl border border-border p-6">  
                 <Skeleton className="h-6 w-32 mb-2" />
                 <Skeleton className="h-4 w-full mb-4" />
                 <Skeleton className="h-10 w-28 mb-4" />
@@ -494,13 +520,20 @@ const Index = () => {
             ))}
           </HorizontalScroll>
         ) : (
-          <HorizontalScroll>
-            {packages.map((pkg: any, i: number) => {
+          <HorizontalScroll forwardOnly className="pt-5">
+            {activePackages.map((pkg: any, i: number) => {
               const allTests = testNames[pkg.id] ?? [];
+              const allTestIds: string[] = packagesQuery.data?.testIds?.[pkg.id] ?? [];
               const featuredIds: string[] = pkg.featured_test_ids ?? [];
-              // Show featured tests if set, otherwise first 5
+              // Show featured tests by id lookup, otherwise first 5
               const displayTests = featuredIds.length > 0
-                ? allTests.filter((_: string, idx: number) => idx < 5) // simplified - use name matching
+                ? featuredIds
+                    .map((fid: string) => {
+                      const idx = allTestIds.indexOf(fid);
+                      return idx >= 0 ? allTests[idx] : null;
+                    })
+                    .filter(Boolean)
+                    .slice(0, 5) as string[]
                 : allTests.slice(0, 5);
               const extraCount = allTests.length - displayTests.length;
               const savings = getSavings(pkg);
@@ -514,10 +547,10 @@ const Index = () => {
                   viewport={{ once: true }}
                   variants={fadeUp}
                   custom={i}
-                  className={`min-w-[280px] max-w-[320px] snap-start flex-shrink-0 relative flex flex-col rounded-xl border p-6 transition-all hover:card-shadow-hover hover:scale-[1.02] ${pkg.is_popular ? "border-primary ring-2 ring-primary/20 bg-accent/50" : "border-border bg-card"}`}
+                  className={`w-[300px] flex-shrink-0 snap-start relative flex flex-col rounded-xl border p-6 pt-8 transition-all hover:card-shadow-hover hover:scale-[1.02] ${pkg.is_popular ? "border-primary ring-2 ring-primary/20 bg-accent/50" : "border-border bg-card"}`}
                 >
                   {pkg.is_popular && (
-                    <span className="absolute -top-3 left-4 inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground shadow-sm">
+                    <span className="absolute -top-3 left-4 z-10 inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground shadow-sm">
                       <Star className="h-3 w-3" /> Popular
                     </span>
                   )}
@@ -533,22 +566,35 @@ const Index = () => {
                           <Info className="h-4 w-4" />
                         </button>
                       ) : (
-                        <Popover>
-                          <PopoverTrigger asChild>
+                        <HoverCard>
+                          <HoverCardTrigger asChild>
                             <button type="button" className="shrink-0 ml-2 text-muted-foreground hover:text-primary transition-colors">
                               <Info className="h-4 w-4" />
                             </button>
-                          </PopoverTrigger>
-                          <PopoverContent className="max-w-xs text-sm">
+                          </HoverCardTrigger>
+                          <HoverCardContent className="max-w-xs text-sm">
                             <p className="font-medium text-foreground mb-1">Instructions</p>
                             <p className="text-muted-foreground whitespace-pre-line">{pkg.instructions}</p>
-                          </PopoverContent>
-                        </Popover>
+                          </HoverCardContent>
+                        </HoverCard>
                       )
                     )}
                   </div>
                   {pkg.description && (
-                    <p className="mt-1 text-sm text-muted-foreground line-clamp-3">{pkg.description}</p>
+                    <div className="mt-1">
+                      <p
+                        className="text-sm text-muted-foreground line-clamp-3"
+                      >
+                        {pkg.description}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setDescModal({ name: pkg.name, text: pkg.description })}
+                        className="text-xs font-medium text-primary hover:underline mt-0.5"
+                      >
+                        Read more →
+                      </button>
+                    </div>
                   )}
                   <div className="mt-3">
                     <div className="flex items-baseline gap-2">
@@ -563,21 +609,25 @@ const Index = () => {
                   </div>
                   {pkg.show_test_count !== false && allTests.length > 0 && (
                     <p className="mt-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                      {allTests.length} Tests Included
+                      🧪 {allTests.length} Tests Included
                     </p>
                   )}
                   {displayTests.length > 0 && (
                     <ul className="mt-2 flex-1 space-y-1.5">
-                      {displayTests.map((t: string) => (
-                        <li key={t} className="flex items-center gap-2 text-xs text-muted-foreground">
-                          <CheckCircle className="h-3.5 w-3.5 text-primary shrink-0" /> {t}
-                        </li>
-                      ))}
+                      {displayTests.map((t: string) => {
+                        const subCount = testSubCounts[pkg.id]?.[t] ?? 0;
+                        return (
+                          <li key={t} className="flex items-center gap-2 text-xs text-muted-foreground">
+                            <CheckCircle className="h-3.5 w-3.5 text-primary shrink-0" /> {t}
+                            {subCount > 0 && <span className="text-[10px] text-muted-foreground/70">({subCount} parameters)</span>}
+                          </li>
+                        );
+                      })}
                       {extraCount > 0 && (
                         <li>
                           <button
                             type="button"
-                            onClick={() => setPkgTestsModal({ name: pkg.name, tests: allTests })}
+                            onClick={() => setPkgTestsModal({ name: pkg.name, tests: allTests, subCounts: testSubCounts[pkg.id] })}
                             className="text-xs font-medium text-primary hover:underline"
                           >
                             +{extraCount} more tests
@@ -600,6 +650,7 @@ const Index = () => {
       <PackageTestsModal
         packageName={pkgTestsModal?.name ?? ""}
         tests={pkgTestsModal?.tests ?? []}
+        subCounts={pkgTestsModal?.subCounts}
         open={!!pkgTestsModal}
         onClose={() => setPkgTestsModal(null)}
       />
@@ -609,6 +660,14 @@ const Index = () => {
         <DialogContent className="max-w-sm">
           <DialogTitle>{instructionsModal?.name} — Instructions</DialogTitle>
           <p className="text-sm text-muted-foreground whitespace-pre-line mt-2">{instructionsModal?.text}</p>
+        </DialogContent>
+      </Dialog>
+
+      {/* Description Modal */}
+      <Dialog open={!!descModal} onOpenChange={(o) => !o && setDescModal(null)}>
+        <DialogContent className="max-w-md">
+          <DialogTitle>{descModal?.name}</DialogTitle>
+          <p className="text-sm text-muted-foreground whitespace-pre-line mt-2">{descModal?.text}</p>
         </DialogContent>
       </Dialog>
 
@@ -630,8 +689,8 @@ const Index = () => {
               ))}
             </div>
           ) : (
-            <div className={`grid gap-6 max-w-3xl mx-auto ${(doctorsQuery.data?.length ?? 0) >= 3 ? "sm:grid-cols-3" : "sm:grid-cols-2 justify-items-center"}`}>
-              {(doctorsQuery.data ?? []).map((d: any, i: number) => (
+            <div className={`grid gap-6 max-w-3xl mx-auto ${(() => { const docs = (doctorsQuery.data ?? []).filter((d: any) => d.is_active !== false); const len = docs.length; return len >= 3 ? "sm:grid-cols-3" : len === 1 ? "grid-cols-1 place-items-center" : "sm:grid-cols-2 justify-items-center"; })()}`}>
+              {(doctorsQuery.data ?? []).filter((d: any) => d.is_active !== false).map((d: any, i: number) => (
                 <motion.div key={d.id} initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={i}
                   className="overflow-hidden rounded-xl border border-border bg-card text-center card-shadow transition-all hover:card-shadow-hover hover:scale-[1.02] w-full max-w-[280px]">
                   {d.profile_image && <img src={d.profile_image} alt={d.name} className="aspect-square w-full object-cover" loading="lazy" />}

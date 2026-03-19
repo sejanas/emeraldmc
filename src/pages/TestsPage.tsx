@@ -112,6 +112,11 @@ const TestsPage = () => {
                   ))}
                 </div>
                 <h3 className="mt-2 font-display text-lg font-semibold text-foreground">{t.name}</h3>
+                {t.is_sub_test && t.parent_test_name && (
+                  <span className="inline-block mt-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-medium text-primary">
+                    Part of {t.parent_test_name}
+                  </span>
+                )}
                 <p className="mt-1 text-sm text-muted-foreground">{t.description}</p>
                 <div className="mt-3 flex flex-wrap gap-3 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {t.report_time}</span>

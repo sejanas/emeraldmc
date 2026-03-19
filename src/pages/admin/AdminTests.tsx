@@ -7,11 +7,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, Search, Eye, EyeOff, GripVertical } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Eye, EyeOff, ArrowUp, ArrowDown, ChevronDown, ChevronUp, X } from "lucide-react";
 import { useConfirm } from "@/components/ConfirmDialog";
 import useCategories from "@/hooks/useCategories";
 import useTests from "@/hooks/useTests";
 import { useCreateTest, useUpdateTest, useDeleteTest } from "@/hooks/useTests";
+import { useSubTests, useCreateSubTest, useUpdateSubTest, useDeleteSubTest } from "@/hooks/useSubTests";
+import { reorderItem } from "@/lib/api";
 
 const AdminTests = () => {
   const { toast } = useToast();
@@ -32,6 +34,37 @@ const AdminTests = () => {
     is_active: true, fasting_required: false, display_order: 0,
     show_on_homepage: false, discount_override: null as number | null,
   });
+
+  const [reordering, setReordering] = useState<string | null>(null);
+
+  // Sub-tests state
+  const subTestsQuery = useSubTests(editing?.id ?? null);
+  const createSubTest = useCreateSubTest();
+  const updateSubTestMut = useUpdateSubTest();
+  const deleteSubTestMut = useDeleteSubTest();
+  const [newSubTestName, setNewSubTestName] = useState("");
+  const [expandedSubTest, setExpandedSubTest] = useState<string | null>(null);
+  const [subReordering, setSubReordering] = useState<string | null>(null);
+
+  const handleSubReorder = async (id: string, direction: "up" | "down") => {
+    setSubReordering(id);
+    try {
+      await reorderItem("sub_tests", id, direction);
+      subTestsQuery.refetch();
+    } catch (err: any) {
+      toast({ title: "Reorder failed", description: err.message, variant: "destructive" });
+    } finally { setSubReordering(null); }
+  };
+
+  const handleReorder = async (id: string, direction: "up" | "down") => {
+    setReordering(id);
+    try {
+      await reorderItem("tests", id, direction);
+      testsQuery.refetch();
+    } catch (err: any) {
+      toast({ title: "Reorder failed", description: err.message, variant: "destructive" });
+    } finally { setReordering(null); }
+  };
 
   const autoDiscountPct = form.original_price > 0 && form.original_price > form.price
     ? Math.round(((form.original_price - form.price) / form.original_price) * 100)
@@ -133,7 +166,7 @@ const AdminTests = () => {
         <table className="w-full text-sm">
           <thead className="bg-muted/50 text-left">
             <tr>
-              <th className="px-4 py-3 font-medium text-muted-foreground w-10"></th>
+              <th className="px-4 py-3 font-medium text-muted-foreground w-16">Order</th>
               <th className="px-4 py-3 font-medium text-muted-foreground">#</th>
               <th className="px-4 py-3 font-medium text-muted-foreground">Name</th>
               <th className="px-4 py-3 font-medium text-muted-foreground">Categories</th>
@@ -154,7 +187,12 @@ const AdminTests = () => {
                   : 0);
               return (
                 <tr key={t.id} className={`border-t border-border ${!t.is_active ? "opacity-50" : ""}`}>
-                  <td className="px-2 py-3"><GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" /></td>
+                  <td className="px-2 py-3">
+                    <div className="flex gap-0.5">
+                      <Button variant="ghost" size="icon" className="h-6 w-6" disabled={reordering === t.id} onClick={() => handleReorder(t.id, "up")}><ArrowUp className="h-3 w-3" /></Button>
+                      <Button variant="ghost" size="icon" className="h-6 w-6" disabled={reordering === t.id} onClick={() => handleReorder(t.id, "down")}><ArrowDown className="h-3 w-3" /></Button>
+                    </div>
+                  </td>
                   <td className="px-4 py-3">{t.display_order}</td>
                   <td className="px-4 py-3 font-medium">{t.name}</td>
                   <td className="px-4 py-3 text-muted-foreground">{getCatNames(t)}</td>
@@ -211,11 +249,162 @@ const AdminTests = () => {
               <div className="flex items-center gap-2"><Switch checked={form.fasting_required} onCheckedChange={(v) => setForm({ ...form, fasting_required: v })} /> <Label>Fasting</Label></div>
             </div>
             <Button onClick={save} className="w-full" disabled={saving}>{saving ? "Saving..." : "Save"}</Button>
+
+            {/* Sub-tests Section */}
+            {editing ? (
+              <div className="border-t border-border pt-4 mt-2">
+                <h4 className="font-semibold text-sm text-foreground mb-3">Sub-tests / Parameters</h4>
+                <div className="flex gap-2 mb-3">
+                  <Input
+                    placeholder="New sub-test name..."
+                    value={newSubTestName}
+                    onChange={(e) => setNewSubTestName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && newSubTestName.trim()) {
+                        e.preventDefault();
+                        createSubTest.mutateAsync({
+                          test_id: editing.id,
+                          name: newSubTestName.trim(),
+                          display_order: (subTestsQuery.data ?? []).length,
+                        }).then(() => {
+                          setNewSubTestName("");
+                          toast({ title: "Sub-test added" });
+                        }).catch((err: any) => toast({ title: "Error", description: err.message, variant: "destructive" }));
+                      }
+                    }}
+                  />
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={!newSubTestName.trim() || createSubTest.isPending}
+                    onClick={() => {
+                      createSubTest.mutateAsync({
+                        test_id: editing.id,
+                        name: newSubTestName.trim(),
+                        display_order: (subTestsQuery.data ?? []).length,
+                      }).then(() => {
+                        setNewSubTestName("");
+                        toast({ title: "Sub-test added" });
+                      }).catch((err: any) => toast({ title: "Error", description: err.message, variant: "destructive" }));
+                    }}
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                {subTestsQuery.isLoading && <p className="text-xs text-muted-foreground">Loading sub-tests...</p>}
+                <div className="space-y-2 max-h-[40vh] overflow-y-auto">
+                  {(subTestsQuery.data ?? []).map((st: any) => (
+                    <div key={st.id} className="rounded-lg border border-border bg-muted/30 p-3">
+                      <div className="flex items-center gap-2">
+                        <div className="flex flex-col gap-0.5">
+                          <button type="button" disabled={subReordering === st.id} onClick={() => handleSubReorder(st.id, "up")} className="text-muted-foreground hover:text-foreground disabled:opacity-30"><ArrowUp className="h-3 w-3" /></button>
+                          <button type="button" disabled={subReordering === st.id} onClick={() => handleSubReorder(st.id, "down")} className="text-muted-foreground hover:text-foreground disabled:opacity-30"><ArrowDown className="h-3 w-3" /></button>
+                        </div>
+                        <span className="flex-1 text-sm font-medium truncate">{st.name}</span>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <div className="flex items-center gap-1">
+                            <Switch
+                              checked={st.is_visible}
+                              onCheckedChange={(v) => updateSubTestMut.mutateAsync({ id: st.id, is_visible: v })}
+                              className="scale-75"
+                            />
+                            <span className="text-[10px] text-muted-foreground">Visible</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Switch
+                              checked={st.show_as_individual}
+                              onCheckedChange={(v) => {
+                                updateSubTestMut.mutateAsync({ id: st.id, show_as_individual: v });
+                                if (v && expandedSubTest !== st.id) setExpandedSubTest(st.id);
+                              }}
+                              className="scale-75"
+                            />
+                            <span className="text-[10px] text-muted-foreground">Individual</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setExpandedSubTest(expandedSubTest === st.id ? null : st.id)}
+                            className="text-muted-foreground hover:text-foreground"
+                          >
+                            {expandedSubTest === st.id ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              const res = await confirm({ title: "Delete Sub-test", description: `Delete "${st.name}"?`, confirmLabel: "Delete", variant: "destructive" });
+                              if (res.confirmed) {
+                                deleteSubTestMut.mutateAsync(st.id).then(() => toast({ title: "Sub-test deleted" })).catch((err: any) => toast({ title: "Error", description: err.message, variant: "destructive" }));
+                              }
+                            }}
+                            className="text-destructive hover:text-destructive/80"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {expandedSubTest === st.id && (
+                        <SubTestDetailForm subTest={st} onSave={(updates) => {
+                          updateSubTestMut.mutateAsync({ id: st.id, ...updates })
+                            .then(() => toast({ title: "Sub-test updated" }))
+                            .catch((err: any) => toast({ title: "Error", description: err.message, variant: "destructive" }));
+                        }} />
+                      )}
+                    </div>
+                  ))}
+                </div>
+                {(subTestsQuery.data ?? []).length === 0 && !subTestsQuery.isLoading && (
+                  <p className="text-xs text-muted-foreground text-center py-2">No sub-tests yet. Add one above.</p>
+                )}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground border-t border-border pt-3 mt-2">Save the test first to manage sub-tests.</p>
+            )}
           </div>
         </DialogContent>
       </Dialog>
     </div>
   );
 };
+
+// Inline detail form for an individual sub-test
+function SubTestDetailForm({ subTest, onSave }: { subTest: any; onSave: (updates: any) => void }) {
+  const [f, setF] = useState({
+    name: subTest.name ?? "",
+    slug: subTest.slug ?? "",
+    description: subTest.description ?? "",
+    price: subTest.price ?? 0,
+    original_price: subTest.original_price ?? 0,
+    sample_type: subTest.sample_type ?? "Blood",
+    report_time: subTest.report_time ?? "Same Day",
+    fasting_required: subTest.fasting_required ?? false,
+    discount_override: subTest.discount_override ?? null as number | null,
+  });
+
+  return (
+    <div className="mt-3 space-y-3 border-t border-border pt-3">
+      <div className="grid grid-cols-2 gap-2">
+        <div><Label className="text-xs">Name</Label><Input value={f.name} onChange={(e) => setF({ ...f, name: e.target.value })} className="mt-0.5 h-8 text-xs" /></div>
+        <div><Label className="text-xs">Slug</Label><Input value={f.slug} onChange={(e) => setF({ ...f, slug: e.target.value })} placeholder="auto" className="mt-0.5 h-8 text-xs" /></div>
+      </div>
+      <div><Label className="text-xs">Description</Label><Textarea value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} className="mt-0.5 text-xs" rows={2} /></div>
+      <div className="grid grid-cols-3 gap-2">
+        <div><Label className="text-xs">MRP (₹)</Label><Input type="number" value={f.original_price} onChange={(e) => setF({ ...f, original_price: +e.target.value })} className="mt-0.5 h-8 text-xs" /></div>
+        <div><Label className="text-xs">Price (₹)</Label><Input type="number" value={f.price} onChange={(e) => setF({ ...f, price: +e.target.value })} className="mt-0.5 h-8 text-xs" /></div>
+        <div><Label className="text-xs">Discount %</Label><Input type="number" value={f.discount_override ?? ""} onChange={(e) => setF({ ...f, discount_override: e.target.value ? +e.target.value : null })} placeholder="auto" className="mt-0.5 h-8 text-xs" /></div>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <div><Label className="text-xs">Sample Type</Label><Input value={f.sample_type} onChange={(e) => setF({ ...f, sample_type: e.target.value })} className="mt-0.5 h-8 text-xs" /></div>
+        <div><Label className="text-xs">Report Time</Label><Input value={f.report_time} onChange={(e) => setF({ ...f, report_time: e.target.value })} className="mt-0.5 h-8 text-xs" /></div>
+      </div>
+      <div className="flex items-center gap-2">
+        <Switch checked={f.fasting_required} onCheckedChange={(v) => setF({ ...f, fasting_required: v })} className="scale-75" />
+        <Label className="text-xs">Fasting Required</Label>
+      </div>
+      <Button size="sm" className="w-full" onClick={() => onSave(f)}>Save Details</Button>
+    </div>
+  );
+}
 
 export default AdminTests;

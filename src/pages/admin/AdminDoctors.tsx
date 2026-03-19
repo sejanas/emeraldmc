@@ -7,11 +7,12 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, Search, ChevronDown, Eye, EyeOff, GripVertical } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, ChevronDown, Eye, EyeOff, ArrowUp, ArrowDown } from "lucide-react";
 import { useConfirm } from "@/components/ConfirmDialog";
 import ImageUpload from "@/components/ImageUpload";
 import useDoctors from "@/hooks/useDoctors";
 import { useCreateDoctor, useUpdateDoctor, useDeleteDoctor } from "@/hooks/useDoctorsMutations";
+import { reorderItem } from "@/lib/api";
 
 interface ExtraFields {
   languages?: string;
@@ -39,6 +40,17 @@ const AdminDoctors = () => {
   const [extraFields, setExtraFields] = useState<ExtraFields>({
     languages: "", availability: "", consultation_fee: null, education: "", awards: "",
   });
+
+  const [reordering, setReordering] = useState<string | null>(null);
+  const handleReorder = async (id: string, direction: "up" | "down") => {
+    setReordering(id);
+    try {
+      await reorderItem("doctors", id, direction);
+      doctorsQuery.refetch();
+    } catch (err: any) {
+      toast({ title: "Reorder failed", description: err.message, variant: "destructive" });
+    } finally { setReordering(null); }
+  };
 
   const openNew = () => {
     setEditing(null);
@@ -130,7 +142,10 @@ const AdminDoctors = () => {
         {filteredDoctors.map((d: any) => (
           <div key={d.id} className={`rounded-xl border bg-card overflow-hidden card-shadow ${d.is_active !== false ? "border-border" : "border-border opacity-60"}`}>
             <div className="flex items-center gap-2 px-4 pt-3">
-              <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
+              <div className="flex gap-0.5">
+                <Button variant="ghost" size="icon" className="h-6 w-6" disabled={reordering === d.id} onClick={() => handleReorder(d.id, "up")}><ArrowUp className="h-3 w-3" /></Button>
+                <Button variant="ghost" size="icon" className="h-6 w-6" disabled={reordering === d.id} onClick={() => handleReorder(d.id, "down")}><ArrowDown className="h-3 w-3" /></Button>
+              </div>
               <span className="text-xs text-muted-foreground">#{d.display_order}</span>
               {d.is_active !== false ? <Eye className="h-3.5 w-3.5 text-primary" /> : <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />}
             </div>

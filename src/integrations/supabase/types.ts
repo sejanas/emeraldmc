@@ -670,6 +670,71 @@ export type Database = {
           },
         ]
       }
+      sub_tests: {
+        Row: {
+          id: string
+          test_id: string
+          name: string
+          is_visible: boolean
+          display_order: number
+          show_as_individual: boolean
+          price: number | null
+          original_price: number | null
+          discounted_price: number | null
+          discount_override: number | null
+          sample_type: string | null
+          report_time: string | null
+          fasting_required: boolean
+          description: string | null
+          slug: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          test_id: string
+          name: string
+          is_visible?: boolean
+          display_order?: number
+          show_as_individual?: boolean
+          price?: number | null
+          original_price?: number | null
+          discounted_price?: number | null
+          discount_override?: number | null
+          sample_type?: string | null
+          report_time?: string | null
+          fasting_required?: boolean
+          description?: string | null
+          slug?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          test_id?: string
+          name?: string
+          is_visible?: boolean
+          display_order?: number
+          show_as_individual?: boolean
+          price?: number | null
+          original_price?: number | null
+          discounted_price?: number | null
+          discount_override?: number | null
+          sample_type?: string | null
+          report_time?: string | null
+          fasting_required?: boolean
+          description?: string | null
+          slug?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sub_tests_test_id_fkey"
+            columns: ["test_id"]
+            isOneToOne: false
+            referencedRelation: "tests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tests: {
         Row: {
           category_id: string | null

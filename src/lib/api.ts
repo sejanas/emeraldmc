@@ -68,8 +68,24 @@ export async function deleteTest(id: string) {
   return request<any>(`/tests/${id}`, { method: "DELETE" });
 }
 
-export async function getPackages() {
-  return request<any>(`/packages`);
+export async function getSubTests(testId: string) {
+  return request<any>(`/sub-tests?test_id=${testId}`);
+}
+
+export async function createSubTest(body: any) {
+  return request<any>(`/sub-tests`, { method: "POST", body });
+}
+
+export async function updateSubTest(id: string, body: any) {
+  return request<any>(`/sub-tests/${id}`, { method: "PUT", body });
+}
+
+export async function deleteSubTest(id: string) {
+  return request<any>(`/sub-tests/${id}`, { method: "DELETE" });
+}
+
+export async function getPackages(includeInactive = false) {
+  return request<any>(`/packages${includeInactive ? '?active=false' : ''}`);
 }
 
 export async function createPackage(body: any) {
@@ -82,4 +98,8 @@ export async function updatePackage(id: string, body: any) {
 
 export async function deletePackage(id: string) {
   return request<any>(`/packages/${id}`, { method: "DELETE" });
+}
+
+export async function reorderItem(table: string, id: string, direction: "up" | "down") {
+  return request<any>(`/reorder`, { method: "POST", body: { table, id, direction } });
 }

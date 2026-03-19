@@ -7,9 +7,10 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useConfirm } from "@/components/ConfirmDialog";
-import { Plus, Pencil, Trash2, Search, Award, BadgeCheck, Eye, EyeOff, GripVertical } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Award, BadgeCheck, Eye, EyeOff, ArrowUp, ArrowDown } from "lucide-react";
 import { useCertifications, useCreateCertification, useUpdateCertification, useDeleteCertification } from "@/hooks/useCertifications";
 import ImageUpload from "@/components/ImageUpload";
+import { reorderItem } from "@/lib/api";
 
 const emptyForm = {
   name: "", slug: "", issuing_authority: "", description: "", image_url: "",
@@ -30,6 +31,17 @@ const AdminCertifications = () => {
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState("");
   const [form, setForm] = useState(emptyForm);
+
+  const [reordering, setReordering] = useState<string | null>(null);
+  const handleReorder = async (id: string, direction: "up" | "down") => {
+    setReordering(id);
+    try {
+      await reorderItem("certifications", id, direction);
+      certsQuery.refetch();
+    } catch (err: any) {
+      toast({ title: "Reorder failed", description: err.message, variant: "destructive" });
+    } finally { setReordering(null); }
+  };
 
   const openNew = () => {
     setEditing(null);
@@ -94,7 +106,10 @@ const AdminCertifications = () => {
         {filtered.map((c: any) => (
           <div key={c.id} className={`rounded-xl border bg-card p-4 ${c.is_active ? "border-border" : "border-border opacity-60"}`}>
             <div className="flex items-center gap-2 mb-2">
-              <GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" />
+              <div className="flex gap-0.5">
+                <Button variant="ghost" size="icon" className="h-6 w-6" disabled={reordering === c.id} onClick={() => handleReorder(c.id, "up")}><ArrowUp className="h-3 w-3" /></Button>
+                <Button variant="ghost" size="icon" className="h-6 w-6" disabled={reordering === c.id} onClick={() => handleReorder(c.id, "down")}><ArrowDown className="h-3 w-3" /></Button>
+              </div>
               <span className="text-xs text-muted-foreground">#{c.display_order}</span>
               {c.is_active ? <Eye className="h-3.5 w-3.5 text-primary" /> : <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />}
               {c.is_verified && <BadgeCheck className="h-3.5 w-3.5 text-primary" />}

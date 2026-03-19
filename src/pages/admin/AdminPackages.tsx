@@ -7,15 +7,16 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, Search, Eye, EyeOff, GripVertical } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Eye, EyeOff, ArrowUp, ArrowDown } from "lucide-react";
 import { useConfirm } from "@/components/ConfirmDialog";
 import usePackages, { useCreatePackage, useUpdatePackage, useDeletePackage } from "@/hooks/usePackages";
 import useTests from "@/hooks/useTests";
+import { reorderItem } from "@/lib/api";
 
 const AdminPackages = () => {
   const { toast } = useToast();
   const confirm = useConfirm();
-  const packagesQuery = usePackages();
+  const packagesQuery = usePackages(true);
   const createPackage = useCreatePackage();
   const updatePackage = useUpdatePackage();
   const deletePackage = useDeletePackage();
@@ -25,6 +26,16 @@ const AdminPackages = () => {
   const [selectedTests, setSelectedTests] = useState<string[]>([]);
   const [featuredTests, setFeaturedTests] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
+  const [reordering, setReordering] = useState<string | null>(null);
+  const handleReorder = async (id: string, direction: "up" | "down") => {
+    setReordering(id);
+    try {
+      await reorderItem("packages", id, direction);
+      packagesQuery.refetch();
+    } catch (err: any) {
+      toast({ title: "Reorder failed", description: err.message, variant: "destructive" });
+    } finally { setReordering(null); }
+  };
   const [form, setForm] = useState({
     name: "", slug: "", description: "", instructions: "",
     original_price: 0, discounted_price: null as number | null,
@@ -148,7 +159,7 @@ const AdminPackages = () => {
         <table className="w-full text-sm">
           <thead className="bg-muted/50 text-left">
             <tr>
-              <th className="px-2 py-3 w-10"></th>
+              <th className="px-2 py-3 w-16">Order</th>
               <th className="px-4 py-3 font-medium text-muted-foreground">#</th>
               <th className="px-4 py-3 font-medium text-muted-foreground">Name</th>
               <th className="px-4 py-3 font-medium text-muted-foreground">MRP</th>
@@ -162,7 +173,12 @@ const AdminPackages = () => {
           <tbody>
             {filteredPackages.map((p: any) => (
               <tr key={p.id} className={`border-t border-border ${p.is_active === false ? "opacity-50" : ""}`}>
-                <td className="px-2 py-3"><GripVertical className="h-4 w-4 text-muted-foreground cursor-grab" /></td>
+                <td className="px-2 py-3">
+                  <div className="flex gap-0.5">
+                    <Button variant="ghost" size="icon" className="h-6 w-6" disabled={reordering === p.id} onClick={() => handleReorder(p.id, "up")}><ArrowUp className="h-3 w-3" /></Button>
+                    <Button variant="ghost" size="icon" className="h-6 w-6" disabled={reordering === p.id} onClick={() => handleReorder(p.id, "down")}><ArrowDown className="h-3 w-3" /></Button>
+                  </div>
+                </td>
                 <td className="px-4 py-3">{p.display_order}</td>
                 <td className="px-4 py-3 font-medium">{p.name}</td>
                 <td className="px-4 py-3 text-muted-foreground">₹{p.original_price}</td>

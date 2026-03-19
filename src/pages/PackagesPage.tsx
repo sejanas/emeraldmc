@@ -1,10 +1,13 @@
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Star, CheckCircle, ArrowRight, Percent } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import SectionHeading from "@/components/SectionHeading";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import PageMeta from "@/components/PageMeta";
+import PackageTestsModal from "@/components/PackageTestsModal";
 import usePackages from "@/hooks/usePackages";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -15,9 +18,20 @@ const fadeUp = {
 
 const PackagesPage = () => {
   const packagesQuery = usePackages();
+  const [descModal, setDescModal] = useState<{ name: string; text: string } | null>(null);
+  const [pkgTestsModal, setPkgTestsModal] = useState<{ name: string; tests: string[]; subCounts?: Record<string, number> } | null>(null);
 
   const packages = packagesQuery.data?.packages ?? [];
   const testNames = packagesQuery.data?.testNames ?? {};
+  const testIds: Record<string, string[]> = packagesQuery.data?.testIds ?? {};
+  const testSubCounts: Record<string, Record<string, number>> = packagesQuery.data?.testSubCounts ?? {};
+
+  const getSavings = (pkg: any) => {
+    if (pkg.savings_override && pkg.savings_override > 0) return pkg.savings_override;
+    const price = pkg.discounted_price ?? pkg.original_price;
+    if (pkg.original_price > price) return pkg.original_price - price;
+    return 0;
+  };
 
   return (
     <div className="container py-12">
@@ -45,13 +59,27 @@ const PackagesPage = () => {
           : packages.map((pkg, i) => {
               const hasDiscount = pkg.discounted_price && pkg.discounted_price < pkg.original_price;
               const discountPct = hasDiscount ? Math.round(((pkg.original_price - pkg.discounted_price!) / pkg.original_price) * 100) : 0;
-              const tests = testNames[pkg.id] ?? [];
+              const allTests = testNames[pkg.id] ?? [];
+              const allTestIds: string[] = testIds[pkg.id] ?? [];
+              const featuredIds: string[] = pkg.featured_test_ids ?? [];
+              const displayTests = featuredIds.length > 0
+                ? featuredIds
+                    .map((fid: string) => {
+                      const idx = allTestIds.indexOf(fid);
+                      return idx >= 0 ? allTests[idx] : null;
+                    })
+                    .filter(Boolean)
+                    .slice(0, 5) as string[]
+                : allTests.slice(0, 5);
+              const extraCount = allTests.length - displayTests.length;
+              const savings = getSavings(pkg);
+              const price = pkg.discounted_price ?? pkg.original_price;
 
               return (
                 <motion.div key={pkg.id} initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={i}
-                  className={`relative flex flex-col rounded-xl border p-6 transition-all hover:card-shadow-hover hover:scale-[1.02] ${pkg.is_popular ? "border-primary ring-2 ring-primary/20 bg-accent/50" : "border-border bg-card"}`}>
+                  className={`relative flex flex-col rounded-xl border p-6 pt-8 transition-all hover:card-shadow-hover hover:scale-[1.02] ${pkg.is_popular ? "border-primary ring-2 ring-primary/20 bg-accent/50" : "border-border bg-card"}`}>
                   {pkg.is_popular && (
-                    <span className="absolute -top-3 left-4 inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground shadow-sm">
+                    <span className="absolute -top-3 left-4 z-10 inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground shadow-sm">
                       <Star className="h-3 w-3" /> Most Popular
                     </span>
                   )}
@@ -61,22 +89,55 @@ const PackagesPage = () => {
                     </span>
                   )}
                   <h3 className="font-display text-xl font-semibold text-foreground">{pkg.name}</h3>
-                  <p className="mt-1 text-sm text-muted-foreground leading-relaxed">{pkg.description}</p>
-                  <div className="mt-4 flex items-baseline gap-2">
-                    <span className="font-display text-4xl font-bold text-primary">₹{pkg.discounted_price ?? pkg.original_price}</span>
-                    {hasDiscount && <span className="text-sm text-muted-foreground line-through">₹{pkg.original_price}</span>}
-                  </div>
-                  {tests.length > 0 && (
-                    <div className="mt-5 border-t border-border pt-4">
-                      <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Includes {tests.length} Tests</p>
-                      <ul className="flex-1 space-y-2">
-                        {tests.map((t: string) => (
-                          <li key={t} className="flex items-start gap-2 text-sm text-muted-foreground">
-                            <CheckCircle className="mt-0.5 h-4 w-4 text-primary shrink-0" /> {t}
-                          </li>
-                        ))}
-                      </ul>
+                  {pkg.description && (
+                    <div className="mt-1">
+                      <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3">{pkg.description}</p>
+                      <button
+                        type="button"
+                        onClick={() => setDescModal({ name: pkg.name, text: pkg.description })}
+                        className="text-xs font-medium text-primary hover:underline mt-0.5"
+                      >
+                        Read more →
+                      </button>
                     </div>
+                  )}
+                  <div className="mt-3">
+                    <div className="flex items-baseline gap-2">
+                      <span className="font-display text-3xl font-bold text-primary">₹{price}</span>
+                      {hasDiscount && <span className="text-sm text-muted-foreground line-through">₹{pkg.original_price}</span>}
+                    </div>
+                    {savings > 0 && (
+                      <p className="text-xs font-semibold text-primary mt-0.5">Save ₹{savings}</p>
+                    )}
+                  </div>
+                  {pkg.show_test_count !== false && allTests.length > 0 && (
+                    <p className="mt-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      🧪 {allTests.length} Tests Included
+                    </p>
+                  )}
+                  {displayTests.length > 0 && (
+                    <ul className="mt-2 flex-1 space-y-1.5">
+                      {displayTests.map((t: string) => {
+                        const subCount = testSubCounts[pkg.id]?.[t] ?? 0;
+                        return (
+                          <li key={t} className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <CheckCircle className="h-4 w-4 text-primary shrink-0" /> {t}
+                            {subCount > 0 && <span className="text-[10px] text-muted-foreground/70">({subCount} parameters)</span>}
+                          </li>
+                        );
+                      })}
+                      {extraCount > 0 && (
+                        <li>
+                          <button
+                            type="button"
+                            onClick={() => setPkgTestsModal({ name: pkg.name, tests: allTests, subCounts: testSubCounts[pkg.id] })}
+                            className="text-xs font-medium text-primary hover:underline"
+                          >
+                            +{extraCount} more tests
+                          </button>
+                        </li>
+                      )}
+                    </ul>
                   )}
                   <div className="mt-auto pt-6">
                     <Button asChild className="w-full" variant={pkg.is_popular ? "default" : "outline"}>
@@ -87,6 +148,23 @@ const PackagesPage = () => {
               );
             })}
       </div>
+
+      {/* Package Tests Modal */}
+      <PackageTestsModal
+        packageName={pkgTestsModal?.name ?? ""}
+        tests={pkgTestsModal?.tests ?? []}
+        subCounts={pkgTestsModal?.subCounts}
+        open={!!pkgTestsModal}
+        onClose={() => setPkgTestsModal(null)}
+      />
+
+      {/* Description Modal */}
+      <Dialog open={!!descModal} onOpenChange={(o) => !o && setDescModal(null)}>
+        <DialogContent className="max-w-md">
+          <DialogTitle>{descModal?.name}</DialogTitle>
+          <p className="text-sm text-muted-foreground whitespace-pre-line mt-2">{descModal?.text}</p>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

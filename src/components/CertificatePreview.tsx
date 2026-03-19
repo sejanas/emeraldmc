@@ -106,7 +106,7 @@ const CertificatePreview = ({ cert, open, onClose }: CertificatePreviewProps) =>
             {/* Canvas-based secondary watermark for extra protection */}
             <canvas
               className="absolute inset-0 w-full h-full rounded-lg pointer-events-none"
-              style={{ zIndex: 11, opacity: 0.04, mixBlendMode: "multiply" }}
+              style={{ zIndex: 11, opacity: 0.06 }}
               ref={(canvas) => {
                 if (!canvas) return;
                 const ctx = canvas.getContext("2d");

@@ -10,10 +10,10 @@ export interface PkgRow {
   is_popular: boolean;
 }
 
-export function usePackages() {
+export function usePackages(includeInactive = false) {
   return useQuery({
-    queryKey: ['packages'],
-    queryFn: () => getPackages(),
+    queryKey: ['packages', { includeInactive }],
+    queryFn: () => getPackages(includeInactive),
     staleTime: 1000 * 60,
     retry: 2,
   });
