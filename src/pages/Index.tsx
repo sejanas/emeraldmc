@@ -2,7 +2,7 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import PageMeta from "@/components/PageMeta";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, Shield, Clock, FlaskConical, Users, Star, CheckCircle, Award, Home, Search, ClipboardList, Microscope, FileDown, MapPin, BadgeCheck, Info, Droplets } from "lucide-react";
+import { ArrowRight, Shield, Clock, FlaskConical, Users, Star, CheckCircle, Award, Home, Search, ClipboardList, Microscope, FileDown, MapPin, BadgeCheck, Info, Droplets, ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -61,8 +61,12 @@ const Index = () => {
   const [heroSearch, setHeroSearch] = useState("");
   const [showResults, setShowResults] = useState(false);
   const [certPreview, setCertPreview] = useState<any>(null);
-  const [pkgTestsModal, setPkgTestsModal] = useState<{ name: string; tests: string[]; subCounts?: Record<string, number> } | null>(null);
+  const [pkgTestsModal, setPkgTestsModal] = useState<{ name: string; tests: string[]; subCounts?: Record<string, number>; subNames?: Record<string, string[]> } | null>(null);
   const [instructionsModal, setInstructionsModal] = useState<{ name: string; text: string } | null>(null);
+  const [pkgExpandedSubs, setPkgExpandedSubs] = useState<Record<string, boolean>>({});
+  const [testExpandedSubs, setTestExpandedSubs] = useState<Record<string, boolean>>({});
+  const togglePkgSub = (key: string) => setPkgExpandedSubs((prev) => ({ ...prev, [key]: !prev[key] }));
+  const toggleTestSub = (id: string) => setTestExpandedSubs((prev) => ({ ...prev, [id]: !prev[id] }));
   const searchRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -80,6 +84,7 @@ const Index = () => {
   const packages = packagesQuery.data?.packages ?? [];
   const testNames = packagesQuery.data?.testNames ?? {};
   const testSubCounts: Record<string, Record<string, number>> = packagesQuery.data?.testSubCounts ?? {};
+  const testSubNames: Record<string, Record<string, string[]>> = packagesQuery.data?.testSubNames ?? {};
   const totalTestCounts: Record<string, number> = packagesQuery.data?.totalTestCounts ?? {};
   const certifications = (certificationsQuery.data ?? []).filter((c: any) => c.is_active !== false);
 
@@ -447,9 +452,24 @@ const Index = () => {
                   >
                     <h3 className="font-semibold text-foreground text-base">{t.name}</h3>
                     {t.sub_test_count > 0 && (
-                      <span className="inline-flex items-center gap-1 mt-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary w-fit">
+                      <button
+                        type="button"
+                        onClick={() => toggleTestSub(t.id)}
+                        className="inline-flex items-center gap-0.5 mt-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary w-fit hover:bg-primary/20 transition-colors"
+                      >
                         <FlaskConical className="h-3 w-3" /> {t.sub_test_count} parameters
-                      </span>
+                        {testExpandedSubs[t.id] ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                      </button>
+                    )}
+                    {testExpandedSubs[t.id] && (t.sub_test_names ?? []).length > 0 && (
+                      <ul className="mt-1 space-y-0.5">
+                        {(t.sub_test_names as string[]).map((sn: string) => (
+                          <li key={sn} className="text-[10px] text-muted-foreground flex items-center gap-1.5">
+                            <span className="h-1 w-1 rounded-full bg-primary/40 shrink-0" />
+                            {sn}
+                          </li>
+                        ))}
+                      </ul>
                     )}
                     <p className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
                       <Clock className="h-3.5 w-3.5 text-primary" />
@@ -617,10 +637,35 @@ const Index = () => {
                     <ul className="mt-2 flex-1 space-y-1.5">
                       {displayTests.map((t: string) => {
                         const subCount = testSubCounts[pkg.id]?.[t] ?? 0;
+                        const subNamesForTest = testSubNames[pkg.id]?.[t] ?? [];
+                        const expandKey = `${pkg.id}:${t}`;
+                        const isOpen = pkgExpandedSubs[expandKey] ?? false;
                         return (
-                          <li key={t} className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <CheckCircle className="h-3.5 w-3.5 text-primary shrink-0" /> {t}
-                            {subCount > 0 && <span className="text-[10px] text-muted-foreground/70">({subCount} parameters)</span>}
+                          <li key={t}>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <CheckCircle className="h-3.5 w-3.5 text-primary shrink-0" />
+                              <span className="flex-1">{t}</span>
+                              {subCount > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => togglePkgSub(expandKey)}
+                                  className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground/70 hover:text-primary transition-colors shrink-0"
+                                >
+                                  ({subCount})
+                                  {isOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                                </button>
+                              )}
+                            </div>
+                            {isOpen && subNamesForTest.length > 0 && (
+                              <ul className="mt-0.5 ml-5 space-y-0.5">
+                                {subNamesForTest.map((sn) => (
+                                  <li key={sn} className="text-[10px] text-muted-foreground/80 flex items-center gap-1">
+                                    <span className="h-1 w-1 rounded-full bg-primary/40 shrink-0" />
+                                    {sn}
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
                           </li>
                         );
                       })}
@@ -628,7 +673,7 @@ const Index = () => {
                         <li>
                           <button
                             type="button"
-                            onClick={() => setPkgTestsModal({ name: pkg.name, tests: allTests, subCounts: testSubCounts[pkg.id] })}
+                            onClick={() => setPkgTestsModal({ name: pkg.name, tests: allTests, subCounts: testSubCounts[pkg.id], subNames: testSubNames[pkg.id] })}
                             className="text-xs font-medium text-primary hover:underline"
                           >
                             +{extraCount} more tests
@@ -652,6 +697,7 @@ const Index = () => {
         packageName={pkgTestsModal?.name ?? ""}
         tests={pkgTestsModal?.tests ?? []}
         subCounts={pkgTestsModal?.subCounts}
+        subNames={pkgTestsModal?.subNames}
         open={!!pkgTestsModal}
         onClose={() => setPkgTestsModal(null)}
       />

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import PageMeta from "@/components/PageMeta";
 import { Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Search, Clock, Droplets, AlertCircle, FlaskConical, X } from "lucide-react";
+import { Search, Clock, Droplets, AlertCircle, FlaskConical, X, ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -21,6 +21,13 @@ const TestsPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState(searchParams.get("search") || "");
   const [category, setCategory] = useState(searchParams.get("category") || "All");
+  const [expandedSubs, setExpandedSubs] = useState<Set<string>>(new Set());
+  const toggleSub = (id: string) =>
+    setExpandedSubs((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
   const testsQuery = useTests({ active: true });
   const categoriesQuery = useCategories();
 
@@ -119,9 +126,24 @@ const TestsPage = () => {
                   </span>
                 )}
                 {t.sub_test_count > 0 && (
-                  <span className="inline-flex items-center gap-1 mt-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-medium text-primary">
+                  <button
+                    type="button"
+                    onClick={() => toggleSub(t.id)}
+                    className="inline-flex items-center gap-1 mt-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-medium text-primary hover:bg-primary/20 transition-colors w-fit"
+                  >
                     <FlaskConical className="h-3 w-3" /> {t.sub_test_count} parameters
-                  </span>
+                    {expandedSubs.has(t.id) ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                  </button>
+                )}
+                {expandedSubs.has(t.id) && (t.sub_test_names ?? []).length > 0 && (
+                  <ul className="mt-1 space-y-0.5">
+                    {(t.sub_test_names as string[]).map((sn: string) => (
+                      <li key={sn} className="text-xs text-muted-foreground flex items-center gap-1.5">
+                        <span className="h-1 w-1 rounded-full bg-primary/40 shrink-0" />
+                        {sn}
+                      </li>
+                    ))}
+                  </ul>
                 )}
                 <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{t.description}</p>
                 <div className="mt-3 flex flex-wrap gap-3 text-xs text-muted-foreground">

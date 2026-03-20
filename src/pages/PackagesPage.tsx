@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Star, CheckCircle, ArrowRight, Percent } from "lucide-react";
+import { Star, CheckCircle, ArrowRight, Percent, ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import SectionHeading from "@/components/SectionHeading";
@@ -19,12 +19,17 @@ const fadeUp = {
 const PackagesPage = () => {
   const packagesQuery = usePackages();
   const [descModal, setDescModal] = useState<{ name: string; text: string } | null>(null);
-  const [pkgTestsModal, setPkgTestsModal] = useState<{ name: string; tests: string[]; subCounts?: Record<string, number> } | null>(null);
+  const [pkgTestsModal, setPkgTestsModal] = useState<{ name: string; tests: string[]; subCounts?: Record<string, number>; subNames?: Record<string, string[]> } | null>(null);
+  const [expandedSubs, setExpandedSubs] = useState<Record<string, boolean>>({});
+
+  const toggleSub = (key: string) =>
+    setExpandedSubs((prev) => ({ ...prev, [key]: !prev[key] }));
 
   const packages = packagesQuery.data?.packages ?? [];
   const testNames = packagesQuery.data?.testNames ?? {};
   const testIds: Record<string, string[]> = packagesQuery.data?.testIds ?? {};
   const testSubCounts: Record<string, Record<string, number>> = packagesQuery.data?.testSubCounts ?? {};
+  const testSubNames: Record<string, Record<string, string[]>> = packagesQuery.data?.testSubNames ?? {};
   const totalTestCounts: Record<string, number> = packagesQuery.data?.totalTestCounts ?? {};
 
   const getSavings = (pkg: any) => {
@@ -120,10 +125,35 @@ const PackagesPage = () => {
                     <ul className="mt-2 flex-1 space-y-1.5">
                       {displayTests.map((t: string) => {
                         const subCount = testSubCounts[pkg.id]?.[t] ?? 0;
+                        const subNames = testSubNames[pkg.id]?.[t] ?? [];
+                        const expandKey = `${pkg.id}:${t}`;
+                        const isOpen = expandedSubs[expandKey] ?? false;
                         return (
-                          <li key={t} className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <CheckCircle className="h-4 w-4 text-primary shrink-0" /> {t}
-                            {subCount > 0 && <span className="text-[10px] text-muted-foreground/70">({subCount} parameters)</span>}
+                          <li key={t}>
+                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                              <CheckCircle className="h-4 w-4 text-primary shrink-0" />
+                              <span className="flex-1">{t}</span>
+                              {subCount > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => toggleSub(expandKey)}
+                                  className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground/70 hover:text-primary transition-colors shrink-0"
+                                >
+                                  ({subCount} parameters)
+                                  {isOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                                </button>
+                              )}
+                            </div>
+                            {isOpen && subNames.length > 0 && (
+                              <ul className="mt-1 ml-6 space-y-0.5">
+                                {subNames.map((sn) => (
+                                  <li key={sn} className="text-[11px] text-muted-foreground/80 flex items-center gap-1.5">
+                                    <span className="h-1 w-1 rounded-full bg-primary/40 shrink-0" />
+                                    {sn}
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
                           </li>
                         );
                       })}
@@ -131,7 +161,7 @@ const PackagesPage = () => {
                         <li>
                           <button
                             type="button"
-                            onClick={() => setPkgTestsModal({ name: pkg.name, tests: allTests, subCounts: testSubCounts[pkg.id] })}
+                            onClick={() => setPkgTestsModal({ name: pkg.name, tests: allTests, subCounts: testSubCounts[pkg.id], subNames: testSubNames[pkg.id] })}
                             className="text-xs font-medium text-primary hover:underline"
                           >
                             +{extraCount} more tests
@@ -155,6 +185,7 @@ const PackagesPage = () => {
         packageName={pkgTestsModal?.name ?? ""}
         tests={pkgTestsModal?.tests ?? []}
         subCounts={pkgTestsModal?.subCounts}
+        subNames={pkgTestsModal?.subNames}
         open={!!pkgTestsModal}
         onClose={() => setPkgTestsModal(null)}
       />
