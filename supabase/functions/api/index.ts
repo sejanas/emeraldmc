@@ -316,6 +316,41 @@ async function crudList(table: string, url: URL, softDelete = true) {
         t.categories = catMap[t.id] ?? [];
       });
     }
+
+    // Append individual sub-tests (show_as_individual=true) to the tests array
+    const activeOnly = url.searchParams.get("active") === "true";
+    let subQ = db
+      .from("sub_tests")
+      .select("*, tests!inner(id, name, is_active, deleted_at)")
+      .eq("show_as_individual", true)
+      .eq("is_visible", true);
+    if (activeOnly) subQ = subQ.eq("tests.is_active", true);
+    subQ = subQ.is("tests.deleted_at", null);
+    const { data: individualSubs } = await subQ;
+    (individualSubs ?? []).forEach((s: any) => {
+      data.push({
+        id: s.id,
+        name: s.name,
+        slug: s.slug,
+        description: s.description,
+        price: s.price ?? 0,
+        original_price: s.original_price,
+        discounted_price: s.discounted_price,
+        discount_override: s.discount_override,
+        sample_type: s.sample_type,
+        report_time: s.report_time,
+        fasting_required: s.fasting_required ?? false,
+        is_active: true,
+        show_on_homepage: false,
+        display_order: 9999,
+        categories: [],
+        is_sub_test: true,
+        parent_test_id: s.test_id,
+        parent_test_name: s.tests?.name ?? "",
+        created_at: s.created_at,
+        deleted_at: null,
+      });
+    });
   }
 
   return json(data);
@@ -472,28 +507,134 @@ async function crudDelete(
   return json({ success: true });
 }
 
+// ── REORDER (generic) ──
+async function handleReorder(req: Request, table: string) {
+  await requireRole(req, ADMIN_ROLES);
+  const { id, direction } = await req.json();
+  if (!id || !["up", "down"].includes(direction))
+    throw { message: "id and direction (up/down) required", status: 400 };
+
+  const db = adminDb();
+  const { data: current } = await db
+    .from(table)
+    .select("id, display_order")
+    .eq("id", id)
+    .single();
+  if (!current) throw { message: "Item not found", status: 404 };
+
+  const op = direction === "up" ? "lt" : "gt";
+  const asc = direction === "up" ? false : true;
+
+  let q = db
+    .from(table)
+    .select("id, display_order");
+  if (table === "tests" || table === "packages" || table === "doctors" || table === "certifications")
+    q = q.is("deleted_at", null);
+  if (table === "sub_tests")
+    q = q.eq("test_id", id.split("|")[0] ?? id);  // sub_tests don't have deleted_at
+
+  const { data: neighbors } = await q[op]("display_order", current.display_order)
+    .order("display_order", { ascending: asc })
+    .limit(1);
+
+  if (!neighbors || neighbors.length === 0) return json({ success: true });
+  const neighbor = neighbors[0];
+
+  await db.from(table).update({ display_order: neighbor.display_order }).eq("id", current.id);
+  await db.from(table).update({ display_order: current.display_order }).eq("id", neighbor.id);
+
+  return json({ success: true });
+}
+
+// ── SUB-TESTS ──
+
+async function handleSubTestsList(url: URL) {
+  const db = adminDb();
+  const testId = url.searchParams.get("test_id");
+  if (!testId) throw { message: "test_id required", status: 400 };
+  const { data, error } = await db
+    .from("sub_tests")
+    .select("*")
+    .eq("test_id", testId)
+    .order("display_order");
+  if (error) throw { message: error.message, status: 500 };
+  return json(data);
+}
+
+async function handleSubTestCreate(req: Request) {
+  const { user } = await requireRole(req, ADMIN_ROLES);
+  const body = await req.json();
+  const { test_id, name, ...rest } = body;
+  if (!test_id || !name) throw { message: "test_id and name required", status: 400 };
+  const slug = rest.slug || name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "") || null;
+  const db = adminDb();
+  const { data, error } = await db
+    .from("sub_tests")
+    .insert({ test_id, name, ...rest, slug })
+    .select()
+    .single();
+  if (error) throw { message: error.message, status: 500 };
+  await logActivity({ event_type: "sub_test.created", user_id: user.id, entity_type: "sub_test", entity_id: data.id, entity_name: name });
+  return json(data, 201);
+}
+
+async function handleSubTestUpdate(req: Request, id: string) {
+  const { user } = await requireRole(req, ADMIN_ROLES);
+  const body = await req.json();
+  if (body.name && !body.slug) {
+    body.slug = body.name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "") || null;
+  }
+  const db = adminDb();
+  const { data, error } = await db
+    .from("sub_tests")
+    .update(body)
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw { message: error.message, status: 500 };
+  await logActivity({ event_type: "sub_test.updated", user_id: user.id, entity_type: "sub_test", entity_id: id, entity_name: data.name });
+  return json(data);
+}
+
+async function handleSubTestDelete(req: Request, id: string) {
+  const { user } = await requireRole(req, ADMIN_ROLES);
+  const db = adminDb();
+  const { data: existing } = await db.from("sub_tests").select("name").eq("id", id).single();
+  const { error } = await db.from("sub_tests").delete().eq("id", id);
+  if (error) throw { message: error.message, status: 500 };
+  await logActivity({ event_type: "sub_test.deleted", user_id: user.id, entity_type: "sub_test", entity_id: id, entity_name: existing?.name });
+  return json({ success: true });
+}
+
 // ── PACKAGES (special) ──
 
 async function handlePackagesList(url: URL) {
   const db = adminDb();
-  const { data: packages, error } = await db
+  let q = db
     .from("packages")
     .select("*")
-    .is("deleted_at", null)
-    .order("display_order");
+    .is("deleted_at", null);
+  if (url.searchParams.get("active") !== "false") q = q.eq("is_active", true);
+  const { data: packages, error } = await q.order("display_order");
   if (error) throw { message: error.message, status: 500 };
 
   const { data: pt } = await db
     .from("package_tests")
-    .select("package_id, test_id, tests(name)");
+    .select("package_id, test_id, tests(name, sub_tests(id, name, is_visible))");
   const testNames: Record<string, string[]> = {};
   const testIds: Record<string, string[]> = {};
+  const testSubCounts: Record<string, Record<string, number>> = {};
   (pt ?? []).forEach((r: any) => {
-    (testNames[r.package_id] ??= []).push(r.tests?.name ?? "");
+    const tName = r.tests?.name ?? "";
+    (testNames[r.package_id] ??= []).push(tName);
     (testIds[r.package_id] ??= []).push(r.test_id);
+    const visibleSubs = (r.tests?.sub_tests ?? []).filter((s: any) => s.is_visible);
+    if (visibleSubs.length > 0) {
+      (testSubCounts[r.package_id] ??= {})[tName] = visibleSubs.length;
+    }
   });
 
-  return json({ packages, testNames, testIds });
+  return json({ packages, testNames, testIds, testSubCounts });
 }
 
 async function handlePackageSave(req: Request, id?: string) {
@@ -1281,6 +1422,78 @@ async function handleResubmit(req: Request) {
   return json({ success: true });
 }
 
+// ── FORGOT PASSWORD ──
+
+async function handleForgotPassword(req: Request) {
+  const { email } = await req.json();
+  if (!email) return errRes("Email is required");
+
+  const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+  const FROM_EMAIL = Deno.env.get("FROM_EMAIL") ?? "noreply@yourdomain.com";
+  const APP_URL = (Deno.env.get("APP_URL") ?? "").replace(/\/$/, "");
+
+  if (!RESEND_API_KEY) throw { message: "Email service not configured", status: 500 };
+
+  const { data, error } = await adminDb().auth.admin.generateLink({
+    type: "recovery",
+    email,
+    options: { redirectTo: `${APP_URL}/admin/reset-password` },
+  });
+
+  // Always respond with success to avoid leaking which emails are registered
+  if (error || !data?.properties?.action_link) return json({ success: true });
+
+  const resetUrl = data.properties.action_link;
+
+  const emailRes = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: FROM_EMAIL,
+      to: email,
+      subject: "Reset your admin password",
+      html: `
+        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px">
+          <h2 style="margin-bottom:8px">Reset your password</h2>
+          <p style="color:#555">You requested a password reset for your admin account. Click the button below to set a new password. This link expires in 1 hour.</p>
+          <a href="${resetUrl}" style="display:inline-block;margin:24px 0;padding:12px 28px;background:#16a34a;color:#fff;border-radius:6px;text-decoration:none;font-weight:600">Reset Password</a>
+          <p style="color:#888;font-size:13px">If you didn't request this, you can safely ignore this email. Your password will not change.</p>
+        </div>
+      `,
+    }),
+  });
+
+  if (!emailRes.ok) {
+    const body = await emailRes.text();
+    throw { message: `Failed to send reset email: ${body}`, status: 500 };
+  }
+
+  return json({ success: true });
+}
+
+// ── RESET PASSWORD ──
+
+async function handleResetPassword(req: Request) {
+  const { password } = await req.json();
+  if (!password) return errRes("Password is required");
+  if (password.length < 8) return errRes("Password must be at least 8 characters");
+  if (!/[A-Z]/.test(password)) return errRes("Must contain at least 1 uppercase letter");
+  if (!/[0-9]/.test(password)) return errRes("Must contain at least 1 number");
+  if (!/[^a-zA-Z0-9]/.test(password)) return errRes("Must contain at least 1 special character");
+
+  // The user must supply their active recovery session token via Authorization header
+  const user = await requireAuth(req);
+
+  const { error } = await adminDb().auth.admin.updateUserById(user.id, { password });
+  if (error) throw { message: error.message, status: 500 };
+
+  await logActivity({ event_type: "user.password_reset", user_id: user.id, entity_type: "user", entity_id: user.id });
+  return json({ success: true });
+}
+
 // ── CHANGE PASSWORD ──
 
 async function handleChangePassword(req: Request) {
@@ -1418,6 +1631,8 @@ Deno.serve(async (req) => {
       if (id === "profile" && method === "PUT") return await handleUpdateProfile(req);
       if (id === "resubmit" && method === "POST") return await handleResubmit(req);
       if (id === "change-password" && method === "POST") return await handleChangePassword(req);
+      if (id === "forgot-password" && method === "POST") return await handleForgotPassword(req);
+      if (id === "reset-password" && method === "POST") return await handleResetPassword(req);
     }
 
     // Dashboard
@@ -1484,6 +1699,14 @@ Deno.serve(async (req) => {
       if (method === "DELETE" && id) return await crudDelete(req, "blogs", id, "blog", true, "title");
     }
 
+    // Sub-tests
+    if (resource === "sub-tests") {
+      if (method === "GET" && !id) return await handleSubTestsList(url);
+      if (method === "POST") return await handleSubTestCreate(req);
+      if (method === "PUT" && id) return await handleSubTestUpdate(req, id);
+      if (method === "DELETE" && id) return await handleSubTestDelete(req, id);
+    }
+
     // Packages (special)
     if (resource === "packages") {
       if (method === "GET" && !id) return await handlePackagesList(url);
@@ -1529,6 +1752,15 @@ Deno.serve(async (req) => {
         return await handleBookingInfoUpdate(req, id);
       if (method === "POST" && id && sub === "updates")
         return await handleBookingUpdates(req, id);
+    }
+
+    // Reorder endpoint: POST /reorder with { table, id, direction }
+    if (resource === "reorder" && method === "POST") {
+      const body = await req.clone().json();
+      const allowedTables = ["tests", "packages", "doctors", "certifications", "sub_tests"];
+      if (!allowedTables.includes(body.table))
+        throw { message: `Reorder not supported for table: ${body.table}`, status: 400 };
+      return await handleReorder(req, body.table);
     }
 
     // Generic CRUD
@@ -1816,6 +2048,13 @@ Deno.serve(async (req) => {
       (tests ?? []).forEach((t: any) => {
         const lastmod = t.updated_at ? t.updated_at.slice(0, 10) : today;
         urls.push(`  <url><loc>${BASE}/tests/${t.slug}</loc><lastmod>${lastmod}</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>`);
+      });
+
+      // Dynamic: individual sub-tests
+      const { data: subTests } = await db.from("sub_tests").select("slug, created_at").eq("show_as_individual", true).eq("is_visible", true).not("slug", "is", null);
+      (subTests ?? []).forEach((s: any) => {
+        const lastmod = s.created_at ? s.created_at.slice(0, 10) : today;
+        urls.push(`  <url><loc>${BASE}/tests/${s.slug}</loc><lastmod>${lastmod}</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>`);
       });
 
       (blogs ?? []).forEach((b: any) => {

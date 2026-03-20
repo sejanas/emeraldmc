@@ -34,6 +34,8 @@ const LogoutPage = lazy(() => import("./pages/LogoutPage"));
 // Lazy-loaded admin pages
 const AdminLogin = lazy(() => import("./pages/admin/AdminLogin"));
 const AdminSignup = lazy(() => import("./pages/admin/AdminSignup"));
+const AdminForgotPassword = lazy(() => import("./pages/admin/AdminForgotPassword"));
+const AdminResetPassword = lazy(() => import("./pages/admin/AdminResetPassword"));
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminCategories = lazy(() => import("./pages/admin/AdminCategories"));
@@ -51,6 +53,7 @@ const AdminVisitors = lazy(() => import("./pages/admin/AdminVisitors"));
 const AdminProfile = lazy(() => import("./pages/admin/AdminProfile"));
 const AdminThemeSettings = lazy(() => import("./pages/admin/AdminThemeSettings"));
 const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
+const PreviewHome = lazy(() => import("./pages/PreviewHome"));
 
 const PageLoader = () => (
   <div className="flex min-h-[50vh] items-center justify-center">
@@ -81,12 +84,15 @@ const App = () => (
                   <Route path="/reports" element={<ReportsPage />} />
                   <Route path="/blog" element={<BlogPage />} />
                   <Route path="/blog/:slug" element={<BlogArticlePage />} />
+                  <Route path="/preview/home" element={<AdminRoute><PreviewHome /></AdminRoute>} />
                   <Route path="/:slug" element={<LocationTestPage />} />
                 </Route>
                 <Route path="/logout" element={<LogoutPage />} />
                 <Route path="/admin/logout" element={<LogoutPage />} />
                 <Route path="/admin/login" element={<AdminLogin />} />
                 <Route path="/admin/signup" element={<AdminSignup />} />
+                <Route path="/admin/forgot-password" element={<AdminForgotPassword />} />
+                <Route path="/admin/reset-password" element={<AdminResetPassword />} />
                 <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
                   <Route index element={<AdminDashboard />} />
                   <Route path="categories" element={<AdminCategories />} />

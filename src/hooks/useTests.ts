@@ -10,9 +10,10 @@ export interface TestRow {
   category_id: string | null;
 }
 
-export function useTests(opts?: { active?: boolean; limit?: number }) {
+export function useTests(opts?: { active?: boolean; limit?: number; enabled?: boolean }) {
   const active = opts?.active ?? true;
   const limit = opts?.limit;
+  const enabled = opts?.enabled ?? true;
   const params: Record<string, string | number | boolean> = { active };
   if (limit) params.limit = limit;
   return useQuery({
@@ -22,6 +23,7 @@ export function useTests(opts?: { active?: boolean; limit?: number }) {
     gcTime: 1000 * 60 * 5,
     retry: 2,
     placeholderData: (prev: any) => prev,
+    enabled,
   });
 }
 
