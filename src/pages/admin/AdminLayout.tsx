@@ -1,16 +1,32 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { useState, useMemo } from "react";
 import ErrorBoundary from "@/components/ErrorBoundary";
-import { LayoutDashboard, List, FlaskConical, Package, Users, Image, LogOut, CalendarCheck, Shield, Activity, UserCircle, HelpCircle, Eye, Palette, FileText, Award, Settings } from "lucide-react";
+import { LayoutDashboard, List, FlaskConical, Package, Users, Image, LogOut, CalendarCheck, Shield, Activity, UserCircle, HelpCircle, Eye, Palette, FileText, Award, Settings, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import ThemeToggle from "@/components/ThemeToggle";
 import NotificationBell from "@/components/NotificationBell";
 import SessionTimeoutDialog from "@/components/SessionTimeoutDialog";
+import { cn } from "@/lib/utils";
+
+interface NavItem {
+  to: string;
+  icon: any;
+  label: string;
+  end?: boolean;
+  roles: string[];
+}
+
+interface NavGroup {
+  label: string;
+  items: NavItem[];
+}
 
 const AdminLayout = () => {
   const { signOut, profile, isSuperAdmin, isBookingManager } = useAuth();
+  const location = useLocation();
 
-  const allLinks = [
+  const allLinks: NavItem[] = [
     { to: "/admin", icon: LayoutDashboard, label: "Dashboard", end: true, roles: ["admin", "super_admin"] },
     { to: "/admin/categories", icon: List, label: "Categories", roles: ["admin", "super_admin"] },
     { to: "/admin/tests", icon: FlaskConical, label: "Tests", roles: ["admin", "super_admin"] },
@@ -32,6 +48,73 @@ const AdminLayout = () => {
   const userRole = profile?.role || "booking_manager";
   const links = allLinks.filter((l) => l.roles.includes(userRole));
 
+  // Group links into accordion sections
+  const navGroups: NavGroup[] = useMemo(() => {
+    const catalogPaths = ["/admin/categories", "/admin/tests", "/admin/packages"];
+    const contentPaths = ["/admin/doctors", "/admin/gallery", "/admin/blog", "/admin/faqs", "/admin/certifications"];
+    const analyticsPaths = ["/admin/visitors", "/admin/activity-logs"];
+    const systemPaths = ["/admin/users", "/admin/theme", "/admin/settings"];
+
+    const groups: NavGroup[] = [];
+
+    // Dashboard & Bookings always top-level
+    const topLevel = links.filter((l) => l.to === "/admin" || l.to === "/admin/bookings");
+    if (topLevel.length > 0) groups.push({ label: "", items: topLevel });
+
+    const catalog = links.filter((l) => catalogPaths.includes(l.to));
+    if (catalog.length > 0) groups.push({ label: "Catalog", items: catalog });
+
+    const content = links.filter((l) => contentPaths.includes(l.to));
+    if (content.length > 0) groups.push({ label: "Content", items: content });
+
+    const analytics = links.filter((l) => analyticsPaths.includes(l.to));
+    if (analytics.length > 0) groups.push({ label: "Analytics", items: analytics });
+
+    const profile = links.filter((l) => l.to === "/admin/profile");
+    const system = links.filter((l) => systemPaths.includes(l.to));
+    const accountItems = [...profile, ...system];
+    if (accountItems.length > 0) groups.push({ label: "Account", items: accountItems });
+
+    return groups;
+  }, [links]);
+
+  // Auto-expand groups that contain the active route
+  const getInitialExpanded = () => {
+    const expanded: string[] = [];
+    navGroups.forEach((g) => {
+      if (!g.label) return; // top-level always visible
+      const hasActive = g.items.some((item) =>
+        item.end ? location.pathname === item.to : location.pathname.startsWith(item.to)
+      );
+      if (hasActive) expanded.push(g.label);
+    });
+    return expanded;
+  };
+
+  const [expanded, setExpanded] = useState<string[]>(getInitialExpanded);
+
+  const toggleGroup = (label: string) => {
+    setExpanded((prev) =>
+      prev.includes(label) ? prev.filter((g) => g !== label) : [...prev, label]
+    );
+  };
+
+  const renderNavLink = (l: NavItem) => (
+    <NavLink
+      key={l.to}
+      to={l.to}
+      end={l.end}
+      className={({ isActive }) =>
+        `flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors ${
+          isActive ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground"
+        }`
+      }
+    >
+      <l.icon className="h-4 w-4" />
+      {l.label}
+    </NavLink>
+  );
+
   return (
     <div className="flex h-screen bg-muted/30">
       <SessionTimeoutDialog />
@@ -45,21 +128,34 @@ const AdminLayout = () => {
           <ThemeToggle />
         </div>
         <nav className="flex flex-col gap-1 p-3 flex-1">
-          {links.map((l) => (
-            <NavLink
-              key={l.to}
-              to={l.to}
-              end={l.end}
-              className={({ isActive }) =>
-                `flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors ${
-                  isActive ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent hover:text-foreground"
-                }`
-              }
-            >
-              <l.icon className="h-4 w-4" />
-              {l.label}
-            </NavLink>
-          ))}
+          {navGroups.map((group) =>
+            !group.label ? (
+              // Top-level items (Dashboard, Bookings) — no accordion
+              <div key="top" className="flex flex-col gap-1">
+                {group.items.map(renderNavLink)}
+              </div>
+            ) : (
+              <div key={group.label}>
+                <button
+                  onClick={() => toggleGroup(group.label)}
+                  className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {group.label}
+                  <ChevronDown
+                    className={cn(
+                      "h-3.5 w-3.5 transition-transform",
+                      expanded.includes(group.label) && "rotate-180"
+                    )}
+                  />
+                </button>
+                {expanded.includes(group.label) && (
+                  <div className="flex flex-col gap-0.5 ml-1">
+                    {group.items.map(renderNavLink)}
+                  </div>
+                )}
+              </div>
+            )
+          )}
         </nav>
         <div className="border-t border-border p-3">
           {profile && (

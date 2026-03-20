@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { useConfirm } from "@/components/ConfirmDialog";
-import { Plus, Pencil, Trash2, Search, Award, BadgeCheck, Eye, EyeOff, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Award, BadgeCheck, Eye, EyeOff, ArrowUp, ArrowDown, X } from "lucide-react";
 import { useCertifications, useCreateCertification, useUpdateCertification, useDeleteCertification } from "@/hooks/useCertifications";
 import ImageUpload from "@/components/ImageUpload";
 import { reorderItem } from "@/lib/api";
@@ -100,7 +100,8 @@ const AdminCertifications = () => {
       </div>
       <div className="relative mb-4 max-w-sm">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+        <Input placeholder="Search..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 pr-9" />
+        {search && <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>}
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {filtered.map((c: any) => (
@@ -131,7 +132,12 @@ const AdminCertifications = () => {
           </div>
         ))}
       </div>
-      {certsQuery.isLoading && <p className="p-6 text-center text-muted-foreground">Loading...</p>}
+      {certsQuery.isLoading && (
+        <div className="p-6 flex flex-col items-center gap-3">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <p className="text-sm text-muted-foreground">Loading certifications...</p>
+        </div>
+      )}
       {!certsQuery.isLoading && !filtered.length && <p className="p-6 text-center text-muted-foreground">No certifications yet.</p>}
 
       <Dialog open={open} onOpenChange={setOpen}>

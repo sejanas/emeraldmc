@@ -25,6 +25,7 @@ const PackagesPage = () => {
   const testNames = packagesQuery.data?.testNames ?? {};
   const testIds: Record<string, string[]> = packagesQuery.data?.testIds ?? {};
   const testSubCounts: Record<string, Record<string, number>> = packagesQuery.data?.testSubCounts ?? {};
+  const totalTestCounts: Record<string, number> = packagesQuery.data?.totalTestCounts ?? {};
 
   const getSavings = (pkg: any) => {
     if (pkg.savings_override && pkg.savings_override > 0) return pkg.savings_override;
@@ -112,7 +113,7 @@ const PackagesPage = () => {
                   </div>
                   {pkg.show_test_count !== false && allTests.length > 0 && (
                     <p className="mt-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                      🧪 {allTests.length} Tests Included
+                      🧪 {totalTestCounts[pkg.id] ?? allTests.length} Tests Included
                     </p>
                   )}
                   {displayTests.length > 0 && (

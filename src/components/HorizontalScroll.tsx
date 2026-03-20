@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -8,12 +8,15 @@ interface HorizontalScrollProps {
   className?: string;
   loop?: boolean;
   forwardOnly?: boolean;
+  /** Enable continuous auto-scrolling (marquee). Speed in px/frame, default 0.5 */
+  autoScroll?: boolean | number;
 }
 
-const HorizontalScroll = ({ children, className, loop, forwardOnly }: HorizontalScrollProps) => {
+const HorizontalScroll = ({ children, className, loop, forwardOnly, autoScroll }: HorizontalScrollProps) => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
+  const pausedRef = useRef(false);
 
   const checkScroll = () => {
     const el = scrollRef.current;
@@ -22,18 +25,69 @@ const HorizontalScroll = ({ children, className, loop, forwardOnly }: Horizontal
     setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 2);
   };
 
+  // Prevent horizontal scroll container from trapping vertical wheel events
+  const handleWheel = useCallback((e: WheelEvent) => {
+    const el = scrollRef.current;
+    if (!el) return;
+    // If scrolling is primarily vertical, redirect to page scroll
+    if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+      e.preventDefault();
+      window.scrollBy({ top: e.deltaY, left: 0 });
+    }
+  }, []);
+
   useEffect(() => {
     checkScroll();
     const el = scrollRef.current;
     if (!el) return;
     el.addEventListener("scroll", checkScroll, { passive: true });
+    el.addEventListener("wheel", handleWheel, { passive: false });
     const ro = new ResizeObserver(checkScroll);
     ro.observe(el);
     return () => {
       el.removeEventListener("scroll", checkScroll);
+      el.removeEventListener("wheel", handleWheel);
       ro.disconnect();
     };
-  }, []);
+  }, [handleWheel]);
+
+  // Auto-scroll (marquee) effect
+  useEffect(() => {
+    if (!autoScroll) return;
+    const el = scrollRef.current;
+    if (!el) return;
+    const speed = typeof autoScroll === "number" ? autoScroll : 0.5;
+    let animId: number;
+
+    const step = () => {
+      if (!pausedRef.current && el) {
+        el.scrollLeft += speed;
+        // Loop back when reaching end
+        if (el.scrollLeft >= el.scrollWidth - el.clientWidth - 1) {
+          el.scrollLeft = 0;
+        }
+      }
+      animId = requestAnimationFrame(step);
+    };
+
+    animId = requestAnimationFrame(step);
+
+    const pause = () => { pausedRef.current = true; };
+    const resume = () => { pausedRef.current = false; };
+
+    el.addEventListener("mouseenter", pause);
+    el.addEventListener("mouseleave", resume);
+    el.addEventListener("touchstart", pause, { passive: true });
+    el.addEventListener("touchend", resume);
+
+    return () => {
+      cancelAnimationFrame(animId);
+      el.removeEventListener("mouseenter", pause);
+      el.removeEventListener("mouseleave", resume);
+      el.removeEventListener("touchstart", pause);
+      el.removeEventListener("touchend", resume);
+    };
+  }, [autoScroll]);
 
   const scroll = (dir: "left" | "right") => {
     const el = scrollRef.current;

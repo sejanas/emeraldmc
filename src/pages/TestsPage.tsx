@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import PageMeta from "@/components/PageMeta";
 import { Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Search, Clock, Droplets, AlertCircle } from "lucide-react";
+import { Search, Clock, Droplets, AlertCircle, FlaskConical, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -67,7 +67,8 @@ const TestsPage = () => {
             if (e.target.value) newParams.set("search", e.target.value);
             else newParams.delete("search");
             setSearchParams(newParams, { replace: true });
-          }} className="pl-9" />
+          }} className="pl-9 pr-9" />
+          {search && <button onClick={() => { setSearch(""); const p = new URLSearchParams(searchParams); p.delete("search"); setSearchParams(p, { replace: true }); }} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>}
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {!testsQuery.isLoading && (
@@ -117,7 +118,12 @@ const TestsPage = () => {
                     Part of {t.parent_test_name}
                   </span>
                 )}
-                <p className="mt-1 text-sm text-muted-foreground">{t.description}</p>
+                {t.sub_test_count > 0 && (
+                  <span className="inline-flex items-center gap-1 mt-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-medium text-primary">
+                    <FlaskConical className="h-3 w-3" /> {t.sub_test_count} parameters
+                  </span>
+                )}
+                <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{t.description}</p>
                 <div className="mt-3 flex flex-wrap gap-3 text-xs text-muted-foreground">
                   <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {t.report_time}</span>
                   <span className="flex items-center gap-1"><Droplets className="h-3 w-3" /> {t.sample_type}</span>

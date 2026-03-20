@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, Search, Images, SlidersHorizontal } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Images, SlidersHorizontal, X } from "lucide-react";
 import { useConfirm } from "@/components/ConfirmDialog";
 import ImageUpload from "@/components/ImageUpload";
 import ImageEditor from "@/components/ImageEditor";
@@ -112,7 +112,8 @@ const AdminGallery = () => {
       <div className="flex flex-col sm:flex-row gap-3 mb-5">
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="Search gallery..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+          <Input placeholder="Search gallery..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 pr-9" />
+          {search && <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>}
         </div>
         <div className="flex gap-1.5 flex-wrap">
           {existingCats.map((c: string) => (
@@ -128,7 +129,17 @@ const AdminGallery = () => {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-        {filteredItems.map((g: any) => (
+        {galleryQuery.isLoading
+          ? Array.from({ length: 8 }).map((_, i) => (
+              <div key={i} className="overflow-hidden rounded-xl border border-border bg-card">
+                <div className="aspect-video animate-pulse bg-muted" />
+                <div className="p-3 space-y-2">
+                  <div className="h-4 w-3/4 animate-pulse rounded bg-muted" />
+                  <div className="h-3 w-1/2 animate-pulse rounded bg-muted" />
+                </div>
+              </div>
+            ))
+          : filteredItems.map((g: any) => (
           <div key={g.id} className="group relative overflow-hidden rounded-xl border border-border bg-card">
             <div className="aspect-video overflow-hidden">
               <img src={g.image_url} alt={g.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110" />
@@ -156,7 +167,7 @@ const AdminGallery = () => {
         ))}
       </div>
 
-      {!filteredItems.length && (
+      {!galleryQuery.isLoading && !filteredItems.length && (
         <div className="py-16 text-center">
           <Images className="mx-auto h-12 w-12 text-muted-foreground/30" />
           <p className="mt-4 text-muted-foreground">{search || filterCat !== "All" ? "No images match your filter." : "No gallery images yet. Add your first image!"}</p>

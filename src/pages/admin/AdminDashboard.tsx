@@ -29,7 +29,11 @@ const AdminDashboard = () => {
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">{c.label}</p>
-                <p className="font-display text-2xl font-bold text-foreground">{c.count}</p>
+                {countsQuery.isLoading ? (
+                  <div className="h-8 w-16 animate-pulse rounded bg-muted mt-1" />
+                ) : (
+                  <p className="font-display text-2xl font-bold text-foreground">{c.count}</p>
+                )}
               </div>
             </div>
           </div>

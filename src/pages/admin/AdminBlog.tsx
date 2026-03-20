@@ -7,7 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { useConfirm } from "@/components/ConfirmDialog";
-import { Plus, Pencil, Trash2, Search, ExternalLink, Eye, Send, Archive } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, ExternalLink, Eye, Send, Archive, X } from "lucide-react";
 import { useBlogs, useCreateBlog, useUpdateBlog, useDeleteBlog } from "@/hooks/useBlogs";
 import ImageUpload from "@/components/ImageUpload";
 import RichTextEditor from "@/components/RichTextEditor";
@@ -137,7 +137,8 @@ const AdminBlog = () => {
 
       <div className="relative mb-4 max-w-sm">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input placeholder="Search posts..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+        <Input placeholder="Search posts..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 pr-9" />
+        {search && <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>}
       </div>
 
       <div className="rounded-xl border border-border bg-card overflow-x-auto">
@@ -190,7 +191,12 @@ const AdminBlog = () => {
             ))}
           </tbody>
         </table>
-        {blogsQuery.isLoading && <p className="p-6 text-center text-muted-foreground">Loading...</p>}
+        {blogsQuery.isLoading && (
+          <div className="p-6 flex flex-col items-center gap-3">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            <p className="text-sm text-muted-foreground">Loading blog posts...</p>
+          </div>
+        )}
         {!blogsQuery.isLoading && !filtered.length && <p className="p-6 text-center text-muted-foreground">No blog posts yet.</p>}
       </div>
 

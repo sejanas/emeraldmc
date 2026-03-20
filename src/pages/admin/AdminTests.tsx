@@ -45,6 +45,8 @@ const AdminTests = () => {
   const [newSubTestName, setNewSubTestName] = useState("");
   const [expandedSubTest, setExpandedSubTest] = useState<string | null>(null);
   const [subReordering, setSubReordering] = useState<string | null>(null);
+  const [addingSubTest, setAddingSubTest] = useState(false);
+  const [savingSubTest, setSavingSubTest] = useState<string | null>(null);
 
   const handleSubReorder = async (id: string, direction: "up" | "down") => {
     setSubReordering(id);
@@ -160,7 +162,8 @@ const AdminTests = () => {
       </div>
       <div className="relative mb-4 max-w-sm">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input placeholder="Search tests..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+        <Input placeholder="Search tests..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 pr-9" />
+        {search && <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>}
       </div>
       <div className="rounded-xl border border-border bg-card overflow-x-auto">
         <table className="w-full text-sm">
@@ -211,7 +214,12 @@ const AdminTests = () => {
             })}
           </tbody>
         </table>
-        {testsQuery.isLoading && <p className="p-6 text-center text-muted-foreground">Loading...</p>}
+        {testsQuery.isLoading && (
+          <div className="p-6 flex flex-col items-center gap-3">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            <p className="text-sm text-muted-foreground">Loading tests...</p>
+          </div>
+        )}
         {!testsQuery.isLoading && !filteredTests.length && <p className="p-6 text-center text-muted-foreground">{search ? "No tests match your search." : "No tests yet."}</p>}
       </div>
 
@@ -248,7 +256,6 @@ const AdminTests = () => {
               <div className="flex items-center gap-2"><Switch checked={form.show_on_homepage} onCheckedChange={(v) => setForm({ ...form, show_on_homepage: v })} /> <Label>Show on Home</Label></div>
               <div className="flex items-center gap-2"><Switch checked={form.fasting_required} onCheckedChange={(v) => setForm({ ...form, fasting_required: v })} /> <Label>Fasting</Label></div>
             </div>
-            <Button onClick={save} className="w-full" disabled={saving}>{saving ? "Saving..." : "Save"}</Button>
 
             {/* Sub-tests Section */}
             {editing ? (
@@ -258,10 +265,12 @@ const AdminTests = () => {
                   <Input
                     placeholder="New sub-test name..."
                     value={newSubTestName}
+                    disabled={addingSubTest}
                     onChange={(e) => setNewSubTestName(e.target.value)}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter" && newSubTestName.trim()) {
+                      if (e.key === "Enter" && newSubTestName.trim() && !addingSubTest) {
                         e.preventDefault();
+                        setAddingSubTest(true);
                         createSubTest.mutateAsync({
                           test_id: editing.id,
                           name: newSubTestName.trim(),
@@ -269,15 +278,17 @@ const AdminTests = () => {
                         }).then(() => {
                           setNewSubTestName("");
                           toast({ title: "Sub-test added" });
-                        }).catch((err: any) => toast({ title: "Error", description: err.message, variant: "destructive" }));
+                        }).catch((err: any) => toast({ title: "Error", description: err.message, variant: "destructive" }))
+                        .finally(() => setAddingSubTest(false));
                       }
                     }}
                   />
                   <Button
                     size="sm"
                     variant="outline"
-                    disabled={!newSubTestName.trim() || createSubTest.isPending}
+                    disabled={!newSubTestName.trim() || addingSubTest}
                     onClick={() => {
+                      setAddingSubTest(true);
                       createSubTest.mutateAsync({
                         test_id: editing.id,
                         name: newSubTestName.trim(),
@@ -285,14 +296,20 @@ const AdminTests = () => {
                       }).then(() => {
                         setNewSubTestName("");
                         toast({ title: "Sub-test added" });
-                      }).catch((err: any) => toast({ title: "Error", description: err.message, variant: "destructive" }));
+                      }).catch((err: any) => toast({ title: "Error", description: err.message, variant: "destructive" }))
+                      .finally(() => setAddingSubTest(false));
                     }}
                   >
-                    <Plus className="h-4 w-4" />
+                    {addingSubTest ? <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" /> : <Plus className="h-4 w-4" />}
                   </Button>
                 </div>
 
-                {subTestsQuery.isLoading && <p className="text-xs text-muted-foreground">Loading sub-tests...</p>}
+                {subTestsQuery.isLoading && (
+                  <div className="flex items-center gap-2 py-3 justify-center text-muted-foreground">
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                    <span className="text-xs">Loading sub-tests...</span>
+                  </div>
+                )}
                 <div className="space-y-2 max-h-[40vh] overflow-y-auto">
                   {(subTestsQuery.data ?? []).map((st: any) => (
                     <div key={st.id} className="rounded-lg border border-border bg-muted/30 p-3">
@@ -345,10 +362,12 @@ const AdminTests = () => {
                       </div>
 
                       {expandedSubTest === st.id && (
-                        <SubTestDetailForm subTest={st} onSave={(updates) => {
+                        <SubTestDetailForm subTest={st} saving={savingSubTest === st.id} onSave={(updates) => {
+                          setSavingSubTest(st.id);
                           updateSubTestMut.mutateAsync({ id: st.id, ...updates })
                             .then(() => toast({ title: "Sub-test updated" }))
-                            .catch((err: any) => toast({ title: "Error", description: err.message, variant: "destructive" }));
+                            .catch((err: any) => toast({ title: "Error", description: err.message, variant: "destructive" }))
+                            .finally(() => setSavingSubTest(null));
                         }} />
                       )}
                     </div>
@@ -361,6 +380,10 @@ const AdminTests = () => {
             ) : (
               <p className="text-xs text-muted-foreground border-t border-border pt-3 mt-2">Save the test first to manage sub-tests.</p>
             )}
+
+            <div className="sticky bottom-0 bg-background pt-3 pb-1 border-t border-border -mx-6 px-6 mt-4">
+              <Button onClick={save} className="w-full" disabled={saving}>{saving ? "Saving..." : "Save Test"}</Button>
+            </div>
           </div>
         </DialogContent>
       </Dialog>
@@ -369,7 +392,7 @@ const AdminTests = () => {
 };
 
 // Inline detail form for an individual sub-test
-function SubTestDetailForm({ subTest, onSave }: { subTest: any; onSave: (updates: any) => void }) {
+function SubTestDetailForm({ subTest, saving, onSave }: { subTest: any; saving?: boolean; onSave: (updates: any) => void }) {
   const [f, setF] = useState({
     name: subTest.name ?? "",
     slug: subTest.slug ?? "",
@@ -402,7 +425,14 @@ function SubTestDetailForm({ subTest, onSave }: { subTest: any; onSave: (updates
         <Switch checked={f.fasting_required} onCheckedChange={(v) => setF({ ...f, fasting_required: v })} className="scale-75" />
         <Label className="text-xs">Fasting Required</Label>
       </div>
-      <Button size="sm" className="w-full" onClick={() => onSave(f)}>Save Details</Button>
+      <Button size="sm" className="w-full" disabled={saving} onClick={() => onSave(f)}>
+        {saving ? (
+          <span className="flex items-center gap-2">
+            <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-primary-foreground border-t-transparent" />
+            Saving...
+          </span>
+        ) : "Save Details"}
+      </Button>
     </div>
   );
 }

@@ -195,12 +195,15 @@ const AdminBookings = () => {
             ))}
           </TabsList>
         </Tabs>
-        <Input
-          placeholder="Search name, phone, patient ID..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="h-8 w-full sm:w-64"
-        />
+        <div className="relative">
+          <Input
+            placeholder="Search name, phone, patient ID..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="h-8 w-full sm:w-64 pr-8"
+          />
+          {search && <button onClick={() => setSearch("")} className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"><X className="h-3.5 w-3.5" /></button>}
+        </div>
       </div>
 
       {/* Bulk Action Bar */}
@@ -406,7 +409,12 @@ function BookingTable({
           })}
         </tbody>
       </table>
-      {loading && <p className="p-6 text-center text-muted-foreground">Loading...</p>}
+      {loading && (
+        <div className="p-6 flex flex-col items-center gap-3">
+          <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+          <p className="text-sm text-muted-foreground">Loading bookings...</p>
+        </div>
+      )}
       {!loading && !bookings.length && <p className="p-6 text-center text-muted-foreground">No bookings found.</p>}
     </div>
   );

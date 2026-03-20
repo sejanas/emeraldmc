@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, Search } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, X } from "lucide-react";
 import { useConfirm } from "@/components/ConfirmDialog";
 import useCategories from "@/hooks/useCategories";
 import { useCreateCategory, useUpdateCategory, useDeleteCategory } from "@/hooks/useCategoriesMutations";
@@ -72,7 +72,8 @@ const AdminCategories = () => {
       </div>
       <div className="relative mb-4 max-w-sm">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input placeholder="Search categories..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+        <Input placeholder="Search categories..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 pr-9" />
+        {search && <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>}
       </div>
       <div className="rounded-xl border border-border bg-card overflow-hidden">
         <table className="w-full text-sm">
@@ -98,7 +99,12 @@ const AdminCategories = () => {
             ))}
           </tbody>
         </table>
-        {categoriesQuery.isLoading && <p className="p-6 text-center text-muted-foreground">Loading...</p>}
+        {categoriesQuery.isLoading && (
+          <div className="p-6 flex flex-col items-center gap-3">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            <p className="text-sm text-muted-foreground">Loading categories...</p>
+          </div>
+        )}
         {!categoriesQuery.isLoading && !filteredCategories.length && <p className="p-6 text-center text-muted-foreground">{search ? "No categories match your search." : "No categories yet."}</p>}
       </div>
 

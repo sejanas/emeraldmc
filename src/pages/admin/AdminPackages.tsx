@@ -7,7 +7,7 @@ import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Pencil, Trash2, Search, Eye, EyeOff, ArrowUp, ArrowDown } from "lucide-react";
+import { Plus, Pencil, Trash2, Search, Eye, EyeOff, ArrowUp, ArrowDown, X } from "lucide-react";
 import { useConfirm } from "@/components/ConfirmDialog";
 import usePackages, { useCreatePackage, useUpdatePackage, useDeletePackage } from "@/hooks/usePackages";
 import useTests from "@/hooks/useTests";
@@ -153,7 +153,8 @@ const AdminPackages = () => {
       </div>
       <div className="relative mb-4 max-w-sm">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input placeholder="Search packages..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
+        <Input placeholder="Search packages..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 pr-9" />
+        {search && <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>}
       </div>
       <div className="rounded-xl border border-border bg-card overflow-x-auto">
         <table className="w-full text-sm">
@@ -194,7 +195,12 @@ const AdminPackages = () => {
             ))}
           </tbody>
         </table>
-        {packagesQuery.isLoading && <p className="p-6 text-center text-muted-foreground">Loading...</p>}
+        {packagesQuery.isLoading && (
+          <div className="p-6 flex flex-col items-center gap-3">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            <p className="text-sm text-muted-foreground">Loading packages...</p>
+          </div>
+        )}
         {!packagesQuery.isLoading && !filteredPackages.length && <p className="p-6 text-center text-muted-foreground">{search ? "No packages match your search." : "No packages yet."}</p>}
       </div>
 

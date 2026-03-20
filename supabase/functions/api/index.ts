@@ -315,6 +315,20 @@ async function crudList(table: string, url: URL, softDelete = true) {
       data.forEach((t: any) => {
         t.categories = catMap[t.id] ?? [];
       });
+
+      // Attach sub_test_count for each test
+      const { data: subCounts } = await db
+        .from("sub_tests")
+        .select("test_id")
+        .eq("is_visible", true)
+        .in("test_id", testIds);
+      const countMap: Record<string, number> = {};
+      (subCounts ?? []).forEach((s: any) => {
+        countMap[s.test_id] = (countMap[s.test_id] ?? 0) + 1;
+      });
+      data.forEach((t: any) => {
+        t.sub_test_count = countMap[t.id] ?? 0;
+      });
     }
 
     // Append individual sub-tests (show_as_individual=true) to the tests array
@@ -624,17 +638,20 @@ async function handlePackagesList(url: URL) {
   const testNames: Record<string, string[]> = {};
   const testIds: Record<string, string[]> = {};
   const testSubCounts: Record<string, Record<string, number>> = {};
+  const totalTestCounts: Record<string, number> = {};
   (pt ?? []).forEach((r: any) => {
     const tName = r.tests?.name ?? "";
     (testNames[r.package_id] ??= []).push(tName);
     (testIds[r.package_id] ??= []).push(r.test_id);
     const visibleSubs = (r.tests?.sub_tests ?? []).filter((s: any) => s.is_visible);
+    // Count: 1 test + its visible sub_tests
+    totalTestCounts[r.package_id] = (totalTestCounts[r.package_id] ?? 0) + 1 + visibleSubs.length;
     if (visibleSubs.length > 0) {
       (testSubCounts[r.package_id] ??= {})[tName] = visibleSubs.length;
     }
   });
 
-  return json({ packages, testNames, testIds, testSubCounts });
+  return json({ packages, testNames, testIds, testSubCounts, totalTestCounts });
 }
 
 async function handlePackageSave(req: Request, id?: string) {
