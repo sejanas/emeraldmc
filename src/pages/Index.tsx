@@ -55,7 +55,7 @@ const howItWorks = [
   { icon: FileDown, step: "4", title: "Download Report", desc: "Get your accurate report on the same day" },
 ];
 
-const serviceAreas = ["Port Blair", "Wimberlygunj", "Bambooflat", "Ferrargunj"];
+const serviceAreas = ["Port Blair", "Wimberlygunj", "Bambooflat", "Chouldari"];
 
 const Index = () => {
   const [heroSearch, setHeroSearch] = useState("");
