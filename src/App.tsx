@@ -34,6 +34,8 @@ const LogoutPage = lazy(() => import("./pages/LogoutPage"));
 // Lazy-loaded admin pages
 const AdminLogin = lazy(() => import("./pages/admin/AdminLogin"));
 const AdminSignup = lazy(() => import("./pages/admin/AdminSignup"));
+const AdminForgotPassword = lazy(() => import("./pages/admin/AdminForgotPassword"));
+const AdminResetPassword = lazy(() => import("./pages/admin/AdminResetPassword"));
 const AdminLayout = lazy(() => import("./pages/admin/AdminLayout"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
 const AdminCategories = lazy(() => import("./pages/admin/AdminCategories"));
@@ -89,6 +91,8 @@ const App = () => (
                 <Route path="/admin/logout" element={<LogoutPage />} />
                 <Route path="/admin/login" element={<AdminLogin />} />
                 <Route path="/admin/signup" element={<AdminSignup />} />
+                <Route path="/admin/forgot-password" element={<AdminForgotPassword />} />
+                <Route path="/admin/reset-password" element={<AdminResetPassword />} />
                 <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
                   <Route index element={<AdminDashboard />} />
                   <Route path="categories" element={<AdminCategories />} />

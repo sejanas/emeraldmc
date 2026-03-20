@@ -20,4 +20,8 @@ export async function resubmit() {
   return api.post('/auth/resubmit');
 }
 
-export default { getProfile, login, signup, updateProfile, resubmit };
+export async function forgotPassword(email: string) {
+  return api.post('/auth/forgot-password', { email });
+}
+
+export default { getProfile, login, signup, updateProfile, resubmit, forgotPassword };

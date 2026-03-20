@@ -1422,6 +1422,78 @@ async function handleResubmit(req: Request) {
   return json({ success: true });
 }
 
+// ── FORGOT PASSWORD ──
+
+async function handleForgotPassword(req: Request) {
+  const { email } = await req.json();
+  if (!email) return errRes("Email is required");
+
+  const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+  const FROM_EMAIL = Deno.env.get("FROM_EMAIL") ?? "noreply@yourdomain.com";
+  const APP_URL = (Deno.env.get("APP_URL") ?? "").replace(/\/$/, "");
+
+  if (!RESEND_API_KEY) throw { message: "Email service not configured", status: 500 };
+
+  const { data, error } = await adminDb().auth.admin.generateLink({
+    type: "recovery",
+    email,
+    options: { redirectTo: `${APP_URL}/admin/reset-password` },
+  });
+
+  // Always respond with success to avoid leaking which emails are registered
+  if (error || !data?.properties?.action_link) return json({ success: true });
+
+  const resetUrl = data.properties.action_link;
+
+  const emailRes = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      from: FROM_EMAIL,
+      to: email,
+      subject: "Reset your admin password",
+      html: `
+        <div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:32px 24px">
+          <h2 style="margin-bottom:8px">Reset your password</h2>
+          <p style="color:#555">You requested a password reset for your admin account. Click the button below to set a new password. This link expires in 1 hour.</p>
+          <a href="${resetUrl}" style="display:inline-block;margin:24px 0;padding:12px 28px;background:#16a34a;color:#fff;border-radius:6px;text-decoration:none;font-weight:600">Reset Password</a>
+          <p style="color:#888;font-size:13px">If you didn't request this, you can safely ignore this email. Your password will not change.</p>
+        </div>
+      `,
+    }),
+  });
+
+  if (!emailRes.ok) {
+    const body = await emailRes.text();
+    throw { message: `Failed to send reset email: ${body}`, status: 500 };
+  }
+
+  return json({ success: true });
+}
+
+// ── RESET PASSWORD ──
+
+async function handleResetPassword(req: Request) {
+  const { password } = await req.json();
+  if (!password) return errRes("Password is required");
+  if (password.length < 8) return errRes("Password must be at least 8 characters");
+  if (!/[A-Z]/.test(password)) return errRes("Must contain at least 1 uppercase letter");
+  if (!/[0-9]/.test(password)) return errRes("Must contain at least 1 number");
+  if (!/[^a-zA-Z0-9]/.test(password)) return errRes("Must contain at least 1 special character");
+
+  // The user must supply their active recovery session token via Authorization header
+  const user = await requireAuth(req);
+
+  const { error } = await adminDb().auth.admin.updateUserById(user.id, { password });
+  if (error) throw { message: error.message, status: 500 };
+
+  await logActivity({ event_type: "user.password_reset", user_id: user.id, entity_type: "user", entity_id: user.id });
+  return json({ success: true });
+}
+
 // ── CHANGE PASSWORD ──
 
 async function handleChangePassword(req: Request) {
@@ -1559,6 +1631,8 @@ Deno.serve(async (req) => {
       if (id === "profile" && method === "PUT") return await handleUpdateProfile(req);
       if (id === "resubmit" && method === "POST") return await handleResubmit(req);
       if (id === "change-password" && method === "POST") return await handleChangePassword(req);
+      if (id === "forgot-password" && method === "POST") return await handleForgotPassword(req);
+      if (id === "reset-password" && method === "POST") return await handleResetPassword(req);
     }
 
     // Dashboard

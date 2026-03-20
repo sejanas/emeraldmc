@@ -49,9 +49,14 @@ const AdminLogin = () => {
         <Button type="submit" className="w-full" disabled={loading}>
           {loading ? "Signing in..." : "Sign In"}
         </Button>
-        <p className="text-center text-sm text-muted-foreground">
-          Need an account? <Link to="/admin/signup" className="text-primary hover:underline">Sign up</Link>
-        </p>
+        <div className="flex items-center justify-between text-sm">
+          <p className="text-muted-foreground">
+            Need an account? <Link to="/admin/signup" className="text-primary hover:underline">Sign up</Link>
+          </p>
+          <Link to="/admin/forgot-password" className="text-primary hover:underline">
+            Forgot password?
+          </Link>
+        </div>
         <div className="pt-2 border-t border-border">
           <Button variant="ghost" size="sm" className="w-full gap-2 text-muted-foreground" asChild>
             <Link to="/">
