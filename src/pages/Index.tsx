@@ -2,7 +2,7 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import PageMeta from "@/components/PageMeta";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, Shield, Clock, FlaskConical, Users, Star, CheckCircle, Award, Home, Search, ClipboardList, Microscope, FileDown, MapPin, BadgeCheck, Info, Percent, Droplets } from "lucide-react";
+import { ArrowRight, Shield, Clock, FlaskConical, Users, Star, CheckCircle, Award, Home, Search, ClipboardList, Microscope, FileDown, MapPin, BadgeCheck, Info, Droplets, ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -55,14 +55,18 @@ const howItWorks = [
   { icon: FileDown, step: "4", title: "Download Report", desc: "Get your accurate report on the same day" },
 ];
 
-const serviceAreas = ["Port Blair", "Wimberlygunj", "Bambooflat", "Ferrargunj"];
+const serviceAreas = ["Port Blair", "Wimberlygunj", "Bambooflat", "Chouldari"];
 
 const Index = () => {
   const [heroSearch, setHeroSearch] = useState("");
   const [showResults, setShowResults] = useState(false);
   const [certPreview, setCertPreview] = useState<any>(null);
-  const [pkgTestsModal, setPkgTestsModal] = useState<{ name: string; tests: string[]; subCounts?: Record<string, number> } | null>(null);
+  const [pkgTestsModal, setPkgTestsModal] = useState<{ name: string; tests: string[]; subCounts?: Record<string, number>; subNames?: Record<string, string[]> } | null>(null);
   const [instructionsModal, setInstructionsModal] = useState<{ name: string; text: string } | null>(null);
+  const [pkgExpandedSubs, setPkgExpandedSubs] = useState<Record<string, boolean>>({});
+  const [testExpandedSubs, setTestExpandedSubs] = useState<Record<string, boolean>>({});
+  const togglePkgSub = (key: string) => setPkgExpandedSubs((prev) => ({ ...prev, [key]: !prev[key] }));
+  const toggleTestSub = (id: string) => setTestExpandedSubs((prev) => ({ ...prev, [id]: !prev[id] }));
   const searchRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -80,20 +84,20 @@ const Index = () => {
   const packages = packagesQuery.data?.packages ?? [];
   const testNames = packagesQuery.data?.testNames ?? {};
   const testSubCounts: Record<string, Record<string, number>> = packagesQuery.data?.testSubCounts ?? {};
+  const testSubNames: Record<string, Record<string, string[]>> = packagesQuery.data?.testSubNames ?? {};
+  const totalTestCounts: Record<string, number> = packagesQuery.data?.totalTestCounts ?? {};
   const certifications = (certificationsQuery.data ?? []).filter((c: any) => c.is_active !== false);
 
   // Filter active packages for display
   const activePackages = useMemo(() => packages.filter((p: any) => p.is_active !== false), [packages]);
 
-  // Filter tests that should show on homepage — enforce even count, min 6, 2-row grid
+  // Filter tests that should show on homepage
   const homepageTests = useMemo(() => {
-    const allTests = testsQuery.data ?? [];
+    const allTests = allTestsQuery.data ?? [];
     const withHomepage = allTests.filter((t: any) => t.show_on_homepage);
-    const base = withHomepage.length >= 6 ? withHomepage : allTests.slice(0, Math.max(allTests.length, 6));
-    // Enforce even count so 2-row grid has no orphans
-    const count = base.length % 2 === 0 ? base.length : base.length - 1;
-    return base.slice(0, Math.max(count, 6));
-  }, [testsQuery.data]);
+    // Show homepage-marked tests; fall back to first 6 if none are marked
+    return withHomepage.length > 0 ? withHomepage : allTests.slice(0, 6);
+  }, [allTestsQuery.data]);
 
   // State for description modal on packages
   const [descModal, setDescModal] = useState<{ name: string; text: string } | null>(null);
@@ -418,73 +422,82 @@ const Index = () => {
             </div>
           )}
           {testsQuery.isLoading ? (
-            <HorizontalScroll forwardOnly>
-              {Array.from({ length: 4 }).map((_, colIdx) => (
-                <div key={colIdx} className="flex flex-col gap-4 flex-shrink-0 snap-start w-[240px] sm:w-[270px]">
-                  {[0, 1].map(r => (
-                    <div key={r} className="rounded-xl border border-border bg-card p-5">
-                      <Skeleton className="h-4 w-24 mb-3" />
-                      <Skeleton className="h-5 w-40 mb-3" />
-                      <Skeleton className="h-4 w-32 mb-4" />
-                      <div className="flex items-baseline gap-2">
-                        <Skeleton className="h-7 w-16" />
-                        <Skeleton className="h-4 w-12" />
-                      </div>
-                    </div>
-                  ))}
+            <HorizontalScroll autoScroll>
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="w-[240px] sm:w-[270px] flex-shrink-0 snap-start rounded-xl border border-border bg-card p-5">
+                  <Skeleton className="h-5 w-40 mb-3" />
+                  <Skeleton className="h-4 w-32 mb-2" />
+                  <Skeleton className="h-4 w-28 mb-4" />
+                  <div className="flex items-baseline gap-2">
+                    <Skeleton className="h-7 w-16" />
+                    <Skeleton className="h-4 w-12" />
+                  </div>
+                  <Skeleton className="mt-4 h-9 w-full" />
                 </div>
               ))}
             </HorizontalScroll>
           ) : (
-            <HorizontalScroll forwardOnly>
-              {Array.from({ length: Math.ceil(homepageTests.length / 2) }).map((_, colIdx) => {
-                const pair = homepageTests.slice(colIdx * 2, colIdx * 2 + 2);
+            <HorizontalScroll autoScroll>
+              {homepageTests.map((t: any, i: number) => {
+                const discountPct = getDiscountPct(t);
                 return (
-                  <div key={colIdx} className="flex flex-col gap-4 flex-shrink-0 snap-start w-[240px] sm:w-[270px]">
-                    {pair.map((t: any, rowIdx: number) => {
-                      const discountPct = getDiscountPct(t);
-                      const animIdx = colIdx * 2 + rowIdx;
-                      return (
-                        <motion.div
-                          key={t.id}
-                          initial="hidden"
-                          whileInView="visible"
-                          viewport={{ once: true }}
-                          variants={fadeUp}
-                          custom={animIdx}
-                          className="rounded-xl border border-border bg-card p-5 transition-all hover:card-shadow-hover hover:scale-[1.01] flex flex-col flex-1"
-                        >
-                          <h3 className="font-semibold text-foreground text-base">{t.name}</h3>
-                          <p className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <Clock className="h-3.5 w-3.5 text-primary" />
-                            Report: {t.report_time}
-                          </p>
-                          {t.sample_type && (
-                            <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-                              <Droplets className="h-3.5 w-3.5 text-primary" />
-                              Sample: {t.sample_type}
-                            </p>
-                          )}
-                          <div className="mt-auto pt-4">
-                            <div className="flex items-baseline gap-2">
-                              <span className="font-display text-xl font-bold text-primary">₹{t.price}</span>
-                              {t.original_price && t.original_price > t.price && (
-                                <span className="text-sm text-muted-foreground line-through">₹{t.original_price}</span>
-                              )}
-                            </div>
-                            {discountPct > 0 && (
-                              <span className="inline-flex items-center gap-1 mt-1 rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-semibold text-destructive">
-                                <Percent className="h-3 w-3" /> {discountPct}% OFF
-                              </span>
-                            )}
-                          </div>
-                          <Button asChild size="sm" variant="outline" className="mt-3 w-full">
-                            <Link to="/book">Book Now</Link>
-                          </Button>
-                        </motion.div>
-                      );
-                    })}
-                  </div>
+                  <motion.div
+                    key={t.id}
+                    initial="hidden"
+                    whileInView="visible"
+                    viewport={{ once: true }}
+                    variants={fadeUp}
+                    custom={i}
+                    className="w-[240px] sm:w-[270px] flex-shrink-0 snap-start rounded-xl border border-border bg-card p-5 transition-all hover:card-shadow-hover hover:scale-[1.01] flex flex-col"
+                  >
+                    <h3 className="font-semibold text-foreground text-base">{t.name}</h3>
+                    {t.sub_test_count > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => toggleTestSub(t.id)}
+                        className="inline-flex items-center gap-0.5 mt-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary w-fit hover:bg-primary/20 transition-colors"
+                      >
+                        <FlaskConical className="h-3 w-3" /> {t.sub_test_count} parameters
+                        {testExpandedSubs[t.id] ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                      </button>
+                    )}
+                    {testExpandedSubs[t.id] && (t.sub_test_names ?? []).length > 0 && (
+                      <ul className="mt-1 space-y-0.5">
+                        {(t.sub_test_names as string[]).map((sn: string) => (
+                          <li key={sn} className="text-[10px] text-muted-foreground flex items-center gap-1.5">
+                            <span className="h-1 w-1 rounded-full bg-primary/40 shrink-0" />
+                            {sn}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    <p className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Clock className="h-3.5 w-3.5 text-primary" />
+                      Report: {t.report_time}
+                    </p>
+                    {t.sample_type && (
+                      <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <Droplets className="h-3.5 w-3.5 text-primary" />
+                        Sample: {t.sample_type}
+                      </p>
+                    )}
+                    <div className="mt-auto pt-4">
+                      <div className="flex items-baseline gap-2">
+                        <span className="font-display text-xl font-bold text-primary">₹{t.price}</span>
+                        {t.original_price && t.original_price > t.price && (
+                          <span className="text-sm text-muted-foreground line-through">₹{t.original_price}</span>
+                        )}
+                      </div>
+                      {discountPct > 0 && (
+                        <span className="inline-flex items-center gap-1 mt-1 rounded-full bg-destructive/10 px-2 py-0.5 text-xs font-semibold text-destructive">
+                          {discountPct}% OFF
+                        </span>
+                      )}
+                    </div>
+                    <Button asChild size="sm" variant="outline" className="mt-3 w-full">
+                      <Link to="/book">Book Now</Link>
+                    </Button>
+                  </motion.div>
                 );
               })}
             </HorizontalScroll>
@@ -504,7 +517,7 @@ const Index = () => {
           </div>
         )}
         {packagesQuery.isLoading ? (
-          <HorizontalScroll forwardOnly className="pt-5">
+          <HorizontalScroll autoScroll className="pt-5">
             {Array.from({ length: 4 }).map((_, i) => (
               <div key={i} className="w-[300px] flex-shrink-0 snap-start rounded-xl border border-border p-6">  
                 <Skeleton className="h-6 w-32 mb-2" />
@@ -520,7 +533,7 @@ const Index = () => {
             ))}
           </HorizontalScroll>
         ) : (
-          <HorizontalScroll forwardOnly className="pt-5">
+          <HorizontalScroll autoScroll className="pt-5">
             {activePackages.map((pkg: any, i: number) => {
               const allTests = testNames[pkg.id] ?? [];
               const allTestIds: string[] = packagesQuery.data?.testIds?.[pkg.id] ?? [];
@@ -538,6 +551,9 @@ const Index = () => {
               const extraCount = allTests.length - displayTests.length;
               const savings = getSavings(pkg);
               const price = pkg.discounted_price ?? pkg.original_price;
+              const hasDiscount = pkg.discounted_price && pkg.discounted_price < pkg.original_price;
+              const discountPct = hasDiscount ? Math.round(((pkg.original_price - pkg.discounted_price) / pkg.original_price) * 100) : 0;
+              const totalCount = totalTestCounts[pkg.id] ?? allTests.length;
 
               return (
                 <motion.div
@@ -551,7 +567,12 @@ const Index = () => {
                 >
                   {pkg.is_popular && (
                     <span className="absolute -top-3 left-4 z-10 inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-semibold text-primary-foreground shadow-sm">
-                      <Star className="h-3 w-3" /> Popular
+                      <Star className="h-3 w-3" /> Most Popular
+                    </span>
+                  )}
+                  {hasDiscount && (
+                    <span className="absolute -top-3 right-4 inline-flex items-center gap-1 rounded-full bg-destructive px-3 py-1 text-xs font-semibold text-destructive-foreground shadow-sm">
+                       {discountPct}% OFF
                     </span>
                   )}
                   <div className="flex items-start justify-between">
@@ -599,7 +620,7 @@ const Index = () => {
                   <div className="mt-3">
                     <div className="flex items-baseline gap-2">
                       <span className="font-display text-3xl font-bold text-primary">₹{price}</span>
-                      {pkg.discounted_price && pkg.discounted_price < pkg.original_price && (
+                      {hasDiscount && (
                         <span className="text-sm text-muted-foreground line-through">₹{pkg.original_price}</span>
                       )}
                     </div>
@@ -607,19 +628,44 @@ const Index = () => {
                       <p className="text-xs font-semibold text-primary mt-0.5">Save ₹{savings}</p>
                     )}
                   </div>
-                  {pkg.show_test_count !== false && allTests.length > 0 && (
+                  {pkg.show_test_count !== false && totalCount > 0 && (
                     <p className="mt-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                      🧪 {allTests.length} Tests Included
+                      🧪 {totalCount} Tests Included
                     </p>
                   )}
                   {displayTests.length > 0 && (
                     <ul className="mt-2 flex-1 space-y-1.5">
                       {displayTests.map((t: string) => {
                         const subCount = testSubCounts[pkg.id]?.[t] ?? 0;
+                        const subNamesForTest = testSubNames[pkg.id]?.[t] ?? [];
+                        const expandKey = `${pkg.id}:${t}`;
+                        const isOpen = pkgExpandedSubs[expandKey] ?? false;
                         return (
-                          <li key={t} className="flex items-center gap-2 text-xs text-muted-foreground">
-                            <CheckCircle className="h-3.5 w-3.5 text-primary shrink-0" /> {t}
-                            {subCount > 0 && <span className="text-[10px] text-muted-foreground/70">({subCount} parameters)</span>}
+                          <li key={t}>
+                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                              <CheckCircle className="h-3.5 w-3.5 text-primary shrink-0" />
+                              <span className="flex-1">{t}</span>
+                              {subCount > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => togglePkgSub(expandKey)}
+                                  className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground/70 hover:text-primary transition-colors shrink-0"
+                                >
+                                  ({subCount})
+                                  {isOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                                </button>
+                              )}
+                            </div>
+                            {isOpen && subNamesForTest.length > 0 && (
+                              <ul className="mt-0.5 ml-5 space-y-0.5">
+                                {subNamesForTest.map((sn) => (
+                                  <li key={sn} className="text-[10px] text-muted-foreground/80 flex items-center gap-1">
+                                    <span className="h-1 w-1 rounded-full bg-primary/40 shrink-0" />
+                                    {sn}
+                                  </li>
+                                ))}
+                              </ul>
+                            )}
                           </li>
                         );
                       })}
@@ -627,7 +673,7 @@ const Index = () => {
                         <li>
                           <button
                             type="button"
-                            onClick={() => setPkgTestsModal({ name: pkg.name, tests: allTests, subCounts: testSubCounts[pkg.id] })}
+                            onClick={() => setPkgTestsModal({ name: pkg.name, tests: allTests, subCounts: testSubCounts[pkg.id], subNames: testSubNames[pkg.id] })}
                             className="text-xs font-medium text-primary hover:underline"
                           >
                             +{extraCount} more tests
@@ -651,6 +697,7 @@ const Index = () => {
         packageName={pkgTestsModal?.name ?? ""}
         tests={pkgTestsModal?.tests ?? []}
         subCounts={pkgTestsModal?.subCounts}
+        subNames={pkgTestsModal?.subNames}
         open={!!pkgTestsModal}
         onClose={() => setPkgTestsModal(null)}
       />

@@ -315,6 +315,23 @@ async function crudList(table: string, url: URL, softDelete = true) {
       data.forEach((t: any) => {
         t.categories = catMap[t.id] ?? [];
       });
+
+      // Attach sub_test_count and sub_test_names for each test
+      const { data: subCounts } = await db
+        .from("sub_tests")
+        .select("test_id, name")
+        .eq("is_visible", true)
+        .in("test_id", testIds);
+      const countMap: Record<string, number> = {};
+      const namesMap: Record<string, string[]> = {};
+      (subCounts ?? []).forEach((s: any) => {
+        countMap[s.test_id] = (countMap[s.test_id] ?? 0) + 1;
+        (namesMap[s.test_id] ??= []).push(s.name);
+      });
+      data.forEach((t: any) => {
+        t.sub_test_count = countMap[t.id] ?? 0;
+        t.sub_test_names = namesMap[t.id] ?? [];
+      });
     }
 
     // Append individual sub-tests (show_as_individual=true) to the tests array
@@ -624,17 +641,22 @@ async function handlePackagesList(url: URL) {
   const testNames: Record<string, string[]> = {};
   const testIds: Record<string, string[]> = {};
   const testSubCounts: Record<string, Record<string, number>> = {};
+  const testSubNames: Record<string, Record<string, string[]>> = {};
+  const totalTestCounts: Record<string, number> = {};
   (pt ?? []).forEach((r: any) => {
     const tName = r.tests?.name ?? "";
     (testNames[r.package_id] ??= []).push(tName);
     (testIds[r.package_id] ??= []).push(r.test_id);
     const visibleSubs = (r.tests?.sub_tests ?? []).filter((s: any) => s.is_visible);
+    // Count: 1 test + its visible sub_tests
+    totalTestCounts[r.package_id] = (totalTestCounts[r.package_id] ?? 0) + 1 + visibleSubs.length;
     if (visibleSubs.length > 0) {
       (testSubCounts[r.package_id] ??= {})[tName] = visibleSubs.length;
+      (testSubNames[r.package_id] ??= {})[tName] = visibleSubs.map((s: any) => s.name as string);
     }
   });
 
-  return json({ packages, testNames, testIds, testSubCounts });
+  return json({ packages, testNames, testIds, testSubCounts, testSubNames, totalTestCounts });
 }
 
 async function handlePackageSave(req: Request, id?: string) {
