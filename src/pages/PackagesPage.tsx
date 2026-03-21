@@ -131,14 +131,11 @@ const PackagesPage = () => {
                               <CheckCircle className="h-4 w-4 text-primary shrink-0" />
                               <span className="flex-1">{t}</span>
                               {subCount > 0 && (
-                                <Popover onOpenChange={(open) => {
-                                  if (open) {
-                                    setPopoverExpanded({ [t]: true });
-                                  }
-                                }}>
+                                <Popover>
                                   <PopoverTrigger asChild>
                                     <button
                                       type="button"
+                                      onClick={() => setPopoverExpanded({ [t]: true })}
                                       className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground/70 hover:text-primary transition-colors shrink-0"
                                     >
                                       ({subCount})
@@ -199,12 +196,11 @@ const PackagesPage = () => {
                       })}
                       {extraCount > 0 && (
                         <li>
-                          <Popover onOpenChange={(open) => {
-                            if (open) setPopoverExpanded({});
-                          }}>
+                          <Popover>
                             <PopoverTrigger asChild>
                               <button
                                 type="button"
+                                onClick={() => setPopoverExpanded({})}
                                 className="text-xs font-medium text-primary hover:underline"
                               >
                                 +{extraCount} more tests
