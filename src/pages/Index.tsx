@@ -2,19 +2,19 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import PageMeta from "@/components/PageMeta";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, Shield, Clock, FlaskConical, Users, Star, CheckCircle, Award, Home, Search, ClipboardList, Microscope, FileDown, MapPin, BadgeCheck, Info, Droplets, ChevronDown, ChevronRight } from "lucide-react";
+import { ArrowRight, Shield, Clock, FlaskConical, Users, Star, CheckCircle, Award, Home, Search, ClipboardList, Microscope, FileDown, MapPin, BadgeCheck, Info, Droplets, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import SectionHeading from "@/components/SectionHeading";
 import StatsCounter from "@/components/StatsCounter";
 import Testimonials from "@/components/Testimonials";
 import HorizontalScroll from "@/components/HorizontalScroll";
 import CertificatePreview from "@/components/CertificatePreview";
+import PackageDetailDialog from "@/components/PackageDetailDialog";
+import TestDetailDialog from "@/components/TestDetailDialog";
 
 import useTests from "@/hooks/useTests";
 import useDoctors from "@/hooks/useDoctors";
@@ -64,8 +64,8 @@ const Index = () => {
   const [showResults, setShowResults] = useState(false);
   const [certPreview, setCertPreview] = useState<any>(null);
   const [instructionsModal, setInstructionsModal] = useState<{ name: string; text: string } | null>(null);
-  const [popoverExpanded, setPopoverExpanded] = useState<Record<string, boolean>>({});
-  const togglePopoverSub = (key: string) => setPopoverExpanded((prev) => ({ ...prev, [key]: !prev[key] }));
+  const [detailPkg, setDetailPkg] = useState<{ pkg: any; defaultExpandTest?: string } | null>(null);
+  const [testDetail, setTestDetail] = useState<any>(null);
   const searchRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const isMobile = useIsMobile();
@@ -97,9 +97,6 @@ const Index = () => {
     // Show homepage-marked tests; fall back to first 6 if none are marked
     return withHomepage.length > 0 ? withHomepage : allTests.slice(0, 6);
   }, [allTestsQuery.data]);
-
-  // State for description modal on packages
-  const [descModal, setDescModal] = useState<{ name: string; text: string } | null>(null);
 
   const q = heroSearch.trim().toLowerCase();
 
@@ -451,32 +448,14 @@ const Index = () => {
                   >
                     <h3 className="font-semibold text-foreground text-base">{t.name}</h3>
                     {t.sub_test_count > 0 && (
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <button
-                            type="button"
-                            className="inline-flex items-center gap-0.5 mt-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary w-fit hover:bg-primary/20 transition-colors"
-                          >
-                            <FlaskConical className="h-3 w-3" /> {t.sub_test_count} parameters
-                            <ChevronRight className="h-3 w-3" />
-                          </button>
-                        </PopoverTrigger>
-                        <PopoverContent side="right" align="start" className="w-72 p-0">
-                          <ScrollArea className="max-h-[60vh]">
-                            <div className="p-3">
-                              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{t.name} — Parameters</p>
-                              <ul className="space-y-0.5">
-                                {(t.sub_test_names as string[] ?? []).map((sn: string) => (
-                                  <li key={sn} className="text-[11px] text-muted-foreground flex items-center gap-1.5 py-0.5">
-                                    <span className="h-1 w-1 rounded-full bg-primary/40 shrink-0" />
-                                    {sn}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          </ScrollArea>
-                        </PopoverContent>
-                      </Popover>
+                      <button
+                        type="button"
+                        onClick={() => setTestDetail(t)}
+                        className="inline-flex items-center gap-0.5 mt-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary w-fit hover:bg-primary/20 transition-colors"
+                      >
+                        <FlaskConical className="h-3 w-3" /> {t.sub_test_count} parameters
+                        <ChevronRight className="h-3 w-3" />
+                      </button>
                     )}
                     <p className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
                       <Clock className="h-3.5 w-3.5 text-primary" />
@@ -617,7 +596,7 @@ const Index = () => {
                       </p>
                       <button
                         type="button"
-                        onClick={() => setDescModal({ name: pkg.name, text: pkg.description })}
+                        onClick={() => setDetailPkg({ pkg })}
                         className="text-xs font-medium text-primary hover:underline mt-0.5"
                       >
                         Read more →
@@ -650,64 +629,14 @@ const Index = () => {
                               <CheckCircle className="h-3.5 w-3.5 text-primary shrink-0" />
                               <span className="flex-1">{t}</span>
                               {subCount > 0 && (
-                                <Popover>
-                                  <PopoverTrigger asChild>
-                                    <button
-                                      type="button"
-                                      onClick={() => setPopoverExpanded({ [t]: true })}
-                                      className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground/70 hover:text-primary transition-colors shrink-0"
-                                    >
-                                      ({subCount})
-                                      <ChevronRight className="h-3 w-3" />
-                                    </button>
-                                  </PopoverTrigger>
-                                  <PopoverContent side="right" align="start" className="w-80 p-0">
-                                    <ScrollArea className="max-h-[60vh]">
-                                      <div className="p-3">
-                                        <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                                          {allTests.length} Tests in {pkg.name}
-                                        </p>
-                                        <ul className="space-y-1">
-                                          {allTests.map((at: string) => {
-                                            const sc = testSubCounts[pkg.id]?.[at] ?? 0;
-                                            const sn = testSubNames[pkg.id]?.[at] ?? [];
-                                            const isOpen = popoverExpanded[at] ?? false;
-                                            return (
-                                              <li key={at}>
-                                                <button
-                                                  type="button"
-                                                  onClick={() => sc > 0 && togglePopoverSub(at)}
-                                                  className={`flex items-center gap-2 text-sm w-full text-left rounded px-1.5 py-1 transition-colors ${
-                                                    sc > 0 ? "hover:bg-accent cursor-pointer" : "cursor-default"
-                                                  }`}
-                                                >
-                                                  <CheckCircle className="h-3.5 w-3.5 text-primary shrink-0" />
-                                                  <span className="flex-1 text-foreground">{at}</span>
-                                                  {sc > 0 && (
-                                                    <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground shrink-0">
-                                                      ({sc})
-                                                      {isOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-                                                    </span>
-                                                  )}
-                                                </button>
-                                                {isOpen && sn.length > 0 && (
-                                                  <ul className="ml-7 mt-0.5 mb-1 space-y-0.5">
-                                                    {sn.map((name) => (
-                                                      <li key={name} className="text-[11px] text-muted-foreground/80 flex items-center gap-1.5">
-                                                        <span className="h-1 w-1 rounded-full bg-primary/40 shrink-0" />
-                                                        {name}
-                                                      </li>
-                                                    ))}
-                                                  </ul>
-                                                )}
-                                              </li>
-                                            );
-                                          })}
-                                        </ul>
-                                      </div>
-                                    </ScrollArea>
-                                  </PopoverContent>
-                                </Popover>
+                                <button
+                                  type="button"
+                                  onClick={() => setDetailPkg({ pkg, defaultExpandTest: t })}
+                                  className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground/70 hover:text-primary transition-colors shrink-0"
+                                >
+                                  ({subCount})
+                                  <ChevronRight className="h-3 w-3" />
+                                </button>
                               )}
                             </div>
                           </li>
@@ -715,63 +644,13 @@ const Index = () => {
                       })}
                       {extraCount > 0 && (
                         <li>
-                          <Popover>
-                            <PopoverTrigger asChild>
-                              <button
-                                type="button"
-                                onClick={() => setPopoverExpanded({})}
-                                className="text-xs font-medium text-primary hover:underline"
-                              >
-                                +{extraCount} more tests
-                              </button>
-                            </PopoverTrigger>
-                            <PopoverContent side="right" align="start" className="w-80 p-0">
-                              <ScrollArea className="max-h-[60vh]">
-                                <div className="p-3">
-                                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
-                                    {allTests.length} Tests in {pkg.name}
-                                  </p>
-                                  <ul className="space-y-1">
-                                    {allTests.map((at: string) => {
-                                      const sc = testSubCounts[pkg.id]?.[at] ?? 0;
-                                      const sn = testSubNames[pkg.id]?.[at] ?? [];
-                                      const isOpen = popoverExpanded[at] ?? false;
-                                      return (
-                                        <li key={at}>
-                                          <button
-                                            type="button"
-                                            onClick={() => sc > 0 && togglePopoverSub(at)}
-                                            className={`flex items-center gap-2 text-sm w-full text-left rounded px-1.5 py-1 transition-colors ${
-                                              sc > 0 ? "hover:bg-accent cursor-pointer" : "cursor-default"
-                                            }`}
-                                          >
-                                            <CheckCircle className="h-3.5 w-3.5 text-primary shrink-0" />
-                                            <span className="flex-1 text-foreground">{at}</span>
-                                            {sc > 0 && (
-                                              <span className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground shrink-0">
-                                                ({sc})
-                                                {isOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
-                                              </span>
-                                            )}
-                                          </button>
-                                          {isOpen && sn.length > 0 && (
-                                            <ul className="ml-7 mt-0.5 mb-1 space-y-0.5">
-                                              {sn.map((name) => (
-                                                <li key={name} className="text-[11px] text-muted-foreground/80 flex items-center gap-1.5">
-                                                  <span className="h-1 w-1 rounded-full bg-primary/40 shrink-0" />
-                                                  {name}
-                                                </li>
-                                              ))}
-                                            </ul>
-                                          )}
-                                        </li>
-                                      );
-                                    })}
-                                  </ul>
-                                </div>
-                              </ScrollArea>
-                            </PopoverContent>
-                          </Popover>
+                          <button
+                            type="button"
+                            onClick={() => setDetailPkg({ pkg })}
+                            className="text-xs font-medium text-primary hover:underline"
+                          >
+                            +{extraCount} more tests
+                          </button>
                         </li>
                       )}
                     </ul>
@@ -794,13 +673,24 @@ const Index = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Description Modal */}
-      <Dialog open={!!descModal} onOpenChange={(o) => !o && setDescModal(null)}>
-        <DialogContent className="max-w-md">
-          <DialogTitle>{descModal?.name}</DialogTitle>
-          <p className="text-sm text-muted-foreground whitespace-pre-line mt-2">{descModal?.text}</p>
-        </DialogContent>
-      </Dialog>
+      {/* Package Detail Dialog */}
+      <PackageDetailDialog
+        pkg={detailPkg?.pkg ?? null}
+        allTests={detailPkg ? (testNames[detailPkg.pkg.id] ?? []) : []}
+        totalTestCount={detailPkg ? (totalTestCounts[detailPkg.pkg.id] ?? 0) : 0}
+        testSubCounts={detailPkg ? (testSubCounts[detailPkg.pkg.id] ?? {}) : {}}
+        testSubNames={detailPkg ? (testSubNames[detailPkg.pkg.id] ?? {}) : {}}
+        defaultExpandTest={detailPkg?.defaultExpandTest}
+        open={!!detailPkg}
+        onClose={() => setDetailPkg(null)}
+      />
+
+      {/* Test Detail Dialog */}
+      <TestDetailDialog
+        test={testDetail}
+        open={!!testDetail}
+        onClose={() => setTestDetail(null)}
+      />
 
       {/* Doctors */}
       <section className="bg-section-gradient py-20">

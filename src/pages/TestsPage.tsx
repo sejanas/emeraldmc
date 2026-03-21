@@ -7,8 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
-import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import TestDetailDialog from "@/components/TestDetailDialog";
 import SectionHeading from "@/components/SectionHeading";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import useCategories from "@/hooks/useCategories";
@@ -23,6 +22,7 @@ const TestsPage = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState(searchParams.get("search") || "");
   const [category, setCategory] = useState(searchParams.get("category") || "All");
+  const [testDetail, setTestDetail] = useState<any>(null);
   const testsQuery = useTests({ active: true });
   const categoriesQuery = useCategories();
 
@@ -121,32 +121,14 @@ const TestsPage = () => {
                   </span>
                 )}
                 {t.sub_test_count > 0 && (
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <button
-                        type="button"
-                        className="inline-flex items-center gap-1 mt-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-medium text-primary hover:bg-primary/20 transition-colors w-fit"
-                      >
-                        <FlaskConical className="h-3 w-3" /> {t.sub_test_count} parameters
-                        <ChevronRight className="h-3 w-3" />
-                      </button>
-                    </PopoverTrigger>
-                    <PopoverContent side="right" align="start" className="w-72 p-0">
-                      <ScrollArea className="max-h-[60vh]">
-                        <div className="p-3">
-                          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">{t.name} — Parameters</p>
-                          <ul className="space-y-0.5">
-                            {(t.sub_test_names as string[] ?? []).map((sn: string) => (
-                              <li key={sn} className="text-[11px] text-muted-foreground flex items-center gap-1.5 py-0.5">
-                                <span className="h-1 w-1 rounded-full bg-primary/40 shrink-0" />
-                                {sn}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
-                      </ScrollArea>
-                    </PopoverContent>
-                  </Popover>
+                  <button
+                    type="button"
+                    onClick={() => setTestDetail(t)}
+                    className="inline-flex items-center gap-1 mt-1 rounded-full bg-primary/10 px-2.5 py-0.5 text-[10px] font-medium text-primary hover:bg-primary/20 transition-colors w-fit"
+                  >
+                    <FlaskConical className="h-3 w-3" /> {t.sub_test_count} parameters
+                    <ChevronRight className="h-3 w-3" />
+                  </button>
                 )}
                 <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{t.description}</p>
                 <div className="mt-3 flex flex-wrap gap-3 text-xs text-muted-foreground">
@@ -173,6 +155,11 @@ const TestsPage = () => {
           <p className="text-sm text-muted-foreground">Try adjusting your search or filter criteria</p>
         </div>
       )}
+      <TestDetailDialog
+        test={testDetail}
+        open={!!testDetail}
+        onClose={() => setTestDetail(null)}
+      />
     </div>
   );
 };
