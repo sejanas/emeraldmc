@@ -648,8 +648,8 @@ async function handlePackagesList(url: URL) {
     (testNames[r.package_id] ??= []).push(tName);
     (testIds[r.package_id] ??= []).push(r.test_id);
     const visibleSubs = (r.tests?.sub_tests ?? []).filter((s: any) => s.is_visible);
-    // Count: 1 test + its visible sub_tests
-    totalTestCounts[r.package_id] = (totalTestCounts[r.package_id] ?? 0) + 1 + visibleSubs.length;
+    // If test has visible sub_tests, count only them; otherwise count the test as 1
+    totalTestCounts[r.package_id] = (totalTestCounts[r.package_id] ?? 0) + (visibleSubs.length > 0 ? visibleSubs.length : 1);
     if (visibleSubs.length > 0) {
       (testSubCounts[r.package_id] ??= {})[tName] = visibleSubs.length;
       (testSubNames[r.package_id] ??= {})[tName] = visibleSubs.map((s: any) => s.name as string);
