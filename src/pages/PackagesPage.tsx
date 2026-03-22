@@ -1,13 +1,12 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Star, CheckCircle, ArrowRight, Percent, ChevronDown, ChevronRight } from "lucide-react";
+import { Star, CheckCircle, ArrowRight, Percent, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import SectionHeading from "@/components/SectionHeading";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import PageMeta from "@/components/PageMeta";
-import PackageTestsModal from "@/components/PackageTestsModal";
+import PackageDetailDialog from "@/components/PackageDetailDialog";
 import usePackages from "@/hooks/usePackages";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -18,12 +17,7 @@ const fadeUp = {
 
 const PackagesPage = () => {
   const packagesQuery = usePackages();
-  const [descModal, setDescModal] = useState<{ name: string; text: string } | null>(null);
-  const [pkgTestsModal, setPkgTestsModal] = useState<{ name: string; tests: string[]; subCounts?: Record<string, number>; subNames?: Record<string, string[]> } | null>(null);
-  const [expandedSubs, setExpandedSubs] = useState<Record<string, boolean>>({});
-
-  const toggleSub = (key: string) =>
-    setExpandedSubs((prev) => ({ ...prev, [key]: !prev[key] }));
+  const [detailPkg, setDetailPkg] = useState<{ pkg: any; defaultExpandTest?: string } | null>(null);
 
   const packages = packagesQuery.data?.packages ?? [];
   const testNames = packagesQuery.data?.testNames ?? {};
@@ -100,7 +94,7 @@ const PackagesPage = () => {
                       <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3">{pkg.description}</p>
                       <button
                         type="button"
-                        onClick={() => setDescModal({ name: pkg.name, text: pkg.description })}
+                        onClick={() => setDetailPkg({ pkg })}
                         className="text-xs font-medium text-primary hover:underline mt-0.5"
                       >
                         Read more →
@@ -125,9 +119,6 @@ const PackagesPage = () => {
                     <ul className="mt-2 flex-1 space-y-1.5">
                       {displayTests.map((t: string) => {
                         const subCount = testSubCounts[pkg.id]?.[t] ?? 0;
-                        const subNames = testSubNames[pkg.id]?.[t] ?? [];
-                        const expandKey = `${pkg.id}:${t}`;
-                        const isOpen = expandedSubs[expandKey] ?? false;
                         return (
                           <li key={t}>
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -136,24 +127,14 @@ const PackagesPage = () => {
                               {subCount > 0 && (
                                 <button
                                   type="button"
-                                  onClick={() => toggleSub(expandKey)}
+                                  onClick={() => setDetailPkg({ pkg, defaultExpandTest: t })}
                                   className="inline-flex items-center gap-0.5 text-[10px] text-muted-foreground/70 hover:text-primary transition-colors shrink-0"
                                 >
-                                  ({subCount} parameters)
-                                  {isOpen ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+                                  ({subCount})
+                                  <ChevronRight className="h-3 w-3" />
                                 </button>
                               )}
                             </div>
-                            {isOpen && subNames.length > 0 && (
-                              <ul className="mt-1 ml-6 space-y-0.5">
-                                {subNames.map((sn) => (
-                                  <li key={sn} className="text-[11px] text-muted-foreground/80 flex items-center gap-1.5">
-                                    <span className="h-1 w-1 rounded-full bg-primary/40 shrink-0" />
-                                    {sn}
-                                  </li>
-                                ))}
-                              </ul>
-                            )}
                           </li>
                         );
                       })}
@@ -161,7 +142,7 @@ const PackagesPage = () => {
                         <li>
                           <button
                             type="button"
-                            onClick={() => setPkgTestsModal({ name: pkg.name, tests: allTests, subCounts: testSubCounts[pkg.id], subNames: testSubNames[pkg.id] })}
+                            onClick={() => setDetailPkg({ pkg })}
                             className="text-xs font-medium text-primary hover:underline"
                           >
                             +{extraCount} more tests
@@ -180,23 +161,16 @@ const PackagesPage = () => {
             })}
       </div>
 
-      {/* Package Tests Modal */}
-      <PackageTestsModal
-        packageName={pkgTestsModal?.name ?? ""}
-        tests={pkgTestsModal?.tests ?? []}
-        subCounts={pkgTestsModal?.subCounts}
-        subNames={pkgTestsModal?.subNames}
-        open={!!pkgTestsModal}
-        onClose={() => setPkgTestsModal(null)}
+      <PackageDetailDialog
+        pkg={detailPkg?.pkg ?? null}
+        allTests={detailPkg ? (testNames[detailPkg.pkg.id] ?? []) : []}
+        totalTestCount={detailPkg ? (totalTestCounts[detailPkg.pkg.id] ?? 0) : 0}
+        testSubCounts={detailPkg ? (testSubCounts[detailPkg.pkg.id] ?? {}) : {}}
+        testSubNames={detailPkg ? (testSubNames[detailPkg.pkg.id] ?? {}) : {}}
+        defaultExpandTest={detailPkg?.defaultExpandTest}
+        open={!!detailPkg}
+        onClose={() => setDetailPkg(null)}
       />
-
-      {/* Description Modal */}
-      <Dialog open={!!descModal} onOpenChange={(o) => !o && setDescModal(null)}>
-        <DialogContent className="max-w-md">
-          <DialogTitle>{descModal?.name}</DialogTitle>
-          <p className="text-sm text-muted-foreground whitespace-pre-line mt-2">{descModal?.text}</p>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
