@@ -67,7 +67,7 @@ const BlogPage = () => {
                     <ExternalLink className="h-3.5 w-3.5 text-muted-foreground" />
                   </div>
                   <h2 className="font-display text-xl font-semibold text-foreground group-hover:text-primary transition-colors">{article.title}</h2>
-                  <p className="mt-2 text-sm text-muted-foreground line-clamp-3">{article.description}</p>
+                  <p className="mt-2 text-sm text-muted-foreground line-clamp-3 text-justify">{article.description}</p>
                 </div>
               </a>
             ) : (
@@ -77,7 +77,7 @@ const BlogPage = () => {
                 <div className="p-6">
                   <Badge variant="secondary" className="mb-3">{article.category || "Article"}</Badge>
                   <h2 className="font-display text-xl font-semibold text-foreground group-hover:text-primary transition-colors">{article.title}</h2>
-                  <p className="mt-2 text-sm text-muted-foreground line-clamp-3">{article.description}</p>
+                  <p className="mt-2 text-sm text-muted-foreground line-clamp-3 text-justify">{article.description}</p>
                   <div className="mt-4 flex items-center gap-4 text-xs text-muted-foreground">
                     {article.datePublished && <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> {new Date(article.datePublished).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</span>}
                     {article.readTime && <span className="flex items-center gap-1"><Clock className="h-3 w-3" /> {article.readTime}</span>}

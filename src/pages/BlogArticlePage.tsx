@@ -81,7 +81,7 @@ const BlogArticlePage = () => {
       </motion.header>
 
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.6, delay: 0.2 }}
-        className="prose prose-lg dark:prose-invert max-w-none prose-headings:font-display prose-headings:text-foreground prose-p:text-muted-foreground prose-li:text-muted-foreground prose-strong:text-foreground"
+        className="prose prose-lg dark:prose-invert max-w-none prose-headings:font-display prose-headings:text-foreground prose-p:text-muted-foreground prose-p:text-justify prose-li:text-muted-foreground prose-strong:text-foreground"
         dangerouslySetInnerHTML={{ __html: article.content }}
       />
     </article>

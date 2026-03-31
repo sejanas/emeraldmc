@@ -49,7 +49,7 @@ const DoctorsPage = () => {
                 <Badge variant="secondary" className="mt-2 text-xs">{d.experience_years} Years Experience</Badge>
               )}
               {d.qualification && <p className="text-xs text-muted-foreground mt-1">{d.qualification}</p>}
-              {d.bio && <p className="mt-2 text-sm text-muted-foreground">{d.bio}</p>}
+              {d.bio && <p className="mt-2 text-sm text-muted-foreground text-justify">{d.bio}</p>}
             </div>
           </motion.div>
         ))}

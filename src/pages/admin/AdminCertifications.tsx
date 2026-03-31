@@ -15,7 +15,7 @@ import { reorderItem } from "@/lib/api";
 const emptyForm = {
   name: "", slug: "", issuing_authority: "", description: "", image_url: "",
   authority_logo: "", certificate_id: "", valid_till: "", is_verified: false,
-  display_order: 0, is_active: true,
+  display_order: 0, is_active: true, show_on_homepage: true,
 };
 
 const AdminCertifications = () => {
@@ -56,7 +56,7 @@ const AdminCertifications = () => {
       description: c.description || "", image_url: c.image_url || "",
       authority_logo: c.authority_logo || "", certificate_id: c.certificate_id || "",
       valid_till: c.valid_till || "", is_verified: c.is_verified ?? false,
-      display_order: c.display_order, is_active: c.is_active,
+      display_order: c.display_order, is_active: c.is_active, show_on_homepage: c.show_on_homepage ?? true,
     });
     setOpen(true);
   };
@@ -161,6 +161,7 @@ const AdminCertifications = () => {
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2"><Switch checked={form.is_verified} onCheckedChange={(v) => setForm({ ...form, is_verified: v })} /><Label>Verified</Label></div>
               <div className="flex items-center gap-2"><Switch checked={form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: v })} /><Label>Visible</Label></div>
+              <div className="flex items-center gap-2"><Switch checked={form.show_on_homepage} onCheckedChange={(v) => setForm({ ...form, show_on_homepage: v })} /><Label>Show on Home</Label></div>
             </div>
             <Button onClick={save} className="w-full" disabled={saving}>{saving ? "Saving..." : "Save"}</Button>
           </div>

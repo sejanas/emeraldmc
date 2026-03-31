@@ -12,7 +12,7 @@ import { useConfirm } from "@/components/ConfirmDialog";
 import ImageUpload from "@/components/ImageUpload";
 import useDoctors from "@/hooks/useDoctors";
 import { useCreateDoctor, useUpdateDoctor, useDeleteDoctor } from "@/hooks/useDoctorsMutations";
-import { reorderItem } from "@/lib/api";
+import { api } from "@/lib/api";
 
 interface ExtraFields {
   languages?: string;
@@ -45,7 +45,15 @@ const AdminDoctors = () => {
   const handleReorder = async (id: string, direction: "up" | "down") => {
     setReordering(id);
     try {
-      await reorderItem("doctors", id, direction);
+      const sorted = [...allDoctors];
+      const idx = sorted.findIndex((d: any) => d.id === id);
+      const targetIdx = direction === "up" ? idx - 1 : idx + 1;
+      if (targetIdx < 0 || targetIdx >= sorted.length) { setReordering(null); return; }
+      // Swap display_order using index-based values
+      await Promise.all([
+        api.put(`/doctors/${sorted[idx].id}`, { display_order: targetIdx }),
+        api.put(`/doctors/${sorted[targetIdx].id}`, { display_order: idx }),
+      ]);
       doctorsQuery.refetch();
     } catch (err: any) {
       toast({ title: "Reorder failed", description: err.message, variant: "destructive" });
@@ -54,7 +62,7 @@ const AdminDoctors = () => {
 
   const openNew = () => {
     setEditing(null);
-    setForm({ name: "", specialization: "", qualification: "", experience_years: 0, bio: "", profile_image: "", display_order: doctorsQuery.data?.length ?? 0, is_active: true });
+    setForm({ name: "", specialization: "", qualification: "", experience_years: 0, bio: "", profile_image: "", display_order: Math.max(0, ...(doctorsQuery.data ?? []).map((d: any) => d.display_order ?? 0)) + 1, is_active: true });
     setExtraFields({ languages: "", availability: "", consultation_fee: null, education: "", awards: "" });
     setExtraOpen(false);
     setOpen(true);
@@ -185,10 +193,7 @@ const AdminDoctors = () => {
               <div><Label>Specialization *</Label><Input value={form.specialization} onChange={(e) => setForm({ ...form, specialization: e.target.value })} className="mt-1" /></div>
               <div><Label>Qualification</Label><Input value={form.qualification} onChange={(e) => setForm({ ...form, qualification: e.target.value })} className="mt-1" /></div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div><Label>Experience (years)</Label><Input type="number" value={form.experience_years} onChange={(e) => setForm({ ...form, experience_years: +e.target.value })} className="mt-1" /></div>
-              <div><Label>Display Order</Label><Input type="number" value={form.display_order} onChange={(e) => setForm({ ...form, display_order: +e.target.value })} className="mt-1" /></div>
-            </div>
+            <div><Label>Experience (years)</Label><Input type="number" value={form.experience_years} onChange={(e) => setForm({ ...form, experience_years: +e.target.value })} className="mt-1" /></div>
             <div><Label>Bio</Label><Textarea value={form.bio} onChange={(e) => setForm({ ...form, bio: e.target.value })} className="mt-1" /></div>
             <div className="flex items-center gap-2"><Switch checked={form.is_active} onCheckedChange={(v) => setForm({ ...form, is_active: v })} /> <Label>Visible</Label></div>
 

@@ -91,7 +91,7 @@ const PackagesPage = () => {
                   <h3 className="font-display text-xl font-semibold text-foreground">{pkg.name}</h3>
                   {pkg.description && (
                     <div className="mt-1">
-                      <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3">{pkg.description}</p>
+                      <p className="text-sm text-muted-foreground leading-relaxed line-clamp-3 text-justify">{pkg.description}</p>
                       <button
                         type="button"
                         onClick={() => setDetailPkg({ pkg })}

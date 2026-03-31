@@ -27,6 +27,7 @@ const FaqPage = lazy(() => import("./pages/FaqPage"));
 const ReportsPage = lazy(() => import("./pages/ReportsPage"));
 const BlogPage = lazy(() => import("./pages/BlogPage"));
 const BlogArticlePage = lazy(() => import("./pages/BlogArticlePage"));
+const CertificationsPage = lazy(() => import("./pages/CertificationsPage"));
 const LocationTestPage = lazy(() => import("./pages/LocationTestPage"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const LogoutPage = lazy(() => import("./pages/LogoutPage"));
@@ -53,6 +54,10 @@ const AdminVisitors = lazy(() => import("./pages/admin/AdminVisitors"));
 const AdminProfile = lazy(() => import("./pages/admin/AdminProfile"));
 const AdminThemeSettings = lazy(() => import("./pages/admin/AdminThemeSettings"));
 const AdminSettings = lazy(() => import("./pages/admin/AdminSettings"));
+const AdminHomepageSections = lazy(() => import("./pages/admin/AdminHomepageSections"));
+const AdminStatistics = lazy(() => import("./pages/admin/AdminStatistics"));
+const AdminReports = lazy(() => import("./pages/admin/AdminReports"));
+const AdminFeatures = lazy(() => import("./pages/admin/AdminFeatures"));
 const PreviewHome = lazy(() => import("./pages/PreviewHome"));
 
 const PageLoader = () => (
@@ -84,6 +89,7 @@ const App = () => (
                   <Route path="/reports" element={<ReportsPage />} />
                   <Route path="/blog" element={<BlogPage />} />
                   <Route path="/blog/:slug" element={<BlogArticlePage />} />
+                  <Route path="/certifications" element={<CertificationsPage />} />
                   <Route path="/preview/home" element={<AdminRoute><PreviewHome /></AdminRoute>} />
                   <Route path="/:slug" element={<LocationTestPage />} />
                 </Route>
@@ -110,6 +116,10 @@ const App = () => (
                   <Route path="profile" element={<AdminProfile />} />
                   <Route path="theme" element={<AdminThemeSettings />} />
                   <Route path="settings" element={<AdminSettings />} />
+                  <Route path="homepage" element={<AdminHomepageSections />} />
+                  <Route path="statistics" element={<AdminStatistics />} />
+                  <Route path="reports" element={<AdminReports />} />
+                  <Route path="features" element={<AdminFeatures />} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
               </Routes>

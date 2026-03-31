@@ -63,7 +63,7 @@ const PackageDetailDialog = ({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-md p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-2xl p-0 gap-0 overflow-hidden">
         {/* Header */}
         <div className="p-5 pb-0">
           <DialogTitle className="font-display text-xl font-semibold">
@@ -88,10 +88,10 @@ const PackageDetailDialog = ({
         </div>
 
         {/* Scrollable body */}
-        <ScrollArea className="max-h-[60vh] px-5">
+        <ScrollArea className="max-h-[75vh] px-5">
           {/* Description */}
           {pkg.description && (
-            <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line mt-3">
+            <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line mt-3 text-justify">
               {pkg.description}
             </p>
           )}
@@ -100,7 +100,7 @@ const PackageDetailDialog = ({
           {pkg.instructions && (
             <div className="mt-3 rounded-lg bg-accent/50 p-3">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1">Preparation</p>
-              <p className="text-sm text-muted-foreground whitespace-pre-line">{pkg.instructions}</p>
+              <p className="text-sm text-muted-foreground whitespace-pre-line text-justify">{pkg.instructions}</p>
             </div>
           )}
 
