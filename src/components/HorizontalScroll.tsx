@@ -92,6 +92,9 @@ const HorizontalScroll = ({ children, className, loop, forwardOnly, autoScroll }
   const scroll = (dir: "left" | "right") => {
     const el = scrollRef.current;
     if (!el) return;
+    // Pause autoscroll for 1.2s so the smooth scroll is not overridden
+    pausedRef.current = true;
+    setTimeout(() => { pausedRef.current = false; }, 1200);
     const atEnd = el.scrollLeft >= el.scrollWidth - el.clientWidth - 2;
     const atStart = el.scrollLeft <= 2;
     if ((loop || forwardOnly) && dir === "right" && atEnd) {
@@ -112,10 +115,10 @@ const HorizontalScroll = ({ children, className, loop, forwardOnly, autoScroll }
         <Button
           variant="outline"
           size="icon"
-          className="absolute -left-3 top-1/2 -translate-y-1/2 z-10 h-9 w-9 rounded-full shadow-md bg-background/90 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity hidden md:flex"
+          className="absolute -left-3 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full shadow-md bg-background/90 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity hidden md:flex"
           onClick={() => scroll("left")}
         >
-          <ChevronLeft className="h-4 w-4" />
+          <ChevronLeft className="h-5 w-5" />
         </Button>
       )}
       <div
@@ -133,10 +136,10 @@ const HorizontalScroll = ({ children, className, loop, forwardOnly, autoScroll }
         <Button
           variant="outline"
           size="icon"
-          className="absolute -right-3 top-1/2 -translate-y-1/2 z-10 h-9 w-9 rounded-full shadow-md bg-background/90 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity hidden md:flex"
+          className="absolute -right-3 top-1/2 -translate-y-1/2 z-10 h-12 w-12 rounded-full shadow-md bg-background/90 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity hidden md:flex"
           onClick={() => scroll("right")}
         >
-          <ChevronRight className="h-4 w-4" />
+          <ChevronRight className="h-5 w-5" />
         </Button>
       )}
     </div>

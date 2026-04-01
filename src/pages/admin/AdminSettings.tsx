@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useSiteSettings, useUpdateSetting } from "@/hooks/useSiteSettings";
-import { Save, Shield, Globe, Settings2, FileText } from "lucide-react";
+import { Save, Shield, Globe, Settings2 } from "lucide-react";
 
 const AdminSettings = () => {
   const { isSuperAdmin } = useAuth();
@@ -28,16 +28,8 @@ const AdminSettings = () => {
     exceptions: { booking_manager: true } as Record<string, boolean>,
   });
 
-  // Stats settings
-  const [stats, setStats] = useState({
-    tests_completed: 0, happy_patients: 0, diagnostic_tests: 0, years_experience: 0,
-  });
-
   // SEO settings
   const [seo, setSeo] = useState({ meta_title: "", meta_description: "", og_image: "" });
-
-  // Reports settings
-  const [reports, setReports] = useState({ portal_url: "https://www.quantahims.com/", instructions: "Login with the credentials received over WhatsApp to view and download your reports." });
 
   useEffect(() => {
     if (!allSettings || !Array.isArray(allSettings)) return;
@@ -46,12 +38,8 @@ const AdminSettings = () => {
     setGeneral({ business_name: g.business_name || "", phone: g.phone || "", email: g.email || "", address: g.address || "", hours: g.hours || "" });
     const sec = get("session_config") ?? {};
     setSecurity({ timeout_minutes: sec.timeout_minutes ?? 30, enabled: sec.enabled !== false, exceptions: sec.exceptions ?? { booking_manager: true } });
-    const st = get("stats") ?? {};
-    setStats({ tests_completed: st.tests_completed ?? 0, happy_patients: st.happy_patients ?? 0, diagnostic_tests: st.diagnostic_tests ?? 0, years_experience: st.years_experience ?? 0 });
     const se = get("seo") ?? {};
     setSeo({ meta_title: se.meta_title || "", meta_description: se.meta_description || "", og_image: se.og_image || "" });
-    const rp = get("report_instructions") ?? {};
-    setReports({ portal_url: rp.portal_url || "https://www.quantahims.com/", instructions: rp.instructions || "Login with the credentials received over WhatsApp to view and download your reports." });
   }, [allSettings]);
 
   if (!isSuperAdmin) return <Navigate to="/admin" replace />;
@@ -76,9 +64,7 @@ const AdminSettings = () => {
         <TabsList className="mb-6">
           <TabsTrigger value="general"><Settings2 className="h-4 w-4 mr-1" /> General</TabsTrigger>
           <TabsTrigger value="security"><Shield className="h-4 w-4 mr-1" /> Security</TabsTrigger>
-          <TabsTrigger value="stats">📊 Statistics</TabsTrigger>
           <TabsTrigger value="seo"><Globe className="h-4 w-4 mr-1" /> SEO</TabsTrigger>
-          <TabsTrigger value="reports"><FileText className="h-4 w-4 mr-1" /> Reports</TabsTrigger>
         </TabsList>
 
         <TabsContent value="general">
@@ -114,20 +100,6 @@ const AdminSettings = () => {
           </div>
         </TabsContent>
 
-        <TabsContent value="stats">
-          <div className="rounded-xl border border-border bg-card p-6 space-y-4">
-            <h2 className="font-semibold text-foreground">Homepage Statistics</h2>
-            <p className="text-sm text-muted-foreground">Configure the numbers shown in the statistics section. Set to 0 to hide a stat.</p>
-            <div className="grid grid-cols-2 gap-4">
-              <div><Label>Tests Completed</Label><Input type="number" value={stats.tests_completed} onChange={(e) => setStats({ ...stats, tests_completed: +e.target.value })} className="mt-1" /></div>
-              <div><Label>Happy Patients</Label><Input type="number" value={stats.happy_patients} onChange={(e) => setStats({ ...stats, happy_patients: +e.target.value })} className="mt-1" /></div>
-              <div><Label>Diagnostic Tests</Label><Input type="number" value={stats.diagnostic_tests} onChange={(e) => setStats({ ...stats, diagnostic_tests: +e.target.value })} className="mt-1" /></div>
-              <div><Label>Years Experience</Label><Input type="number" value={stats.years_experience} onChange={(e) => setStats({ ...stats, years_experience: +e.target.value })} className="mt-1" /></div>
-            </div>
-            <Button onClick={() => saveSection("stats", stats)} disabled={saving}><Save className="h-4 w-4 mr-2" /> Save</Button>
-          </div>
-        </TabsContent>
-
         <TabsContent value="seo">
           <div className="rounded-xl border border-border bg-card p-6 space-y-4">
             <h2 className="font-semibold text-foreground">SEO Settings</h2>
@@ -138,23 +110,6 @@ const AdminSettings = () => {
           </div>
         </TabsContent>
 
-        <TabsContent value="reports">
-          <div className="rounded-xl border border-border bg-card p-6 space-y-4">
-            <h2 className="font-semibold text-foreground">Report Download Instructions</h2>
-            <p className="text-sm text-muted-foreground">These instructions are shown on the Reports page when a patient's booking is completed.</p>
-            <div><Label>Portal URL</Label><Input value={reports.portal_url} onChange={(e) => setReports({ ...reports, portal_url: e.target.value })} className="mt-1" placeholder="https://www.quantahims.com/" /></div>
-            <div>
-              <Label>Instructions</Label>
-              <textarea
-                value={reports.instructions}
-                onChange={(e) => setReports({ ...reports, instructions: e.target.value })}
-                className="mt-1 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[100px]"
-                placeholder="Instructions shown to patients for downloading reports..."
-              />
-            </div>
-            <Button onClick={() => saveSection("report_instructions", reports)} disabled={saving}><Save className="h-4 w-4 mr-2" /> Save</Button>
-          </div>
-        </TabsContent>
       </Tabs>
     </div>
   );
