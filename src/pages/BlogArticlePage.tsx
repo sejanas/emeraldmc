@@ -58,7 +58,7 @@ const BlogArticlePage = () => {
       <PageMeta
         title={article.meta_title || article.title}
         description={article.meta_description || article.description}
-        canonical={`https://emeraldmc.lovable.app/blog/${article.slug}`}
+        canonical={`https://www.wellnessandaman.com/blog/${article.slug}`}
       />
       <JsonLd schema={schema} />
       <Breadcrumbs items={[{ label: "Health Blog", href: "/blog" }, { label: article.title }]} />

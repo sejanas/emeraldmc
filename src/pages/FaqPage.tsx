@@ -16,7 +16,7 @@ const FaqPage = () => {
       <PageMeta
         title="FAQs – Frequently Asked Questions"
         description="Find answers to common questions about diagnostic tests, health packages, home sample collection, reports, and services at Emerald Medical Care in Port Blair."
-        canonical="https://emeraldmedicalcare.com/faq"
+        canonical="https://www.wellnessandaman.com/faq"
       />
       {faqList.length > 0 && <JsonLd schema={createFaqSchema(faqList)} />}
 
