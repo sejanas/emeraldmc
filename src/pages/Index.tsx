@@ -15,6 +15,8 @@ import HorizontalScroll from "@/components/HorizontalScroll";
 import CertificatePreview from "@/components/CertificatePreview";
 import PackageDetailDialog from "@/components/PackageDetailDialog";
 import TestDetailDialog from "@/components/TestDetailDialog";
+import VisitingDoctorModal from "@/components/VisitingDoctorModal";
+import { VISITING_DOCTOR_EVENT, isVisitActive } from "@/data/visitingDoctorEvent";
 
 import useTests from "@/hooks/useTests";
 import useDoctors from "@/hooks/useDoctors";
@@ -206,6 +208,7 @@ const Index = () => {
 
   return (
     <>
+      <VisitingDoctorModal />
       <PageMeta
         title="Shifa's Mainland Healthcare – ISO Certified Diagnostic Lab in Sri Vijaya Puram"
         description="ISO certified diagnostic laboratory in Sri Vijaya Puram, Port Blair. 50+ health tests, affordable packages, expert doctors, and free home sample collection."
@@ -371,6 +374,68 @@ const Index = () => {
           )}
         </div>
       </section>
+      )}
+
+      {/* Visiting Doctor Camp Section */}
+      {isVisitActive() && (
+        <section className="container py-16">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.55 }}
+            className="overflow-hidden rounded-2xl border-2 border-primary/30 bg-card card-shadow"
+          >
+            <div className="flex flex-col md:flex-row">
+              {/* Doctor photo */}
+              <div className="relative md:w-64 shrink-0">
+                <img
+                  src={VISITING_DOCTOR_EVENT.imageUrl}
+                  alt={VISITING_DOCTOR_EVENT.name}
+                  className="h-64 w-full object-cover object-top md:h-full"
+                  loading="lazy"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent md:bg-gradient-to-r" />
+              </div>
+              {/* Content */}
+              <div className="flex-1 p-6 md:p-8">
+                <div className="flex flex-wrap gap-2 mb-4">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-green-500/10 text-green-600 dark:text-green-400 border border-green-500/30 px-3 py-1 text-xs font-bold">
+                    FREE CAMP
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 text-primary border border-primary/20 px-3 py-1 text-xs font-semibold">
+                    VISITING SPECIALIST
+                  </span>
+                </div>
+                <h2 className="font-display text-2xl font-bold text-foreground">{VISITING_DOCTOR_EVENT.name}</h2>
+                <p className="text-sm text-primary font-semibold mt-0.5">{VISITING_DOCTOR_EVENT.credentials}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{VISITING_DOCTOR_EVENT.organisation}</p>
+                <p className="mt-3 text-sm text-muted-foreground leading-relaxed max-w-xl">{VISITING_DOCTOR_EVENT.bio}</p>
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {VISITING_DOCTOR_EVENT.specialties.map((s) => (
+                    <span key={s} className="rounded-full border border-border bg-accent px-2.5 py-0.5 text-xs font-medium text-foreground">{s}</span>
+                  ))}
+                </div>
+                <div className="mt-5 flex flex-wrap items-center gap-3">
+                  <span className="text-sm font-semibold text-foreground">
+                    Visiting: <span className="text-primary">{VISITING_DOCTOR_EVENT.visitLabel}</span>
+                  </span>
+                  <span className="text-green-600 dark:text-green-400 text-sm font-bold">Registration &amp; Consultation FREE</span>
+                </div>
+                <div className="mt-5 flex flex-wrap gap-3">
+                  <Button asChild>
+                    <Link to="/book?from=fertility-camp">Book Free Appointment <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                  </Button>
+                  <Button asChild variant="outline">
+                    <a href={VISITING_DOCTOR_EVENT.sourceUrl} target="_blank" rel="noopener noreferrer">
+                      About the Doctor <ArrowRight className="ml-2 h-4 w-4" />
+                    </a>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        </section>
       )}
 
       {/* Dynamic Sections - ordered via admin settings */}
@@ -547,7 +612,7 @@ const Index = () => {
                               )}
                             </div>
                             <Button asChild size="sm" variant="outline" className="mt-3 w-full">
-                              <Link to="/book">Book Now</Link>
+                              <Link to={"/book?test=" + encodeURIComponent(t.name)}>Book Now</Link>
                             </Button>
                           </motion.div>
                         );
@@ -721,7 +786,7 @@ const Index = () => {
                             </ul>
                           )}
                           <Button asChild className="mt-5 w-full" size="sm" variant={pkg.is_popular ? "default" : "outline"}>
-                            <Link to="/book">Book Now</Link>
+                            <Link to={"/book?package=" + encodeURIComponent(pkg.name)}>Book Now</Link>
                           </Button>
                         </motion.div>
                       );

@@ -154,7 +154,7 @@ const PackageDetailDialog = ({
         {/* Footer CTA */}
         <div className="p-4 border-t border-border">
           <Button asChild className="w-full">
-            <Link to="/book" onClick={onClose}>
+            <Link to={"/book?package=" + encodeURIComponent(pkg.name)} onClick={onClose}>
               Book Now <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
           </Button>

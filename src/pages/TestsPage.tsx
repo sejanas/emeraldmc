@@ -143,7 +143,7 @@ const TestsPage = () => {
                     )}
                     <span className="font-display text-xl font-bold text-primary">₹{t.price}</span>
                   </div>
-                  <Button asChild size="sm"><Link to="/book">Book Now</Link></Button>
+                  <Button asChild size="sm"><Link to={"/book?test=" + encodeURIComponent(t.name)}>Book Now</Link></Button>
                 </div>
               </motion.div>
             ))}

@@ -5,7 +5,11 @@ import ErrorBox from "@/components/ErrorBox";
 import PageMeta from "@/components/PageMeta";
 import useDoctors from "@/hooks/useDoctors";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Link } from "react-router-dom";
+import { ArrowRight, ExternalLink } from "lucide-react";
+import { VISITING_DOCTOR_EVENT, isVisitActive } from "@/data/visitingDoctorEvent";
 
 const DoctorsPage = () => {
   const doctorsQuery = useDoctors();
@@ -16,6 +20,56 @@ const DoctorsPage = () => {
       <PageMeta title="Our Doctors – Expert Healthcare Professionals" description="Meet the qualified pathologists and physicians at Shifa's Mainland Healthcare in Sri Vijaya Puram, Port Blair." />
       <Breadcrumbs items={[{ label: "Our Doctors" }]} />
       <SectionHeading title="Our Expert Doctors" subtitle="Meet the qualified healthcare professionals at Emerald Medical Care" />
+
+      {/* Visiting Doctor Banner */}
+      {isVisitActive() && (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+          className="mb-10 overflow-hidden rounded-2xl border-2 border-primary/30 bg-card card-shadow max-w-4xl mx-auto"
+        >
+          <div className="flex flex-col sm:flex-row">
+            <div className="relative sm:w-48 shrink-0">
+              <img
+                src={VISITING_DOCTOR_EVENT.imageUrl}
+                alt={VISITING_DOCTOR_EVENT.name}
+                className="h-52 w-full object-cover object-top sm:h-full"
+                loading="lazy"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent sm:bg-gradient-to-r" />
+            </div>
+            <div className="flex-1 p-5 sm:p-6">
+              <div className="flex flex-wrap gap-2 mb-3">
+                <Badge className="bg-green-500 text-white border-0 font-bold">FREE CAMP</Badge>
+                <Badge variant="outline" className="font-semibold text-primary border-primary/30">VISITING SPECIALIST</Badge>
+              </div>
+              <h3 className="font-display text-xl font-bold text-foreground">{VISITING_DOCTOR_EVENT.name}</h3>
+              <p className="text-sm font-semibold text-primary mt-0.5">{VISITING_DOCTOR_EVENT.credentials}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{VISITING_DOCTOR_EVENT.organisation}</p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {VISITING_DOCTOR_EVENT.specialties.map((s) => (
+                  <span key={s} className="rounded-full border border-border bg-accent px-2.5 py-0.5 text-xs font-medium text-foreground">{s}</span>
+                ))}
+              </div>
+              <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
+                <span className="font-semibold text-foreground">Visiting: <span className="text-primary">{VISITING_DOCTOR_EVENT.visitLabel}</span></span>
+                <span className="text-green-600 dark:text-green-400 font-bold">Registration &amp; Consultation FREE</span>
+              </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                <Button asChild size="sm">
+                  <Link to="/book?from=fertility-camp">Book Free Appointment <ArrowRight className="ml-1.5 h-3.5 w-3.5" /></Link>
+                </Button>
+                <Button asChild size="sm" variant="outline">
+                  <a href={VISITING_DOCTOR_EVENT.sourceUrl} target="_blank" rel="noopener noreferrer">
+                    About the Doctor <ExternalLink className="ml-1.5 h-3.5 w-3.5" />
+                  </a>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
       <div className={`grid gap-8 max-w-4xl mx-auto ${doctors.length >= 3 ? "sm:grid-cols-3" : doctors.length === 1 ? "grid-cols-1 place-items-center" : "sm:grid-cols-2 justify-items-center"}`}>
         {doctorsQuery.error && (
           <div className="col-span-3 p-6">
