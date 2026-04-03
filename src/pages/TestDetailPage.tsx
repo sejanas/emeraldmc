@@ -35,7 +35,7 @@ const StaticTestDetail = ({ info }: { info: (typeof testDetails)[0] }) => {
       <PageMeta
         title={`${info.fullName} in Port Blair – Price, Preparation, Normal Range`}
         description={`Get ${info.fullName} at Emerald Medical Care in Sri Vijaya Puram, Port Blair. ISO certified lab with same-day reports. ${info.whatIs.slice(0, 100)}`}
-        canonical={`https://emeraldmedicalcare.com/tests/${info.slug}`}
+        canonical={`https://www.wellnessandaman.com/tests/${info.slug}`}
       />
       <JsonLd schema={testSchema} />
       <JsonLd schema={faqSchema} />
@@ -127,7 +127,7 @@ const DbTestDetail = ({ test }: { test: any }) => {
       <PageMeta
         title={`${test.name} – Price & Details`}
         description={test.description || `Book ${test.name} at Emerald Medical Care, Port Blair. Transparent pricing & same-day reports.`}
-        canonical={test.slug ? `https://emeraldmedicalcare.com/tests/${test.slug}` : undefined}
+        canonical={test.slug ? `https://www.wellnessandaman.com/tests/${test.slug}` : undefined}
       />
       <Breadcrumbs items={[{ label: "Diagnostic Tests", href: "/tests" }, { label: test.name }]} />
 

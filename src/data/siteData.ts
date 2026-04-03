@@ -1,5 +1,7 @@
 // Centralized site data - will be replaced by DB in Phase 2
 
+export const SITE_URL = "https://www.wellnessandaman.com";
+
 export const businessInfo = {
   name: "Shifa's Mainland Healthcare",
   shortName: "SMH",

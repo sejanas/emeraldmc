@@ -25,4 +25,4 @@ Allow: /
 User-agent: *
 Allow: /
 
-Sitemap: https://emeraldmedicalcare.com/sitemap.xml
+Sitemap: https://www.wellnessandaman.com/sitemap.xml

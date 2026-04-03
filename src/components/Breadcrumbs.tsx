@@ -8,6 +8,7 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import JsonLd, { createBreadcrumbSchema } from "@/components/JsonLd";
 
 interface BreadcrumbEntry {
   label: string;
@@ -20,6 +21,7 @@ const Breadcrumbs = ({ items }: { items: BreadcrumbEntry[] }) => (
     animate={{ opacity: 1, x: 0 }}
     transition={{ duration: 0.3 }}
   >
+    <JsonLd schema={createBreadcrumbSchema(items.map((item) => ({ name: item.label, url: item.href })))} />
     <Breadcrumb className="mb-6">
       <BreadcrumbList>
         <BreadcrumbItem>

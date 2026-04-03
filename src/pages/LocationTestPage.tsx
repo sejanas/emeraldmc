@@ -57,7 +57,7 @@ const LocationTestPage = () => {
       <PageMeta
         title={`${page.testName} in Port Blair – Emerald Medical Care`}
         description={page.description}
-        canonical={`https://emeraldmedicalcare.com/${page.slug}`}
+        canonical={`https://www.wellnessandaman.com/${page.slug}`}
       />
       <JsonLd schema={schema} />
 

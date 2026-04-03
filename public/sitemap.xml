@@ -2,14 +2,15 @@
 <!-- Dynamic sitemap served from /api/sitemap endpoint -->
 <!-- This static file is a fallback; the _redirects file routes /sitemap.xml to the dynamic endpoint -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-  <url><loc>https://emeraldmedicalcare.com/</loc><changefreq>weekly</changefreq><priority>1.0</priority></url>
-  <url><loc>https://emeraldmedicalcare.com/tests</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
-  <url><loc>https://emeraldmedicalcare.com/packages</loc><changefreq>weekly</changefreq><priority>0.9</priority></url>
-  <url><loc>https://emeraldmedicalcare.com/doctors</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://emeraldmedicalcare.com/book</loc><changefreq>monthly</changefreq><priority>0.8</priority></url>
-  <url><loc>https://emeraldmedicalcare.com/gallery</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://emeraldmedicalcare.com/faq</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://emeraldmedicalcare.com/contact</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
-  <url><loc>https://emeraldmedicalcare.com/reports</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
-  <url><loc>https://emeraldmedicalcare.com/blog</loc><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://www.wellnessandaman.com/</loc><lastmod>2026-04-03</lastmod><changefreq>weekly</changefreq><priority>1.0</priority></url>
+  <url><loc>https://www.wellnessandaman.com/tests</loc><lastmod>2026-04-03</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://www.wellnessandaman.com/packages</loc><lastmod>2026-04-03</lastmod><changefreq>weekly</changefreq><priority>0.9</priority></url>
+  <url><loc>https://www.wellnessandaman.com/doctors</loc><lastmod>2026-04-03</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://www.wellnessandaman.com/book</loc><lastmod>2026-04-03</lastmod><changefreq>monthly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://www.wellnessandaman.com/gallery</loc><lastmod>2026-04-03</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://www.wellnessandaman.com/faq</loc><lastmod>2026-04-03</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://www.wellnessandaman.com/contact</loc><lastmod>2026-04-03</lastmod><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://www.wellnessandaman.com/reports</loc><lastmod>2026-04-03</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
+  <url><loc>https://www.wellnessandaman.com/blog</loc><lastmod>2026-04-03</lastmod><changefreq>weekly</changefreq><priority>0.8</priority></url>
+  <url><loc>https://www.wellnessandaman.com/certifications</loc><lastmod>2026-04-03</lastmod><changefreq>monthly</changefreq><priority>0.6</priority></url>
 </urlset>

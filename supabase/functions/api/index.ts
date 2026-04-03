@@ -2039,7 +2039,7 @@ Deno.serve(async (req) => {
     // Dynamic Sitemap
     if (resource === "sitemap" && method === "GET") {
       const db = adminDb();
-      const BASE = "https://emeraldmedicalcare.com";
+      const BASE = "https://www.wellnessandaman.com";
       const today = new Date().toISOString().slice(0, 10);
 
       // Static pages

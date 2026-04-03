@@ -1,4 +1,4 @@
-import { businessInfo } from "@/data/siteData";
+import { businessInfo, SITE_URL } from "@/data/siteData";
 
 interface JsonLdProps {
   schema?: Record<string, any>;
@@ -25,7 +25,7 @@ const defaultSchema = {
     longitude: "92.7365",
   },
   openingHours: "Mo-Su 06:00-19:00",
-  url: typeof window !== "undefined" ? window.location.origin : "https://emeraldmc.lovable.app",
+  url: SITE_URL,
   medicalSpecialty: ["Pathology", "Clinical Laboratory"],
   priceRange: "₹100 - ₹5000",
   areaServed: [
@@ -48,6 +48,77 @@ const defaultSchema = {
     ],
   },
 };
+
+// WebSite schema — enables Google sitelinks search box
+export const websiteSchema = {
+  "@context": "https://schema.org",
+  "@type": "WebSite",
+  name: businessInfo.name,
+  alternateName: "Wellness Andaman",
+  url: SITE_URL,
+  potentialAction: {
+    "@type": "SearchAction",
+    target: {
+      "@type": "EntryPoint",
+      urlTemplate: `${SITE_URL}/tests?q={search_term_string}`,
+    },
+    "query-input": "required name=search_term_string",
+  },
+};
+
+// Organization schema — helps Google understand brand identity
+export const organizationSchema = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  name: businessInfo.name,
+  alternateName: "Wellness Andaman",
+  url: SITE_URL,
+  logo: `${SITE_URL}/logo.png`,
+  contactPoint: {
+    "@type": "ContactPoint",
+    telephone: businessInfo.phone,
+    contactType: "customer service",
+    areaServed: "IN",
+    availableLanguage: ["English", "Hindi"],
+  },
+  sameAs: [
+    "https://www.facebook.com/profile.php?id=61588640095513",
+    "https://www.instagram.com/shifa_health_care0",
+  ],
+};
+
+// SiteNavigationElement schema — tells Google which pages are important for sitelinks
+export const siteNavigationSchema = {
+  "@context": "https://schema.org",
+  "@graph": [
+    { "@type": "SiteNavigationElement", name: "Diagnostic Tests", url: `${SITE_URL}/tests` },
+    { "@type": "SiteNavigationElement", name: "Health Packages", url: `${SITE_URL}/packages` },
+    { "@type": "SiteNavigationElement", name: "Book a Test", url: `${SITE_URL}/book` },
+    { "@type": "SiteNavigationElement", name: "Our Doctors", url: `${SITE_URL}/doctors` },
+    { "@type": "SiteNavigationElement", name: "Certifications", url: `${SITE_URL}/certifications` },
+    { "@type": "SiteNavigationElement", name: "Reports", url: `${SITE_URL}/reports` },
+    { "@type": "SiteNavigationElement", name: "Health Blog", url: `${SITE_URL}/blog` },
+    { "@type": "SiteNavigationElement", name: "FAQ", url: `${SITE_URL}/faq` },
+    { "@type": "SiteNavigationElement", name: "Contact Us", url: `${SITE_URL}/contact` },
+  ],
+};
+
+// BreadcrumbList schema helper
+export function createBreadcrumbSchema(items: { name: string; url?: string }[]) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: SITE_URL },
+      ...items.map((item, i) => ({
+        "@type": "ListItem",
+        position: i + 2,
+        name: item.name,
+        ...(item.url ? { item: `${SITE_URL}${item.url}` } : {}),
+      })),
+    ],
+  };
+}
 
 const JsonLd = ({ schema }: JsonLdProps) => {
   const data = schema ?? defaultSchema;
@@ -133,7 +204,7 @@ export function createArticleSchema(article: {
     datePublished: article.datePublished,
     mainEntityOfPage: {
       "@type": "WebPage",
-      "@id": `${typeof window !== "undefined" ? window.location.origin : ""}/blog/${article.slug}`,
+      "@id": `${SITE_URL}/blog/${article.slug}`,
     },
   };
 }

@@ -49,7 +49,7 @@ const BlogPage = () => {
       <PageMeta
         title="Health Blog – Medical Articles & Tips"
         description="Read expert medical articles about blood tests, thyroid disorders, diabetes, and preventive health from our experienced pathologists."
-        canonical="https://emeraldmc.lovable.app/blog"
+        canonical="https://www.wellnessandaman.com/blog"
       />
       <Breadcrumbs items={[{ label: "Health Blog" }]} />
       <SectionHeading title="Health Blog" subtitle="Expert medical articles and health tips from our experienced pathologists" />
