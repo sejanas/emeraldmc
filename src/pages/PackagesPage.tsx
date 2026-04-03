@@ -153,7 +153,7 @@ const PackagesPage = () => {
                   )}
                   <div className="mt-auto pt-6">
                     <Button asChild className="w-full" variant={pkg.is_popular ? "default" : "outline"}>
-                      <Link to="/book">Book Now <ArrowRight className="ml-2 h-4 w-4" /></Link>
+                      <Link to={"/book?package=" + encodeURIComponent(pkg.name)}>Book Now <ArrowRight className="ml-2 h-4 w-4" /></Link>
                     </Button>
                   </div>
                 </motion.div>

@@ -184,7 +184,7 @@ const BookCTA = ({ name }: { name: string }) => (
   <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} className="flex flex-col sm:flex-row gap-3 mt-10">
     <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
       <Button asChild size="lg">
-        <Link to="/book">Book {name} Test <ArrowRight className="ml-2 h-4 w-4" /></Link>
+        <Link to={"/book?test=" + encodeURIComponent(name)}>Book {name} Test <ArrowRight className="ml-2 h-4 w-4" /></Link>
       </Button>
     </motion.div>
     <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>

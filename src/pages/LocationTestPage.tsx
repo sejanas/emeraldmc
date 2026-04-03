@@ -114,7 +114,7 @@ const LocationTestPage = () => {
 
       <div className="flex flex-col sm:flex-row gap-3 mt-10">
         <Button asChild size="lg">
-          <Link to="/book">Book {page.testName} <ArrowRight className="ml-2 h-4 w-4" /></Link>
+          <Link to={"/book?test=" + encodeURIComponent(page.testName)}>Book {page.testName} <ArrowRight className="ml-2 h-4 w-4" /></Link>
         </Button>
         <Button asChild variant="outline" size="lg">
           <a href={`tel:${businessInfo.phone}`}><Phone className="mr-2 h-4 w-4" /> Call to Book</a>
