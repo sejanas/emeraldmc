@@ -39,7 +39,7 @@ const BookingPage = () => {
     name: "", phone: "", email: "", date: "", slot: "",
     testOrPackage: isFertilityCamp ? "general" : preselectedPackage || preselectedTest || "",
     address: "",
-    notes: isFertilityCamp ? "Fertility Consultation – Dr. Rukkayal Ashik (Free Camp, Apr 18–20)" : "",
+    notes: isFertilityCamp ? "Fertility Consultation – Dr. Rukkayal Ashik (Free Camp, Apr 25–26)" : "",
   });
   const testsQuery = useTests({ active: true });
   const packagesQuery = usePackages();
@@ -155,7 +155,7 @@ const BookingPage = () => {
           <Stethoscope className="h-5 w-5 text-primary shrink-0 mt-0.5" />
           <div className="text-sm">
             <p className="font-semibold text-foreground">Booking for the Free Fertility Camp</p>
-            <p className="text-muted-foreground mt-0.5">Dr. Rukkayal Ashik (MS OG, MRCOG UK) &middot; Visiting Apr 18–20, 2026 &middot; Registration &amp; consultation free</p>
+            <p className="text-muted-foreground mt-0.5">Dr. Rukkayal Ashik (Gynaecologist, MRCOG UK) &middot; Visiting Apr 25–26, 2026 &middot; Registration &amp; consultation free</p>
           </div>
         </div>
       )}
