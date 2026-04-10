@@ -82,6 +82,7 @@ export const organizationSchema = {
     availableLanguage: ["English", "Hindi"],
   },
   sameAs: [
+    "https://www.shifasmainlandhealthcare.com",
     "https://www.facebook.com/profile.php?id=61588640095513",
     "https://www.instagram.com/shifa_health_care0",
   ],
