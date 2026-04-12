@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import SectionHeading from "@/components/SectionHeading";
 import Breadcrumbs from "@/components/Breadcrumbs";
@@ -7,6 +8,8 @@ import useDoctors from "@/hooks/useDoctors";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { Link } from "react-router-dom";
 import { ArrowRight, ExternalLink } from "lucide-react";
 import { VISITING_DOCTOR_EVENT, isVisitActive } from "@/data/visitingDoctorEvent";
@@ -14,6 +17,7 @@ import { VISITING_DOCTOR_EVENT, isVisitActive } from "@/data/visitingDoctorEvent
 const DoctorsPage = () => {
   const doctorsQuery = useDoctors();
   const doctors = (doctorsQuery.data ?? []).filter((d: any) => d.is_active !== false);
+  const [selectedDoctor, setSelectedDoctor] = useState<any | null>(null);
 
   return (
     <div className="container py-12">
@@ -103,12 +107,84 @@ const DoctorsPage = () => {
                 <Badge variant="secondary" className="mt-2 text-xs">{d.experience_years} Years Experience</Badge>
               )}
               {d.qualification && <p className="text-xs text-muted-foreground mt-1">{d.qualification}</p>}
-              {d.bio && <p className="mt-2 text-sm text-muted-foreground text-justify">{d.bio}</p>}
+              {d.bio && (
+                <>
+                  <p className="mt-2 text-sm text-muted-foreground text-justify line-clamp-4">{d.bio}</p>
+                  <button
+                    onClick={() => setSelectedDoctor(d)}
+                    className="mt-1.5 text-xs font-medium text-primary hover:underline focus:outline-none"
+                  >
+                    Read More
+                  </button>
+                </>
+              )}
             </div>
           </motion.div>
         ))}
       </div>
       {doctorsQuery.isLoading === false && doctors.length === 0 && <p className="py-12 text-center text-muted-foreground">No doctors listed yet.</p>}
+
+      {/* Doctor Detail Modal */}
+      <Dialog open={!!selectedDoctor} onOpenChange={(open) => !open && setSelectedDoctor(null)}>
+        <DialogContent className="max-w-lg p-0 gap-0 overflow-hidden">
+          {selectedDoctor && (
+            <>
+              {/* Header */}
+              <div className="flex gap-4 p-5 pb-4 border-b border-border">
+                {selectedDoctor.profile_image ? (
+                  <img
+                    src={selectedDoctor.profile_image}
+                    alt={selectedDoctor.name}
+                    className="h-20 w-20 rounded-xl object-cover shrink-0"
+                  />
+                ) : (
+                  <div className="h-20 w-20 rounded-xl bg-muted flex items-center justify-center shrink-0">
+                    <span className="text-3xl text-muted-foreground font-display">{selectedDoctor.name?.[0]}</span>
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <DialogTitle className="font-display text-lg font-semibold text-foreground leading-tight">
+                    {selectedDoctor.name}
+                  </DialogTitle>
+                  {selectedDoctor.specialization && (
+                    <p className="text-sm font-medium text-primary mt-0.5">{selectedDoctor.specialization}</p>
+                  )}
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {selectedDoctor.experience_years && (
+                      <Badge variant="secondary" className="text-xs">
+                        {selectedDoctor.experience_years} Years Experience
+                      </Badge>
+                    )}
+                    {selectedDoctor.qualification && (
+                      <Badge variant="outline" className="text-xs font-normal">
+                        {selectedDoctor.qualification}
+                      </Badge>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Bio */}
+              {selectedDoctor.bio && (
+                <ScrollArea className="max-h-[55vh]">
+                  <p className="px-5 py-4 text-sm text-muted-foreground leading-relaxed text-justify whitespace-pre-line">
+                    {selectedDoctor.bio}
+                  </p>
+                </ScrollArea>
+              )}
+
+              {/* Footer */}
+              <div className="p-4 border-t border-border">
+                <Button asChild className="w-full">
+                  <Link to="/book" onClick={() => setSelectedDoctor(null)}>
+                    Book Appointment <ArrowRight className="ml-2 h-4 w-4" />
+                  </Link>
+                </Button>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
