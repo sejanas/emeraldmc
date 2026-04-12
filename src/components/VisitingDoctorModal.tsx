@@ -75,7 +75,7 @@ const VisitingDoctorModal = () => {
             {/* Doctor info */}
             <div>
               <h2 className="text-xl md:text-2xl font-bold text-foreground leading-tight">{VISITING_DOCTOR_EVENT.name}</h2>
-              <p className="text-sm font-bold text-foreground mt-1">Gynaecologist & Fertility Specialist</p>
+              <p className="text-sm font-bold text-foreground mt-1">{VISITING_DOCTOR_EVENT.role}</p>
               <p className="text-xs text-primary font-semibold mt-0.5">{VISITING_DOCTOR_EVENT.credentials}</p>
             </div>
 

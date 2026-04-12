@@ -408,8 +408,14 @@ const Index = () => {
                   </span>
                 </div>
                 <h2 className="font-display text-2xl font-bold text-foreground">{VISITING_DOCTOR_EVENT.name}</h2>
+                <p className="text-sm font-bold text-foreground mt-1">{VISITING_DOCTOR_EVENT.role}</p>
                 <p className="text-sm text-primary font-semibold mt-0.5">{VISITING_DOCTOR_EVENT.credentials}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{VISITING_DOCTOR_EVENT.organisation}</p>
+                <div className="flex items-center gap-2 mt-1">
+                  <div className="bg-white rounded-md px-2 py-0.5 shrink-0">
+                    <img src={VISITING_DOCTOR_EVENT.brandLogoUrl} alt="The Hive Fertility" className="h-5 w-auto" />
+                  </div>
+                  <p className="text-xs text-muted-foreground">{VISITING_DOCTOR_EVENT.organisation}</p>
+                </div>
                 <p className="mt-3 text-sm text-muted-foreground leading-relaxed max-w-xl">{VISITING_DOCTOR_EVENT.bio}</p>
                 <div className="mt-3 flex flex-wrap gap-1.5">
                   {VISITING_DOCTOR_EVENT.specialties.map((s) => (

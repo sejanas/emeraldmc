@@ -49,8 +49,14 @@ const DoctorsPage = () => {
                 <Badge variant="outline" className="font-semibold text-primary border-primary/30">VISITING SPECIALIST</Badge>
               </div>
               <h3 className="font-display text-xl font-bold text-foreground">{VISITING_DOCTOR_EVENT.name}</h3>
+              <p className="text-sm font-bold text-foreground mt-1">{VISITING_DOCTOR_EVENT.role}</p>
               <p className="text-sm font-semibold text-primary mt-0.5">{VISITING_DOCTOR_EVENT.credentials}</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{VISITING_DOCTOR_EVENT.organisation}</p>
+              <div className="flex items-center gap-2 mt-1">
+                <div className="bg-white rounded-md px-2 py-0.5 shrink-0">
+                  <img src={VISITING_DOCTOR_EVENT.brandLogoUrl} alt="The Hive Fertility" className="h-5 w-auto" />
+                </div>
+                <p className="text-xs text-muted-foreground">{VISITING_DOCTOR_EVENT.organisation}</p>
+              </div>
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {VISITING_DOCTOR_EVENT.specialties.map((s) => (
                   <span key={s} className="rounded-full border border-border bg-accent px-2.5 py-0.5 text-xs font-medium text-foreground">{s}</span>
