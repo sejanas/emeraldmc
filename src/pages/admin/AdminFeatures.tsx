@@ -24,7 +24,7 @@ const DEFAULT_FEATURES: FeatureItem[] = [
 ];
 
 const AdminFeatures = () => {
-  const { isSuperAdmin } = useAuth();
+  const { isAdmin, isBookingManager } = useAuth();
   const { toast } = useToast();
   const updateSetting = useUpdateSetting();
   const { data: allSettings, isLoading } = useSiteSettings();
@@ -39,7 +39,7 @@ const AdminFeatures = () => {
     if (saved && Array.isArray(saved)) setFeatures(saved);
   }, [allSettings]);
 
-  if (!isSuperAdmin) return <Navigate to="/admin" replace />;
+  if (!isAdmin || isBookingManager) return <Navigate to="/admin" replace />;
   if (isLoading) return (
     <div className="flex items-center justify-center p-12">
       <div className="h-6 w-6 animate-spin rounded-full border-4 border-primary border-t-transparent" />

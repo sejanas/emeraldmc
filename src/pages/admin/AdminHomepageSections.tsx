@@ -29,7 +29,7 @@ const DEFAULT_SECTIONS: HomepageSection[] = [
 ];
 
 const AdminHomepageSections = () => {
-  const { isSuperAdmin } = useAuth();
+  const { isAdmin, isBookingManager } = useAuth();
   const { toast } = useToast();
   const updateSetting = useUpdateSetting();
   const { data: allSettings, isLoading } = useSiteSettings();
@@ -55,7 +55,7 @@ const AdminHomepageSections = () => {
     }
   }, [allSettings]);
 
-  if (!isSuperAdmin) return <Navigate to="/admin" replace />;
+  if (!isAdmin || isBookingManager) return <Navigate to="/admin" replace />;
 
   const moveSection = (index: number, direction: "up" | "down") => {
     const newSections = [...sections];
