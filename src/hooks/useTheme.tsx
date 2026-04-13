@@ -167,7 +167,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   const [mode, setModeState] = useState<ThemeMode>(() => {
     const stored = localStorage.getItem(MODE_KEY) as ThemeMode | null;
-    return stored && ["light", "dark", "system"].includes(stored) ? stored : "system";
+    return stored && ["light", "dark", "system"].includes(stored) ? stored : "light";
   });
 
   const [systemDark, setSystemDark] = useState(getSystemDark);

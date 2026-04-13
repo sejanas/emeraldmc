@@ -2,7 +2,7 @@ import { useState, useMemo, useRef, useEffect } from "react";
 import PageMeta from "@/components/PageMeta";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ArrowRight, Shield, Clock, FlaskConical, Users, Star, CheckCircle, Award, Home, Search, ClipboardList, Microscope, FileDown, MapPin, BadgeCheck, Info, Droplets, ChevronRight, Heart, Zap, Target, Lightbulb, Globe, Activity, Lock, Truck, Phone, Mail, CreditCard, ThumbsUp, Headphones, Stethoscope, Wifi, Camera, Monitor, PenTool, Briefcase, Gift, Syringe, Pill, Thermometer, type LucideIcon } from "lucide-react";
+import { icons as lucideIcons, ArrowRight, Shield, Clock, FlaskConical, Users, Star, CheckCircle, Award, Home, Search, ClipboardList, Microscope, FileDown, MapPin, BadgeCheck, Info, Droplets, ChevronRight, Heart, Zap, Target, Lightbulb, Globe, Activity, Lock, Truck, Phone, Mail, CreditCard, ThumbsUp, Headphones, Stethoscope, Wifi, Camera, Monitor, PenTool, Briefcase, Gift, Syringe, Pill, Thermometer, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -41,14 +41,7 @@ const fadeUp = {
   }),
 };
 
-const FEATURE_ICONS: Record<string, LucideIcon> = {
-  Shield, FlaskConical, Clock, Users, Heart, Star, Award, Microscope, Home,
-  Search, ClipboardList, MapPin, BadgeCheck, Droplets, CheckCircle,
-  Zap, Target, Lightbulb, Globe, Activity, Lock, Truck, Phone, Mail,
-  CreditCard, ThumbsUp, Headphones, Stethoscope, Wifi, Camera, Monitor,
-  PenTool, Briefcase, Gift, Syringe, Pill, Thermometer, ArrowRight, Info,
-  FileDown, ChevronRight,
-};
+const FEATURE_ICONS: Record<string, LucideIcon> = lucideIcons as unknown as Record<string, LucideIcon>;
 
 const defaultFeatures = [
   { icon: "Shield", title: "ISO Certified", desc: "Internationally certified diagnostic laboratory" },
