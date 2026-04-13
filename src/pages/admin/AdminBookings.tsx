@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
+import { Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -28,6 +29,9 @@ const statusColors: Record<string, string> = {
   completed: "bg-primary/10 text-primary",
   cancelled: "bg-destructive/10 text-destructive",
 };
+
+import { useAuth } from "@/hooks/useAuth";
+import { useFeaturePermissions } from "@/hooks/useFeaturePermissions";
 
 const statusLabels: Record<string, string> = {
   pending: "Pending",
@@ -63,6 +67,8 @@ function isOverdue(booking: any): boolean {
 }
 
 const AdminBookings = () => {
+  const { profile } = useAuth();
+  const { canAccess } = useFeaturePermissions();
   const { toast } = useToast();
   const bookingsQuery = useBookings();
   const bookings: any[] = bookingsQuery.data ?? [];
@@ -114,6 +120,8 @@ const AdminBookings = () => {
     setStatusFilter(v);
     setSelectedIds(new Set());
   }, []);
+
+  if (!canAccess("bookings", profile?.role)) return <Navigate to="/admin" replace />;
 
   const updateStatus = async (id: string, status: string, reason?: string) => {
     try {

@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
+import { Navigate } from "react-router-dom";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -8,6 +9,8 @@ import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/
 import { Area, AreaChart, XAxis, YAxis, CartesianGrid } from "recharts";
 import { BarChart3, MapPin, List, ChevronLeft, ChevronRight } from "lucide-react";
 import { useVisitorAnalytics, useVisitorLocations, useVisitorDaily, useVisitorFilters } from "@/hooks/useVisitors";
+import { useAuth } from "@/hooks/useAuth";
+import { useFeaturePermissions } from "@/hooks/useFeaturePermissions";
 
 const DATE_PRESETS: { label: string; days: number | null }[] = [
   { label: "7 days", days: 7 },
@@ -27,6 +30,8 @@ function getFromDate(days: number | null): string | undefined {
 const PAGE_SIZE = 50;
 
 const AdminVisitors = () => {
+  const { profile } = useAuth();
+  const { canAccess } = useFeaturePermissions();
   const [datePreset, setDatePreset] = useState(1); // 30 days default
   const [country, setCountry] = useState<string>("");
   const [region, setRegion] = useState<string>("");
@@ -61,6 +66,8 @@ const AdminVisitors = () => {
   const chartConfig = {
     count: { label: "Visits", color: "hsl(var(--primary))" },
   };
+
+  if (!canAccess("visitors", profile?.role)) return <Navigate to="/admin" replace />;
 
   const resetFilters = () => {
     setCountry("");

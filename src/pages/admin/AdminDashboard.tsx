@@ -1,9 +1,16 @@
+import { Navigate } from "react-router-dom";
 import useDashboardCounts from "@/hooks/useDashboardCounts";
+import { useAuth } from "@/hooks/useAuth";
+import { useFeaturePermissions } from "@/hooks/useFeaturePermissions";
 import { FlaskConical, Package, Users, Image, List, Eye, CalendarCheck, HelpCircle, MapPin } from "lucide-react";
 
 const AdminDashboard = () => {
+  const { profile } = useAuth();
+  const { canAccess } = useFeaturePermissions();
   const countsQuery = useDashboardCounts();
   const counts = countsQuery.data ?? { categories: 0, tests: 0, packages: 0, doctors: 0, gallery: 0, visitors: 0, bookings: 0, faqs: 0, visitors_today: 0, top_locations: [] };
+
+  if (!canAccess("dashboard", profile?.role)) return <Navigate to="/admin/profile" replace />;
 
   const cards = [
     { label: "Categories", count: counts.categories, icon: List },

@@ -55,7 +55,7 @@ const AdminHomepageSections = () => {
     }
   }, [allSettings]);
 
-  if (!isAdmin || isBookingManager) return <Navigate to="/admin" replace />;
+  if (!canAccess("homepage", profile?.role)) return <Navigate to="/admin" replace />;
 
   const moveSection = (index: number, direction: "up" | "down") => {
     const newSections = [...sections];

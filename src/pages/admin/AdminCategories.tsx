@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,8 +9,12 @@ import { Plus, Pencil, Trash2, Search, X } from "lucide-react";
 import { useConfirm } from "@/components/ConfirmDialog";
 import useCategories from "@/hooks/useCategories";
 import { useCreateCategory, useUpdateCategory, useDeleteCategory } from "@/hooks/useCategoriesMutations";
+import { useAuth } from "@/hooks/useAuth";
+import { useFeaturePermissions } from "@/hooks/useFeaturePermissions";
 
 const AdminCategories = () => {
+  const { profile } = useAuth();
+  const { canAccess } = useFeaturePermissions();
   const { toast } = useToast();
   const confirm = useConfirm();
   const categoriesQuery = useCategories();
@@ -20,6 +25,8 @@ const AdminCategories = () => {
   const [editing, setEditing] = useState<any>(null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({ name: "", slug: "", display_order: 0 });
+
+  if (!canAccess("categories", profile?.role)) return <Navigate to="/admin" replace />;
 
   const openNew = () => { setEditing(null); setForm({ name: "", slug: "", display_order: categoriesQuery.data?.length ?? 0 }); setOpen(true); };
   const openEdit = (c: any) => { setEditing(c); setForm({ name: c.name, slug: c.slug, display_order: c.display_order }); setOpen(true); };

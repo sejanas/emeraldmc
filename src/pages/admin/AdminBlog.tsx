@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +12,8 @@ import { Plus, Pencil, Trash2, Search, ExternalLink, Eye, Send, Archive, X } fro
 import { useBlogs, useCreateBlog, useUpdateBlog, useDeleteBlog } from "@/hooks/useBlogs";
 import ImageUpload from "@/components/ImageUpload";
 import RichTextEditor from "@/components/RichTextEditor";
+import { useAuth } from "@/hooks/useAuth";
+import { useFeaturePermissions } from "@/hooks/useFeaturePermissions";
 
 const STATUS_COLORS: Record<string, string> = {
   draft: "bg-muted text-muted-foreground",
@@ -28,6 +31,8 @@ const emptyForm = {
 };
 
 const AdminBlog = () => {
+  const { profile } = useAuth();
+  const { canAccess } = useFeaturePermissions();
   const { toast } = useToast();
   const confirm = useConfirm();
   const blogsQuery = useBlogs({ all: true });
@@ -41,6 +46,8 @@ const AdminBlog = () => {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [form, setForm] = useState(emptyForm);
+
+  if (!canAccess("blog", profile?.role)) return <Navigate to="/admin" replace />;
 
   const openNew = () => {
     setEditing(null);

@@ -27,6 +27,8 @@ import { useSiteSettings } from "@/hooks/useSiteSettings";
 import ErrorBox from "@/components/ErrorBox";
 import heroImg from "@/assets/hero-lab.png";
 import JsonLd from "@/components/JsonLd";
+import HeroCarousel from "@/components/HeroCarousel";
+import useHeroSlides from "@/hooks/useHeroSlides";
 import { useFaqs } from "@/hooks/useFaqs";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -89,6 +91,7 @@ const Index = () => {
   const faqsQuery = useFaqs(true);
   const certificationsQuery = useCertifications();
   const settingsQuery = useSiteSettings();
+  const heroSlidesQuery = useHeroSlides(true);
 
   const getCatNames = (t: any) =>
     (t.categories ?? []).map((c: any) => c.name).join(", ") || "";
@@ -99,6 +102,13 @@ const Index = () => {
   const testSubNames: Record<string, Record<string, string[]>> = packagesQuery.data?.testSubNames ?? {};
   const totalTestCounts: Record<string, number> = packagesQuery.data?.totalTestCounts ?? {};
   const certifications = (certificationsQuery.data ?? []).filter((c: any) => c.is_active !== false && c.show_on_homepage !== false);
+
+  const heroSlides = useMemo(() => {
+    const slides = heroSlidesQuery.data ?? [];
+    return slides.length > 0
+      ? slides.sort((a: any, b: any) => a.display_order - b.display_order)
+      : [{ id: "fallback", heading: "Bringing World Class Care to the Islands", subtitle: "Shifa\u2019s Mainland Healthcare \u2014 ISO Certified Diagnostic Lab providing reliable health tests, affordable packages, and free home sample collection in Sri Vijaya Puram.", image_url: heroImg }];
+  }, [heroSlidesQuery.data]);
 
   // Filter active packages for display
   const activePackages = useMemo(() => packages.filter((p: any) => p.is_active !== false), [packages]);
@@ -215,33 +225,8 @@ const Index = () => {
       />
       <JsonLd />
 
-      {/* Hero */}
-      <section className="relative overflow-hidden bg-section-gradient">
-        <div className="container grid items-center gap-8 py-20 md:grid-cols-2 md:py-28">
-          <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0}>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-accent px-3 py-1 text-xs font-medium text-primary">
-              <Shield className="h-3 w-3" /> ISO Certified Lab
-            </span>
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-primary/20 bg-accent px-3 py-1 text-xs font-medium text-primary ml-2">
-              <Award className="h-3 w-3" /> NABL Certified
-            </span>
-            <h1 className="mt-4 font-display text-4xl font-bold leading-tight text-foreground md:text-5xl lg:text-6xl">
-              Bringing World Class Care to{" "}
-              <span className="text-gradient-emerald">the Islands</span>
-            </h1>
-            <p className="mt-4 text-lg text-muted-foreground leading-relaxed max-w-lg">
-              Shifa's Mainland Healthcare — ISO Certified Diagnostic Lab providing reliable health tests, affordable packages, and free home sample collection in Sri Vijaya Puram.
-            </p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Button asChild size="lg"><Link to="/book">Book Health Test <ArrowRight className="ml-2 h-4 w-4" /></Link></Button>
-              <Button asChild variant="outline" size="lg"><Link to="/packages">View Packages</Link></Button>
-            </div>
-          </motion.div>
-          <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: 0.6, delay: 0.2 }}>
-            <img src={heroImg} alt="Shifa's Mainland Healthcare - ISO certified diagnostic laboratory in Sri Vijaya Puram" width={960} height={540} className="w-full rounded-2xl card-shadow object-cover" loading="eager" fetchPriority="high" />
-          </motion.div>
-        </div>
-      </section>
+      {/* Hero Carousel */}
+      <HeroCarousel slides={heroSlides} fallbackImage={heroImg} />
 
       {/* Trust Badges */}
       <section className="border-b border-border bg-card">

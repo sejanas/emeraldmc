@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { Navigate, useSearchParams } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import useActivityLogs from "@/hooks/useActivityLogs";
+import { useAuth } from "@/hooks/useAuth";
+import { useFeaturePermissions } from "@/hooks/useFeaturePermissions";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -21,6 +23,8 @@ const EVENT_PREFIXES = [
 ];
 
 const AdminActivityLogs = () => {
+  const { profile } = useAuth();
+  const { canAccess } = useFeaturePermissions();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [userId, setUserId] = useState(searchParams.get("user_id") ?? "");
@@ -38,6 +42,8 @@ const AdminActivityLogs = () => {
   const logsQuery = useActivityLogs(filters);
   const logs = logsQuery.data ?? [];
   const loading = logsQuery.isLoading;
+
+  if (!canAccess("activity_logs", profile?.role)) return <Navigate to="/admin" replace />;
 
   const clearFilters = () => {
     setUserId("");

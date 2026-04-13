@@ -18,6 +18,8 @@ interface ImageUploadProps {
   /** Show aspect ratio picker buttons */
   showAspectPicker?: boolean;
   className?: string;
+  /** Override classes on the preview image (and its container becomes block) */
+  previewClassName?: string;
 }
 
 const ASPECT_MAP: Record<AspectPreset, number | undefined> = {
@@ -92,6 +94,7 @@ const ImageUpload = ({
   aspectRatio = "free",
   showAspectPicker = true,
   className,
+  previewClassName,
 }: ImageUploadProps) => {
   const [uploading, setUploading] = useState(false);
   const [cropOpen, setCropOpen] = useState(false);
@@ -174,8 +177,8 @@ const ImageUpload = ({
     <div className={className}>
       <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
       {value ? (
-        <div className="relative inline-block">
-          <img src={value} alt="Uploaded" className="h-24 w-24 rounded-lg object-cover border border-border" />
+        <div className={previewClassName ? "relative block" : "relative inline-block"}>
+          <img src={value} alt="Uploaded" className={previewClassName ?? "h-24 w-24 rounded-lg object-cover border border-border"} />
           <button
             type="button"
             onClick={() => onChange("")}

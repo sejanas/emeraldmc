@@ -320,6 +320,20 @@ CREATE TABLE IF NOT EXISTS public.booking_updates (
   created_at  timestamptz NOT NULL DEFAULT now()
 );
 
+CREATE TABLE IF NOT EXISTS public.hero_slides (
+  id            uuid        DEFAULT gen_random_uuid() PRIMARY KEY,
+  heading       text        NOT NULL CHECK (char_length(heading) <= 80),
+  subtitle      text        NOT NULL CHECK (char_length(subtitle) <= 200),
+  image_url     text        NOT NULL,
+  display_order integer     NOT NULL DEFAULT 0,
+  is_active     boolean     NOT NULL DEFAULT true,
+  created_by    uuid,
+  updated_by    uuid,
+  created_at    timestamptz NOT NULL DEFAULT now(),
+  updated_at    timestamptz,
+  deleted_at    timestamptz
+);
+
 -- ── Function ─────────────────────────────────────────────────────
 
 CREATE OR REPLACE FUNCTION public.has_role(_role public.app_role, _user_id uuid)
@@ -344,6 +358,7 @@ ALTER TABLE public.site_settings     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.visitors          ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.activity_logs     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.hero_slides       ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_roles        ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_profiles     ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.user_phones       ENABLE ROW LEVEL SECURITY;

@@ -1831,6 +1831,12 @@ Deno.serve(async (req) => {
         softDelete: true,
         nameField: "name",
       },
+      "hero-slides": {
+        table: "hero_slides",
+        entity: "hero_slide",
+        softDelete: true,
+        nameField: "heading",
+      },
     };
 
     if (crudConfig[resource]) {
