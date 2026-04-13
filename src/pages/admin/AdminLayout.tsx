@@ -1,9 +1,10 @@
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useState, useMemo } from "react";
 import ErrorBoundary from "@/components/ErrorBoundary";
-import { LayoutDashboard, List, FlaskConical, Package, Users, Image, LogOut, CalendarCheck, Shield, Activity, UserCircle, HelpCircle, Eye, Palette, FileText, Award, Settings, ChevronDown, LayoutGrid, BarChart3, Layers } from "lucide-react";
+import { LayoutDashboard, List, FlaskConical, Package, Users, Image, LogOut, CalendarCheck, Shield, Activity, UserCircle, HelpCircle, Eye, Palette, FileText, Award, Settings, ChevronDown, LayoutGrid, BarChart3, Layers, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { useFeaturePermissions, PATH_TO_FEATURE } from "@/hooks/useFeaturePermissions";
 import ThemeToggle from "@/components/ThemeToggle";
 import NotificationBell from "@/components/NotificationBell";
 import SessionTimeoutDialog from "@/components/SessionTimeoutDialog";
@@ -47,17 +48,23 @@ const AdminLayout = () => {
     { to: "/admin/users", icon: Shield, label: "Users", roles: ["super_admin"] },
     { to: "/admin/theme", icon: Palette, label: "Theme", roles: ["super_admin"] },
     { to: "/admin/settings", icon: Settings, label: "Settings", roles: ["super_admin"] },
+    { to: "/admin/access-control", icon: ShieldCheck, label: "Access Control", roles: ["super_admin"] },
   ];
 
+  const { canAccess } = useFeaturePermissions();
   const userRole = profile?.role || "booking_manager";
-  const links = allLinks.filter((l) => l.roles.includes(userRole));
+  const links = allLinks.filter((l) => {
+    const featureKey = PATH_TO_FEATURE[l.to];
+    if (featureKey) return canAccess(featureKey, userRole);
+    return l.roles.includes(userRole);
+  });
 
   // Group links into accordion sections
   const navGroups: NavGroup[] = useMemo(() => {
     const catalogPaths = ["/admin/categories", "/admin/tests", "/admin/packages"];
     const contentPaths = ["/admin/doctors", "/admin/gallery", "/admin/blog", "/admin/faqs", "/admin/certifications", "/admin/statistics", "/admin/reports", "/admin/features", "/admin/homepage"];
     const analyticsPaths = ["/admin/visitors", "/admin/activity-logs"];
-    const systemPaths = ["/admin/users", "/admin/theme", "/admin/settings"];
+    const systemPaths = ["/admin/users", "/admin/theme", "/admin/settings", "/admin/access-control"];
 
     const groups: NavGroup[] = [];
 

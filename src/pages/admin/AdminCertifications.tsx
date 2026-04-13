@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -11,6 +12,8 @@ import { Plus, Pencil, Trash2, Search, Award, BadgeCheck, Eye, EyeOff, ArrowUp, 
 import { useCertifications, useCreateCertification, useUpdateCertification, useDeleteCertification } from "@/hooks/useCertifications";
 import ImageUpload from "@/components/ImageUpload";
 import { reorderItem } from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
+import { useFeaturePermissions } from "@/hooks/useFeaturePermissions";
 
 const emptyForm = {
   name: "", slug: "", issuing_authority: "", description: "", image_url: "",
@@ -19,6 +22,8 @@ const emptyForm = {
 };
 
 const AdminCertifications = () => {
+  const { profile } = useAuth();
+  const { canAccess } = useFeaturePermissions();
   const { toast } = useToast();
   const confirm = useConfirm();
   const certsQuery = useCertifications();
@@ -33,6 +38,9 @@ const AdminCertifications = () => {
   const [form, setForm] = useState(emptyForm);
 
   const [reordering, setReordering] = useState<string | null>(null);
+
+  if (!canAccess("certifications", profile?.role)) return <Navigate to="/admin" replace />;
+
   const handleReorder = async (id: string, direction: "up" | "down") => {
     setReordering(id);
     try {

@@ -8,10 +8,12 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useSiteSettings, useUpdateSetting } from "@/hooks/useSiteSettings";
+import { useFeaturePermissions } from "@/hooks/useFeaturePermissions";
 import { Save, Shield, Globe, Settings2 } from "lucide-react";
 
 const AdminSettings = () => {
-  const { isSuperAdmin } = useAuth();
+  const { profile } = useAuth();
+  const { canAccess } = useFeaturePermissions();
   const { toast } = useToast();
   const updateSetting = useUpdateSetting();
   const { data: allSettings, isLoading } = useSiteSettings();
@@ -42,7 +44,7 @@ const AdminSettings = () => {
     setSeo({ meta_title: se.meta_title || "", meta_description: se.meta_description || "", og_image: se.og_image || "" });
   }, [allSettings]);
 
-  if (!isSuperAdmin) return <Navigate to="/admin" replace />;
+  if (!canAccess("settings", profile?.role)) return <Navigate to="/admin" replace />;
 
   const saveSection = async (key: string, value: any) => {
     setSaving(true);

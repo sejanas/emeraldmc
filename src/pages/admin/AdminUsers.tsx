@@ -1,10 +1,13 @@
 import { useNavigate } from "react-router-dom";
+import { Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import useAdminUsers from "@/hooks/useAdminUsers";
 import useAdminUserAction from "@/hooks/useAdminUserAction";
 import { useConfirm } from "@/components/ConfirmDialog";
+import { useAuth } from "@/hooks/useAuth";
+import { useFeaturePermissions } from "@/hooks/useFeaturePermissions";
 import { CheckCircle, XCircle, Activity } from "lucide-react";
 
 const statusColors: Record<string, string> = {
@@ -21,6 +24,8 @@ const roleColors: Record<string, string> = {
 };
 
 const AdminUsers = () => {
+  const { profile } = useAuth();
+  const { canAccess } = useFeaturePermissions();
   const { toast } = useToast();
   const navigate = useNavigate();
   const confirm = useConfirm();
@@ -32,6 +37,8 @@ const AdminUsers = () => {
   const promoteUser = useAdminUserAction('promote-user');
   const revokeUser = useAdminUserAction('revoke-user');
   const declineUser = useAdminUserAction('decline-user');
+
+  if (!canAccess("users", profile?.role)) return <Navigate to="/admin" replace />;
 
   const action = async (endpoint: string, payload: any, label: string) => {
     try {
