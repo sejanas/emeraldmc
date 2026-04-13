@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import SectionHeading from "@/components/SectionHeading";
 import Breadcrumbs from "@/components/Breadcrumbs";
@@ -11,13 +11,23 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Link } from "react-router-dom";
-import { ArrowRight, ExternalLink } from "lucide-react";
+import { ArrowRight, ExternalLink, Clock, Users } from "lucide-react";
 import { VISITING_DOCTOR_EVENT, isVisitActive } from "@/data/visitingDoctorEvent";
 
 const DoctorsPage = () => {
   const doctorsQuery = useDoctors();
   const doctors = (doctorsQuery.data ?? []).filter((d: any) => d.is_active !== false);
   const [selectedDoctor, setSelectedDoctor] = useState<any | null>(null);
+
+  const { isLive, urgencyText } = useMemo(() => {
+    const now = new Date();
+    const start = new Date(VISITING_DOCTOR_EVENT.visitStart + "T00:00:00");
+    const end = new Date(VISITING_DOCTOR_EVENT.visitEnd + "T23:59:59");
+    const live = now >= start && now <= end;
+    const daysUntil = Math.ceil((start.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+    const text = live ? "Happening now!" : daysUntil === 1 ? "Starts tomorrow!" : `Starts in ${daysUntil} days`;
+    return { isLive: live, urgencyText: text };
+  }, []);
 
   return (
     <div className="container py-12">
@@ -31,23 +41,41 @@ const DoctorsPage = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="mb-10 overflow-hidden rounded-2xl border-2 border-primary/30 bg-card card-shadow max-w-4xl mx-auto"
+          className="mb-10 overflow-hidden rounded-2xl border border-border bg-card card-shadow border-l-4 border-l-green-500 max-w-4xl mx-auto"
         >
           <div className="flex flex-col sm:flex-row">
-            <div className="relative sm:w-48 shrink-0">
+            {/* Photo with overlaid badges */}
+            <div className="relative sm:w-52 shrink-0">
               <img
                 src={VISITING_DOCTOR_EVENT.imageUrl}
                 alt={VISITING_DOCTOR_EVENT.name}
                 className="h-52 w-full object-cover object-top sm:h-full"
                 loading="lazy"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent sm:bg-gradient-to-r" />
-            </div>
-            <div className="flex-1 p-5 sm:p-6">
-              <div className="flex flex-wrap gap-2 mb-3">
-                <Badge className="bg-green-500 text-white border-0 font-bold">FREE CAMP</Badge>
-                <Badge variant="outline" className="font-semibold text-primary border-primary/30">VISITING SPECIALIST</Badge>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent sm:bg-gradient-to-r" />
+              <div className="absolute bottom-3 left-3 flex flex-col gap-1.5">
+                <span className="inline-flex w-fit items-center gap-1 rounded-full bg-green-500 text-white px-3 py-1 text-xs font-bold shadow animate-pulse">
+                  FREE CAMP
+                </span>
+                <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-black/60 text-white border border-white/20 px-2.5 py-1 text-xs font-semibold backdrop-blur-sm">
+                  {VISITING_DOCTOR_EVENT.visitLabel}
+                </span>
               </div>
+            </div>
+
+            {/* Content */}
+            <div className="flex-1 p-5 sm:p-6">
+              {/* Badges row */}
+              <div className="flex flex-wrap items-center gap-2 mb-3">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 text-primary border border-primary/20 px-3 py-1 text-xs font-semibold">
+                  VISITING SPECIALIST
+                </span>
+                <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold ${isLive ? "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/30 animate-pulse" : "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/30"}`}>
+                  <Clock className="h-3 w-3" />
+                  {urgencyText}
+                </span>
+              </div>
+
               <h3 className="font-display text-xl font-bold text-foreground">{VISITING_DOCTOR_EVENT.name}</h3>
               <p className="text-sm font-bold text-foreground mt-1">{VISITING_DOCTOR_EVENT.role}</p>
               <p className="text-sm font-semibold text-primary mt-0.5">{VISITING_DOCTOR_EVENT.credentials}</p>
@@ -57,15 +85,29 @@ const DoctorsPage = () => {
                 </div>
                 <p className="text-xs text-muted-foreground">{VISITING_DOCTOR_EVENT.organisation}</p>
               </div>
-              <div className="mt-2 flex flex-wrap gap-1.5">
+
+              {/* Trust stat pills */}
+              <div className="mt-3 flex flex-wrap gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-foreground">
+                  <Clock className="h-3.5 w-3.5 text-primary" /> {VISITING_DOCTOR_EVENT.experience} Experience
+                </span>
+                <span className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-foreground">
+                  <Users className="h-3.5 w-3.5 text-primary" /> 1000+ Couples Helped
+                </span>
+              </div>
+
+              <div className="mt-3 flex flex-wrap gap-1.5">
                 {VISITING_DOCTOR_EVENT.specialties.map((s) => (
                   <span key={s} className="rounded-full border border-border bg-accent px-2.5 py-0.5 text-xs font-medium text-foreground">{s}</span>
                 ))}
               </div>
+
               <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
                 <span className="font-semibold text-foreground">Visiting: <span className="text-primary">{VISITING_DOCTOR_EVENT.visitLabel}</span></span>
                 <span className="text-green-600 dark:text-green-400 font-bold">Registration &amp; Consultation FREE</span>
               </div>
+              <p className="mt-1 text-xs text-muted-foreground">Limited free consultation slots — book early to secure yours.</p>
+
               <div className="mt-4 flex flex-wrap gap-2">
                 <Button asChild size="sm">
                   <Link to="/book?from=fertility-camp">Book Free Appointment <ArrowRight className="ml-1.5 h-3.5 w-3.5" /></Link>
