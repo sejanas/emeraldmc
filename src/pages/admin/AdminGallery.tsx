@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,10 +13,14 @@ import ImageUpload from "@/components/ImageUpload";
 import ImageEditor from "@/components/ImageEditor";
 import useGallery from "@/hooks/useGallery";
 import { useCreateGallery, useUpdateGallery, useDeleteGallery } from "@/hooks/useGalleryMutations";
+import { useAuth } from "@/hooks/useAuth";
+import { useFeaturePermissions } from "@/hooks/useFeaturePermissions";
 
 const CATEGORIES = ["General", "Lab", "Equipment", "Events", "Team", "Facility", "Patients"];
 
 const AdminGallery = () => {
+  const { profile } = useAuth();
+  const { canAccess } = useFeaturePermissions();
   const { toast } = useToast();
   const confirm = useConfirm();
   const galleryQuery = useGallery();
@@ -30,6 +35,8 @@ const AdminGallery = () => {
   // Image editor state
   const [editorOpen, setEditorOpen] = useState(false);
   const [editorItem, setEditorItem] = useState<any>(null);
+
+  if (!canAccess("gallery", profile?.role)) return <Navigate to="/admin" replace />;
 
   const items = galleryQuery.data ?? [];
 

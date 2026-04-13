@@ -1,15 +1,21 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
+import { useFeaturePermissions, PATH_TO_FEATURE } from "@/hooks/useFeaturePermissions";
 
 const PROFILE_ALLOWED_STATUSES = ["pending", "declined"];
 
-const BOOKING_MANAGER_PATHS = ["/admin/bookings", "/admin/profile"];
+/** Paths that are always accessible to any authenticated admin-level user */
+const ALWAYS_ALLOWED = ["/admin/profile"];
+
+/** Paths restricted to super_admin only (not in the RBAC matrix) */
+const SUPER_ADMIN_ONLY = ["/admin/access-control"];
 
 const AdminRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, isAdmin, isBookingManager, profile, loading } = useAuth();
+  const { user, isAdmin, isSuperAdmin, profile, loading } = useAuth();
+  const { canAccess, isLoading: permissionsLoading } = useFeaturePermissions();
   const location = useLocation();
 
-  if (loading) {
+  if (loading || permissionsLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -29,17 +35,39 @@ const AdminRoute = ({ children }: { children: React.ReactNode }) => {
 
   if (!isAdmin) return <Navigate to="/" replace />;
 
-  // Booking managers can only access bookings and profile
-  if (isBookingManager) {
-    const allowed = BOOKING_MANAGER_PATHS.some(
-      (p) => location.pathname === p || location.pathname.startsWith(p + "/")
-    );
-    // Also allow the base /admin path — redirect to bookings
-    if (location.pathname === "/admin") {
-      return <Navigate to="/admin/bookings" replace />;
-    }
-    if (!allowed) {
-      return <Navigate to="/admin/bookings" replace />;
+  const role = profile?.role;
+  const path = location.pathname;
+
+  // Always-allowed paths
+  if (ALWAYS_ALLOWED.some((p) => path === p || path.startsWith(p + "/"))) {
+    return <>{children}</>;
+  }
+
+  // Super-admin-only system paths
+  if (SUPER_ADMIN_ONLY.some((p) => path === p || path.startsWith(p + "/"))) {
+    if (!isSuperAdmin) return <Navigate to="/admin" replace />;
+    return <>{children}</>;
+  }
+
+  // Dashboard: accessible to admin + super_admin, redirect others to first allowed page
+  if (path === "/admin") {
+    if (role === "admin" || role === "super_admin") return <>{children}</>;
+    // Find first feature-path the user can access
+    const firstAllowed = Object.entries(PATH_TO_FEATURE).find(([, fk]) => canAccess(fk, role));
+    return <Navigate to={firstAllowed ? firstAllowed[0] : "/admin/profile"} replace />;
+  }
+
+  // Feature-gated paths: check dynamic permissions
+  const featureKey = PATH_TO_FEATURE[path] ?? Object.entries(PATH_TO_FEATURE).find(
+    ([p]) => path.startsWith(p + "/")
+  )?.[1];
+
+  if (featureKey) {
+    if (!canAccess(featureKey, role)) {
+      // Redirect to dashboard (admin/super_admin) or first allowed path
+      if (role === "admin" || role === "super_admin") return <Navigate to="/admin" replace />;
+      const firstAllowed = Object.entries(PATH_TO_FEATURE).find(([, fk]) => canAccess(fk, role));
+      return <Navigate to={firstAllowed ? firstAllowed[0] : "/admin/profile"} replace />;
     }
   }
 

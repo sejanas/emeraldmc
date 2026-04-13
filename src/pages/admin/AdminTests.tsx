@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,8 +15,12 @@ import useTests from "@/hooks/useTests";
 import { useCreateTest, useUpdateTest, useDeleteTest } from "@/hooks/useTests";
 import { useSubTests, useCreateSubTest, useUpdateSubTest, useDeleteSubTest } from "@/hooks/useSubTests";
 import { reorderItem } from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
+import { useFeaturePermissions } from "@/hooks/useFeaturePermissions";
 
 const AdminTests = () => {
+  const { profile } = useAuth();
+  const { canAccess } = useFeaturePermissions();
   const { toast } = useToast();
   const confirm = useConfirm();
   const createTest = useCreateTest();
@@ -47,6 +52,8 @@ const AdminTests = () => {
   const [subReordering, setSubReordering] = useState<string | null>(null);
   const [addingSubTest, setAddingSubTest] = useState(false);
   const [savingSubTest, setSavingSubTest] = useState<string | null>(null);
+
+  if (!canAccess("tests", profile?.role)) return <Navigate to="/admin" replace />;
 
   const handleSubReorder = async (id: string, direction: "up" | "down") => {
     setSubReordering(id);

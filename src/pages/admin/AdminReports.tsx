@@ -5,11 +5,13 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
+import { useFeaturePermissions } from "@/hooks/useFeaturePermissions";
 import { useSiteSettings, useUpdateSetting } from "@/hooks/useSiteSettings";
 import { Save } from "lucide-react";
 
 const AdminReports = () => {
-  const { isSuperAdmin } = useAuth();
+  const { profile } = useAuth();
+  const { canAccess } = useFeaturePermissions();
   const { toast } = useToast();
   const updateSetting = useUpdateSetting();
   const { data: allSettings, isLoading } = useSiteSettings();
@@ -28,7 +30,7 @@ const AdminReports = () => {
     });
   }, [allSettings]);
 
-  if (!isSuperAdmin) return <Navigate to="/admin" replace />;
+  if (!canAccess("reports", profile?.role)) return <Navigate to="/admin" replace />;
   if (isLoading) return <div className="flex items-center justify-center p-12"><div className="h-6 w-6 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div>;
 
   const save = async () => {

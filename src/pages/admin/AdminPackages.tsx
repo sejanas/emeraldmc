@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,8 +13,12 @@ import { useConfirm } from "@/components/ConfirmDialog";
 import usePackages, { useCreatePackage, useUpdatePackage, useDeletePackage } from "@/hooks/usePackages";
 import useTests from "@/hooks/useTests";
 import { reorderItem } from "@/lib/api";
+import { useAuth } from "@/hooks/useAuth";
+import { useFeaturePermissions } from "@/hooks/useFeaturePermissions";
 
 const AdminPackages = () => {
+  const { profile } = useAuth();
+  const { canAccess } = useFeaturePermissions();
   const { toast } = useToast();
   const confirm = useConfirm();
   const packagesQuery = usePackages(true);
@@ -27,6 +32,9 @@ const AdminPackages = () => {
   const [featuredTests, setFeaturedTests] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [reordering, setReordering] = useState<string | null>(null);
+
+  if (!canAccess("packages", profile?.role)) return <Navigate to="/admin" replace />;
+
   const handleReorder = async (id: string, direction: "up" | "down") => {
     setReordering(id);
     try {

@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { X, BadgeCheck } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { BadgeCheck } from "lucide-react";
 
 interface CertificatePreviewProps {
   cert: any;
@@ -41,22 +40,12 @@ const CertificatePreview = ({ cert, open, onClose }: CertificatePreviewProps) =>
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent
-        className="max-w-4xl w-[95vw] max-h-[95vh] p-0 overflow-hidden bg-background/95 backdrop-blur-sm"
+        className="max-w-4xl w-[95vw] h-[95vh] p-0 overflow-hidden flex flex-col bg-background/95 backdrop-blur-sm"
         onContextMenu={handleContextMenu}
       >
         <DialogTitle className="sr-only">{cert.name} Certificate</DialogTitle>
-        
-        {/* Close button */}
-        <Button
-          variant="ghost"
-          size="icon"
-          className="absolute right-3 top-3 z-50 rounded-full bg-background/80 hover:bg-background"
-          onClick={onClose}
-        >
-          <X className="h-5 w-5" />
-        </Button>
 
-        <div ref={containerRef} className="relative w-full h-full overflow-auto p-4">
+        <div ref={containerRef} className="relative w-full flex-1 min-h-0 overflow-auto p-4">
           {/* Certificate image with watermark overlay */}
           <div className="relative mx-auto max-w-3xl select-none">
             {cert.image_url ? (

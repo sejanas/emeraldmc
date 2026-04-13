@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { Navigate } from "react-router-dom";
 import { useFaqs, useFaqsMutations } from "@/hooks/useFaqs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,10 +11,14 @@ import { Plus, Pencil, Trash2, Search, X } from "lucide-react";
 import RichTextEditor from "@/components/RichTextEditor";
 import { useConfirm } from "@/components/ConfirmDialog";
 import ErrorBox from "@/components/ErrorBox";
+import { useAuth } from "@/hooks/useAuth";
+import { useFeaturePermissions } from "@/hooks/useFeaturePermissions";
 
 const empty = { question: "", answer: "", display_order: 0, is_active: true };
 
 const AdminFaqs = () => {
+  const { profile } = useAuth();
+  const { canAccess } = useFeaturePermissions();
   const { data: faqs, isLoading, error, refetch } = useFaqs();
   const { create, update, remove } = useFaqsMutations();
   const confirm = useConfirm();
@@ -26,6 +31,8 @@ const AdminFaqs = () => {
     const q = search.toLowerCase();
     return (faqs ?? []).filter((f: any) => f.question.toLowerCase().includes(q));
   }, [faqs, search]);
+
+  if (!canAccess("faqs", profile?.role)) return <Navigate to="/admin" replace />;
 
   const openNew = () => { setEditId(null); setForm(empty); setOpen(true); };
   const openEdit = (faq: any) => {

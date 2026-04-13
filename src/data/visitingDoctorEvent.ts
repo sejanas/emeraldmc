@@ -1,7 +1,7 @@
 export const VISITING_DOCTOR_EVENT = {
   name: "Dr. Rukkayal Ashik",
   credentials: "MS OG, MRCOG (UK), FRM, FMAS, F ART",
-  role: "Fertility Specialist & Gynaecologist",
+  role: "Gynaecologist & Fertility Specialist",
   organisation: "The Hive Fertility & Women's Centre, Chennai",
   specialties: ["IVF & ICSI", "PCOD / PCOS", "Endometriosis", "Recurrent IVF Failures", "Fertility Preservation", "Laparoscopic Surgery"],
   experience: "10+ years",

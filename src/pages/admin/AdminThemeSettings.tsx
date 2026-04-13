@@ -8,17 +8,19 @@ import { Label } from "@/components/ui/label";
 import { Check } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { cn } from "@/lib/utils";
+import { useFeaturePermissions } from "@/hooks/useFeaturePermissions";
 
 const AdminThemeSettings = () => {
   const { colorPreset, customHsl, setColorPreset, setCustomColor } = useTheme();
-  const { isSuperAdmin } = useAuth();
+  const { profile } = useAuth();
+  const { canAccess } = useFeaturePermissions();
   const { toast } = useToast();
   const [customH, setCustomH] = useState(customHsl?.h ?? 200);
   const [customS, setCustomS] = useState(customHsl?.s ?? 60);
   const [customL, setCustomL] = useState(customHsl?.l ?? 45);
   const [saving, setSaving] = useState(false);
 
-  if (!isSuperAdmin) return <Navigate to="/admin" replace />;
+  if (!canAccess("theme", profile?.role)) return <Navigate to="/admin" replace />;
 
   const handlePreset = async (value: string) => {
     setSaving(true);
