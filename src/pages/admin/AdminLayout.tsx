@@ -42,6 +42,7 @@ const AdminLayout = () => {
     { to: "/admin/reports", icon: FileText, label: "Reports", roles: ["admin", "super_admin"] },
     { to: "/admin/features", icon: Layers, label: "Features", roles: ["admin", "super_admin"] },
     { to: "/admin/homepage", icon: LayoutGrid, label: "Homepage", roles: ["admin", "super_admin"] },
+    { to: "/admin/hero-slides", icon: Image, label: "Hero Slides", roles: ["admin", "super_admin"] },
     { to: "/admin/visitors", icon: Eye, label: "Visitors", roles: ["admin", "super_admin"] },
     { to: "/admin/activity-logs", icon: Activity, label: "Activity Logs", roles: ["admin", "super_admin"] },
     { to: "/admin/profile", icon: UserCircle, label: "My Profile", roles: ["admin", "super_admin", "booking_manager"] },
@@ -62,7 +63,7 @@ const AdminLayout = () => {
   // Group links into accordion sections
   const navGroups: NavGroup[] = useMemo(() => {
     const catalogPaths = ["/admin/categories", "/admin/tests", "/admin/packages"];
-    const contentPaths = ["/admin/doctors", "/admin/gallery", "/admin/blog", "/admin/faqs", "/admin/certifications", "/admin/statistics", "/admin/reports", "/admin/features", "/admin/homepage"];
+    const contentPaths = ["/admin/doctors", "/admin/gallery", "/admin/blog", "/admin/faqs", "/admin/certifications", "/admin/statistics", "/admin/reports", "/admin/features", "/admin/homepage", "/admin/hero-slides"];
     const analyticsPaths = ["/admin/visitors", "/admin/activity-logs"];
     const systemPaths = ["/admin/users", "/admin/theme", "/admin/settings", "/admin/access-control"];
 
