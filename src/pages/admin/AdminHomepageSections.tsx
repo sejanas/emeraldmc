@@ -5,6 +5,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { useSiteSettings, useUpdateSetting } from "@/hooks/useSiteSettings";
+import { useFeaturePermissions } from "@/hooks/useFeaturePermissions";
 import { Save, GripVertical, Eye, EyeOff, ArrowUp, ArrowDown } from "lucide-react";
 
 export interface HomepageSection {
@@ -29,7 +30,8 @@ const DEFAULT_SECTIONS: HomepageSection[] = [
 ];
 
 const AdminHomepageSections = () => {
-  const { isAdmin, isBookingManager } = useAuth();
+  const { isAdmin, isBookingManager, profile } = useAuth();
+  const { canAccess } = useFeaturePermissions();
   const { toast } = useToast();
   const updateSetting = useUpdateSetting();
   const { data: allSettings, isLoading } = useSiteSettings();
