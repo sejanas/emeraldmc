@@ -1872,11 +1872,28 @@ Deno.serve(async (req) => {
         const page = body.page || "/";
         const ua = body.user_agent || "unknown";
 
+        // Extract client IP from proxy headers (check multiple sources)
+        const ip = (
+          req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+          req.headers.get("cf-connecting-ip") ||
+          req.headers.get("x-real-ip") ||
+          req.headers.get("x-vercel-forwarded-for")?.split(",")[0]?.trim() ||
+          req.headers.get("x-client-ip") ||
+          ""
+        ).trim();
+
         const encoder = new TextEncoder();
         const dateStr = new Date().toISOString().slice(0, 10);
-        const raw = `${ua}|${page}|${dateStr}`;
+
+        // ip_hash: unique per visitor+page+day (dedup key)
+        const raw = `${ip}|${ua}|${page}|${dateStr}`;
         const hashBuf = await crypto.subtle.digest("SHA-256", encoder.encode(raw));
         const ipHash = Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 32);
+
+        // visitor_hash: unique per visitor+day (for bounce rate — no page in hash)
+        const vRaw = `${ip}|${ua}|${dateStr}`;
+        const vBuf = await crypto.subtle.digest("SHA-256", encoder.encode(vRaw));
+        const visitorHash = Array.from(new Uint8Array(vBuf)).map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 32);
 
         const db = adminDb();
         const todayStart = `${dateStr}T00:00:00Z`;
@@ -1887,28 +1904,35 @@ Deno.serve(async (req) => {
           .gte("visited_at", todayStart);
 
         if ((existing ?? 0) === 0) {
+          // Geo lookup using ip-api.com (45 req/min free, no key needed)
           let city: string | null = null;
           let region: string | null = null;
           let country: string | null = null;
-          try {
-            const forwarded = req.headers.get("x-forwarded-for") || req.headers.get("cf-connecting-ip") || "";
-            const ip = forwarded.split(",")[0].trim();
-            if (ip && ip !== "127.0.0.1" && ip !== "::1") {
-              const geoRes = await fetch(`https://ipapi.co/${ip}/json/`, { signal: AbortSignal.timeout(3000) });
+          if (ip && ip !== "127.0.0.1" && ip !== "::1") {
+            try {
+              const geoRes = await fetch(
+                `http://ip-api.com/json/${ip}?fields=status,country,regionName,city`,
+                { signal: AbortSignal.timeout(5000) }
+              );
               if (geoRes.ok) {
                 const geo = await geoRes.json();
-                city = geo.city || null;
-                region = geo.region || null;
-                country = geo.country_name || null;
+                if (geo.status === "success") {
+                  city = geo.city || null;
+                  region = geo.regionName || null;
+                  country = geo.country || null;
+                }
               }
+            } catch (geoErr) {
+              console.error("[visitors/track] geo lookup failed:", ip, geoErr);
             }
-          } catch { /* ignore geo failures */ }
+          }
 
           await db.from("visitors").insert({
             page,
             referrer: body.referrer || null,
             user_agent: ua,
             ip_hash: ipHash,
+            visitor_hash: visitorHash,
             city,
             region,
             country,
@@ -2020,6 +2044,127 @@ Deno.serve(async (req) => {
           cities: [...cities].sort(),
           pages: [...pages].sort(),
         });
+      }
+
+      // Devices breakdown — parse user agents, return aggregated browser/OS
+      if (method === "GET" && id === "devices") {
+        await requireRole(req, ADMIN_ROLES);
+        const db = adminDb();
+        let q = db.from("visitors").select("user_agent, visited_at");
+        const from = url.searchParams.get("from");
+        const to = url.searchParams.get("to");
+        if (from) q = q.gte("visited_at", from);
+        if (to) q = q.lte("visited_at", to);
+        const { data, error } = await q;
+        if (error) throw { message: error.message, status: 500 };
+
+        const browsers: Record<string, number> = {};
+        const os: Record<string, number> = {};
+        (data ?? []).forEach((r: any) => {
+          const ua = r.user_agent || "";
+          // Browser detection
+          let browser = "Other";
+          if (/Edg\//i.test(ua)) browser = "Edge";
+          else if (/OPR\//i.test(ua) || /Opera/i.test(ua)) browser = "Opera";
+          else if (/Chrome\//i.test(ua) && !/Chromium/i.test(ua)) browser = "Chrome";
+          else if (/Safari\//i.test(ua) && !/Chrome/i.test(ua)) browser = "Safari";
+          else if (/Firefox\//i.test(ua)) browser = "Firefox";
+          else if (/bot|crawl|spider|slurp/i.test(ua)) browser = "Bot";
+          browsers[browser] = (browsers[browser] || 0) + 1;
+          // OS detection
+          let osName = "Other";
+          if (/Windows/i.test(ua)) osName = "Windows";
+          else if (/Android/i.test(ua)) osName = "Android";
+          else if (/iPhone|iPad|iPod/i.test(ua)) osName = "iOS";
+          else if (/Mac OS/i.test(ua)) osName = "macOS";
+          else if (/Linux/i.test(ua)) osName = "Linux";
+          else if (/CrOS/i.test(ua)) osName = "ChromeOS";
+          else if (/bot|crawl|spider/i.test(ua)) osName = "Bot";
+          os[osName] = (os[osName] || 0) + 1;
+        });
+        return json({
+          browsers: Object.entries(browsers).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count),
+          os: Object.entries(os).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count),
+        });
+      }
+
+      // Bounce rate — visitors who viewed only 1 page
+      if (method === "GET" && id === "bounce") {
+        await requireRole(req, ADMIN_ROLES);
+        const db = adminDb();
+        let q = db.from("visitors").select("visitor_hash, visited_at");
+        const from = url.searchParams.get("from");
+        const to = url.searchParams.get("to");
+        if (from) q = q.gte("visited_at", from);
+        if (to) q = q.lte("visited_at", to);
+        q = q.not("visitor_hash", "is", null);
+        const { data, error } = await q;
+        if (error) throw { message: error.message, status: 500 };
+
+        // Count pages per visitor_hash
+        const visitorPages: Record<string, number> = {};
+        (data ?? []).forEach((r: any) => {
+          if (r.visitor_hash) visitorPages[r.visitor_hash] = (visitorPages[r.visitor_hash] || 0) + 1;
+        });
+        const totalVisitors = Object.keys(visitorPages).length;
+        const bounced = Object.values(visitorPages).filter((c) => c === 1).length;
+        return json({
+          total_visitors: totalVisitors,
+          bounced,
+          bounce_rate: totalVisitors > 0 ? Math.round((bounced / totalVisitors) * 100) : 0,
+        });
+      }
+
+      // Live visitors — count in last N minutes (default 60)
+      if (method === "GET" && id === "live") {
+        const minutes = parseInt(url.searchParams.get("minutes") || "60");
+        const since = new Date(Date.now() - minutes * 60 * 1000).toISOString();
+        const { count } = await adminDb()
+          .from("visitors")
+          .select("id", { count: "exact", head: true })
+          .gte("visited_at", since);
+        return json({ count: count ?? 0, minutes });
+      }
+
+      // Cleanup — super_admin only
+      if (method === "POST" && id === "cleanup") {
+        const { profile: p } = await requireRole(req, ["super_admin"]);
+        const body = await req.json().catch(() => ({}));
+        const db = adminDb();
+
+        let q = db.from("visitors").delete();
+        let hasFilter = false;
+
+        // Delete records with no geo data
+        if (body.no_geo === true) {
+          q = q.is("country", null);
+          hasFilter = true;
+        }
+        // Delete records before a date
+        if (body.before) {
+          q = q.lt("visited_at", body.before);
+          hasFilter = true;
+        }
+
+        if (!hasFilter) return errRes("At least one filter is required (no_geo, before)", 400);
+
+        // Supabase requires a filter for delete; we've ensured at least one above
+        const { error, count } = await q.select("id", { count: "exact", head: true });
+        // Actually perform deletion: re-run with proper filters
+        let dq = db.from("visitors").delete();
+        if (body.no_geo === true) dq = dq.is("country", null);
+        if (body.before) dq = dq.lt("visited_at", body.before);
+        const { error: delErr } = await dq;
+        if (delErr) throw { message: delErr.message, status: 500 };
+
+        await logActivity({
+          event_type: "visitors_cleanup",
+          user_id: p.user_id,
+          entity_type: "visitors",
+          changes: { filters: body, deleted: count ?? 0 },
+        });
+
+        return json({ success: true, deleted: count ?? 0 });
       }
     }
 

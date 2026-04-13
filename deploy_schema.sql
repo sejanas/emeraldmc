@@ -685,6 +685,9 @@ ALTER TABLE public.visitors ADD COLUMN IF NOT EXISTS city text;
 ALTER TABLE public.visitors ADD COLUMN IF NOT EXISTS region text;
 ALTER TABLE public.visitors ADD COLUMN IF NOT EXISTS country text;
 
+-- ── 20260413100000_add_visitor_hash.sql ──────────────────
+ALTER TABLE public.visitors ADD COLUMN IF NOT EXISTS visitor_hash text;
+
 -- ── 20260308071848_994f6354-364f-4b1b-b45b-9fdc7b6816b5.sql ──────────────────
 ALTER TABLE public.user_profiles 
   ADD COLUMN IF NOT EXISTS decline_reason text,

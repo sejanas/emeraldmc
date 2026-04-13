@@ -1,4 +1,6 @@
 import useSupabaseQuery from "./useSupabaseQuery";
+import { useSupabaseMutation } from "./useSupabaseMutation";
+import { useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/api";
 
 interface VisitorLog {
@@ -29,6 +31,22 @@ interface FilterOptions {
   regions: string[];
   cities: string[];
   pages: string[];
+}
+
+interface DeviceBreakdown {
+  browsers: { name: string; count: number }[];
+  os: { name: string; count: number }[];
+}
+
+interface BounceData {
+  total_visitors: number;
+  bounced: number;
+  bounce_rate: number;
+}
+
+interface LiveCount {
+  count: number;
+  minutes: number;
 }
 
 function buildQs(params: Record<string, string | undefined>) {
@@ -95,5 +113,43 @@ export function useVisitorFilters() {
     ["visitors", "filters"],
     () => api.get("/visitors/filters"),
     { staleTime: 1000 * 60 * 5 }
+  );
+}
+
+export function useVisitorDevices(filters: { from?: string; to?: string }) {
+  const qs = buildQs({ from: filters.from, to: filters.to });
+  return useSupabaseQuery<DeviceBreakdown>(
+    ["visitors", "devices", qs],
+    () => api.get(`/visitors/devices${qs}`),
+    { refetchOnMount: true }
+  );
+}
+
+export function useVisitorBounce(filters: { from?: string; to?: string }) {
+  const qs = buildQs({ from: filters.from, to: filters.to });
+  return useSupabaseQuery<BounceData>(
+    ["visitors", "bounce", qs],
+    () => api.get(`/visitors/bounce${qs}`),
+    { refetchOnMount: true }
+  );
+}
+
+export function useVisitorLive(minutes = 60) {
+  return useSupabaseQuery<LiveCount>(
+    ["visitors", "live", minutes],
+    () => api.get(`/visitors/live?minutes=${minutes}`),
+    { refetchInterval: 30_000, staleTime: 15_000 }
+  );
+}
+
+export function useVisitorCleanup() {
+  const qc = useQueryClient();
+  return useSupabaseMutation<{ success: boolean; deleted: number }, Error, { no_geo?: boolean; before?: string }>(
+    (filters) => api.post("/visitors/cleanup", filters),
+    {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: ["visitors"] });
+      },
+    }
   );
 }
