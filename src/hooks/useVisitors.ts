@@ -77,7 +77,7 @@ export function useVisitorAnalytics(filters: {
   return useSupabaseQuery<{ data: VisitorLog[]; total: number | null }>(
     ["visitors", "analytics", qs],
     () => api.get(`/visitors/analytics${qs}`),
-    { refetchOnMount: true }
+    { refetchOnMount: true, refetchInterval: 60_000 }
   );
 }
 
@@ -90,7 +90,7 @@ export function useVisitorLocations(filters: {
   return useSupabaseQuery<LocationAgg[]>(
     ["visitors", "locations", qs],
     () => api.get(`/visitors/locations${qs}`),
-    { refetchOnMount: true }
+    { refetchOnMount: true, refetchInterval: 60_000 }
   );
 }
 
@@ -104,7 +104,7 @@ export function useVisitorDaily(filters: {
   return useSupabaseQuery<DailyCount[]>(
     ["visitors", "daily", qs],
     () => api.get(`/visitors/daily${qs}`),
-    { refetchOnMount: true }
+    { refetchOnMount: true, refetchInterval: 60_000 }
   );
 }
 
@@ -121,7 +121,7 @@ export function useVisitorDevices(filters: { from?: string; to?: string }) {
   return useSupabaseQuery<DeviceBreakdown>(
     ["visitors", "devices", qs],
     () => api.get(`/visitors/devices${qs}`),
-    { refetchOnMount: true }
+    { refetchOnMount: true, refetchInterval: 120_000 }
   );
 }
 
@@ -130,7 +130,7 @@ export function useVisitorBounce(filters: { from?: string; to?: string }) {
   return useSupabaseQuery<BounceData>(
     ["visitors", "bounce", qs],
     () => api.get(`/visitors/bounce${qs}`),
-    { refetchOnMount: true }
+    { refetchOnMount: true, refetchInterval: 120_000 }
   );
 }
 
@@ -139,6 +139,83 @@ export function useVisitorLive(minutes = 60) {
     ["visitors", "live", minutes],
     () => api.get(`/visitors/live?minutes=${minutes}`),
     { refetchInterval: 30_000, staleTime: 15_000 }
+  );
+}
+
+interface UtmBreakdown {
+  sources: { name: string; count: number }[];
+  mediums: { name: string; count: number }[];
+  campaigns: { name: string; count: number }[];
+}
+
+export function useVisitorUtm(filters: { from?: string; to?: string }) {
+  const qs = buildQs({ from: filters.from, to: filters.to });
+  return useSupabaseQuery<UtmBreakdown>(
+    ["visitors", "utm", qs],
+    () => api.get(`/visitors/utm${qs}`),
+    { refetchOnMount: true, refetchInterval: 120_000 }
+  );
+}
+
+interface FunnelData {
+  total_sessions: number;
+  entry_pages: { page: string; count: number }[];
+  page_stats: { page: string; count: number; avg_duration_sec: number | null }[];
+  top_transitions: { from: string; to: string; count: number }[];
+}
+
+export function useVisitorFunnel(filters: { from?: string; to?: string }) {
+  const qs = buildQs({ from: filters.from, to: filters.to });
+  return useSupabaseQuery<FunnelData>(
+    ["visitors", "funnel", qs],
+    () => api.get(`/visitors/funnel${qs}`),
+    { refetchOnMount: true, refetchInterval: 120_000 }
+  );
+}
+
+interface Annotation {
+  id: string;
+  label: string;
+  date: string;
+  color: string;
+  created_at: string;
+}
+
+export function useVisitorAnnotations(filters: { from?: string; to?: string }) {
+  const qs = buildQs({ from: filters.from, to: filters.to });
+  return useSupabaseQuery<Annotation[]>(
+    ["visitors", "annotations", qs],
+    () => api.get(`/visitors/annotations${qs}`),
+    { refetchOnMount: true }
+  );
+}
+
+export function useVisitorAnnotationsMutation() {
+  const qc = useQueryClient();
+  const create = useSupabaseMutation<Annotation, Error, { label: string; date: string; color?: string }>(
+    (body) => api.post("/visitors/annotations", body),
+    { onSuccess: () => { qc.invalidateQueries({ queryKey: ["visitors", "annotations"] }); } }
+  );
+  return { create };
+}
+
+export function useVisitorAnnotationDelete() {
+  const qc = useQueryClient();
+  return useSupabaseMutation<{ success: boolean }, Error, string>(
+    (id) => api.del(`/visitors/annotations?annotation_id=${id}`),
+    { onSuccess: () => { qc.invalidateQueries({ queryKey: ["visitors", "annotations"] }); } }
+  );
+}
+
+export function useVisitorArchive() {
+  const qc = useQueryClient();
+  return useSupabaseMutation<{ success: boolean; deleted: number; refreshed: boolean }, Error, { days_to_keep?: number }>(
+    (body) => api.post("/visitors/archive", body),
+    {
+      onSuccess: () => {
+        qc.invalidateQueries({ queryKey: ["visitors"] });
+      },
+    }
   );
 }
 
