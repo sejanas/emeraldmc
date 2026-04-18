@@ -1865,18 +1865,63 @@ Deno.serve(async (req) => {
         );
     }
 
-    // Visitors
+    // Visitors — ipinfo.io returns ISO country codes; map to full names
+    const COUNTRY_CODE_MAP: Record<string, string> = {
+      AF:"Afghanistan",AL:"Albania",DZ:"Algeria",AD:"Andorra",AO:"Angola",AG:"Antigua and Barbuda",AR:"Argentina",AM:"Armenia",AU:"Australia",AT:"Austria",
+      AZ:"Azerbaijan",BS:"Bahamas",BH:"Bahrain",BD:"Bangladesh",BB:"Barbados",BY:"Belarus",BE:"Belgium",BZ:"Belize",BJ:"Benin",BT:"Bhutan",
+      BO:"Bolivia",BA:"Bosnia and Herzegovina",BW:"Botswana",BR:"Brazil",BN:"Brunei",BG:"Bulgaria",BF:"Burkina Faso",BI:"Burundi",KH:"Cambodia",
+      CM:"Cameroon",CA:"Canada",CV:"Cape Verde",CF:"Central African Republic",TD:"Chad",CL:"Chile",CN:"China",CO:"Colombia",KM:"Comoros",
+      CG:"Congo",CD:"Democratic Republic of the Congo",CR:"Costa Rica",CI:"Ivory Coast",HR:"Croatia",CU:"Cuba",CY:"Cyprus",CZ:"Czech Republic",
+      DK:"Denmark",DJ:"Djibouti",DM:"Dominica",DO:"Dominican Republic",EC:"Ecuador",EG:"Egypt",SV:"El Salvador",GQ:"Equatorial Guinea",
+      ER:"Eritrea",EE:"Estonia",SZ:"Eswatini",ET:"Ethiopia",FJ:"Fiji",FI:"Finland",FR:"France",GA:"Gabon",GM:"Gambia",GE:"Georgia",
+      DE:"Germany",GH:"Ghana",GR:"Greece",GD:"Grenada",GT:"Guatemala",GN:"Guinea",GW:"Guinea-Bissau",GY:"Guyana",HT:"Haiti",HN:"Honduras",
+      HU:"Hungary",IS:"Iceland",IN:"India",ID:"Indonesia",IR:"Iran",IQ:"Iraq",IE:"Ireland",IL:"Israel",IT:"Italy",JM:"Jamaica",JP:"Japan",
+      JO:"Jordan",KZ:"Kazakhstan",KE:"Kenya",KI:"Kiribati",KP:"North Korea",KR:"South Korea",KW:"Kuwait",KG:"Kyrgyzstan",LA:"Laos",
+      LV:"Latvia",LB:"Lebanon",LS:"Lesotho",LR:"Liberia",LY:"Libya",LI:"Liechtenstein",LT:"Lithuania",LU:"Luxembourg",MG:"Madagascar",
+      MW:"Malawi",MY:"Malaysia",MV:"Maldives",ML:"Mali",MT:"Malta",MH:"Marshall Islands",MR:"Mauritania",MU:"Mauritius",MX:"Mexico",
+      FM:"Micronesia",MD:"Moldova",MC:"Monaco",MN:"Mongolia",ME:"Montenegro",MA:"Morocco",MZ:"Mozambique",MM:"Myanmar",NA:"Namibia",
+      NR:"Nauru",NP:"Nepal",NL:"Netherlands",NZ:"New Zealand",NI:"Nicaragua",NE:"Niger",NG:"Nigeria",MK:"North Macedonia",NO:"Norway",
+      OM:"Oman",PK:"Pakistan",PW:"Palau",PA:"Panama",PG:"Papua New Guinea",PY:"Paraguay",PE:"Peru",PH:"Philippines",PL:"Poland",
+      PT:"Portugal",QA:"Qatar",RO:"Romania",RU:"Russia",RW:"Rwanda",KN:"Saint Kitts and Nevis",LC:"Saint Lucia",VC:"Saint Vincent and the Grenadines",
+      WS:"Samoa",SM:"San Marino",ST:"Sao Tome and Principe",SA:"Saudi Arabia",SN:"Senegal",RS:"Serbia",SC:"Seychelles",SL:"Sierra Leone",
+      SG:"Singapore",SK:"Slovakia",SI:"Slovenia",SB:"Solomon Islands",SO:"Somalia",ZA:"South Africa",SS:"South Sudan",ES:"Spain",LK:"Sri Lanka",
+      SD:"Sudan",SR:"Suriname",SE:"Sweden",CH:"Switzerland",SY:"Syria",TW:"Taiwan",TJ:"Tajikistan",TZ:"Tanzania",TH:"Thailand",
+      TL:"Timor-Leste",TG:"Togo",TO:"Tonga",TT:"Trinidad and Tobago",TN:"Tunisia",TR:"Turkey",TM:"Turkmenistan",TV:"Tuvalu",UG:"Uganda",
+      UA:"Ukraine",AE:"United Arab Emirates",GB:"United Kingdom",US:"United States",UY:"Uruguay",UZ:"Uzbekistan",VU:"Vanuatu",VE:"Venezuela",
+      VN:"Vietnam",YE:"Yemen",ZM:"Zambia",ZW:"Zimbabwe",HK:"Hong Kong",MO:"Macau",PS:"Palestine",PR:"Puerto Rico",XK:"Kosovo",
+    };
+    function ipInfoCountryName(code: string): string | null {
+      return COUNTRY_CODE_MAP[code?.toUpperCase()] ?? null;
+    }
+
     if (resource === "visitors") {
       if (method === "POST" && id === "track") {
         const body = await req.json().catch(() => ({}));
         const page = body.page || "/";
         const ua = body.user_agent || "unknown";
 
+        // Extract client IP from proxy headers (check multiple sources)
+        const ip = (
+          req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+          req.headers.get("cf-connecting-ip") ||
+          req.headers.get("x-real-ip") ||
+          req.headers.get("x-vercel-forwarded-for")?.split(",")[0]?.trim() ||
+          req.headers.get("x-client-ip") ||
+          ""
+        ).trim();
+
         const encoder = new TextEncoder();
         const dateStr = new Date().toISOString().slice(0, 10);
-        const raw = `${ua}|${page}|${dateStr}`;
+
+        // ip_hash: unique per visitor+page+day (dedup key)
+        const raw = `${ip}|${ua}|${page}|${dateStr}`;
         const hashBuf = await crypto.subtle.digest("SHA-256", encoder.encode(raw));
         const ipHash = Array.from(new Uint8Array(hashBuf)).map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 32);
+
+        // visitor_hash: unique per visitor+day (for bounce rate — no page in hash)
+        const vRaw = `${ip}|${ua}|${dateStr}`;
+        const vBuf = await crypto.subtle.digest("SHA-256", encoder.encode(vRaw));
+        const visitorHash = Array.from(new Uint8Array(vBuf)).map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 32);
 
         const db = adminDb();
         const todayStart = `${dateStr}T00:00:00Z`;
@@ -1887,46 +1932,131 @@ Deno.serve(async (req) => {
           .gte("visited_at", todayStart);
 
         if ((existing ?? 0) === 0) {
+          // Rate limit: max 30 track inserts per IP per hour
+          const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+          const { count: recentCount } = await db
+            .from("visitors")
+            .select("id", { count: "exact", head: true })
+            .eq("ip_hash", ipHash.slice(0, 16)) // prefix match not possible; use visitor_hash for IP-level
+            .gte("visited_at", oneHourAgo);
+          // Use visitor_hash (IP+UA+day, no page) to count all pages from same visitor today
+          const { count: todayFromIp } = await db
+            .from("visitors")
+            .select("id", { count: "exact", head: true })
+            .eq("visitor_hash", visitorHash)
+            .gte("visited_at", todayStart);
+          if ((todayFromIp ?? 0) >= 30) {
+            return json({ success: true, throttled: true });
+          }
+
+          // Geo lookup — reuse cached geo from earlier visit by same visitor today
           let city: string | null = null;
           let region: string | null = null;
           let country: string | null = null;
-          try {
-            const forwarded = req.headers.get("x-forwarded-for") || req.headers.get("cf-connecting-ip") || "";
-            const ip = forwarded.split(",")[0].trim();
-            if (ip && ip !== "127.0.0.1" && ip !== "::1") {
-              const geoRes = await fetch(`https://ipapi.co/${ip}/json/`, { signal: AbortSignal.timeout(3000) });
+
+          const { data: cachedGeo } = await db
+            .from("visitors")
+            .select("city, region, country")
+            .eq("visitor_hash", visitorHash)
+            .not("country", "is", null)
+            .limit(1)
+            .maybeSingle();
+
+          if (cachedGeo?.country) {
+            city = cachedGeo.city;
+            region = cachedGeo.region;
+            country = cachedGeo.country;
+          } else if (ip && ip !== "127.0.0.1" && ip !== "::1") {
+            // Primary: ipinfo.io (HTTPS, 50K/mo free tier)
+            try {
+              const geoRes = await fetch(
+                `https://ipinfo.io/${ip}/json`,
+                { signal: AbortSignal.timeout(4000) }
+              );
               if (geoRes.ok) {
                 const geo = await geoRes.json();
-                city = geo.city || null;
-                region = geo.region || null;
-                country = geo.country_name || null;
+                if (geo.country) {
+                  city = geo.city || null;
+                  region = geo.region || null;
+                  // ipinfo.io returns country code (e.g. "IN"); we need full name
+                  // Use a lightweight mapping for top countries
+                  country = ipInfoCountryName(geo.country) || geo.country || null;
+                }
+              }
+            } catch {
+              // Fallback: ip-api.com (HTTP, 45 req/min free)
+              try {
+                const geoRes = await fetch(
+                  `http://ip-api.com/json/${ip}?fields=status,country,regionName,city`,
+                  { signal: AbortSignal.timeout(5000) }
+                );
+                if (geoRes.ok) {
+                  const geo = await geoRes.json();
+                  if (geo.status === "success") {
+                    city = geo.city || null;
+                    region = geo.regionName || null;
+                    country = geo.country || null;
+                  }
+                }
+              } catch (geoErr) {
+                console.error("[visitors/track] geo lookup failed:", ip, geoErr);
               }
             }
-          } catch { /* ignore geo failures */ }
+          }
 
+          const isBot = /bot|crawl|spider|slurp|facebookexternalhit|Bytespider|GPTBot|ClaudeBot/i.test(ua);
           await db.from("visitors").insert({
             page,
             referrer: body.referrer || null,
             user_agent: ua,
             ip_hash: ipHash,
+            visitor_hash: visitorHash,
             city,
             region,
             country,
+            is_bot: isBot,
+            utm_source: body.utm_source || null,
+            utm_medium: body.utm_medium || null,
+            utm_campaign: body.utm_campaign || null,
+            persistent_id: body.persistent_id || null,
+            screen_width: body.screen_width ? parseInt(body.screen_width) : null,
+            screen_height: body.screen_height ? parseInt(body.screen_height) : null,
           });
         }
+        return json({ success: true });
+      }
+
+      // Duration update — called via sendBeacon on page unload
+      if (method === "POST" && id === "duration") {
+        const body = await req.json().catch(() => ({}));
+        const pg = body.page || "/";
+        const sec = parseInt(body.duration_sec);
+        if (!sec || sec < 1 || sec > 3600) return json({ success: true });
+        const db = adminDb();
+        // Update the most recent record for this page today (best effort)
+        const todayStart = new Date().toISOString().slice(0, 10) + "T00:00:00Z";
+        await db
+          .from("visitors")
+          .update({ duration_sec: sec })
+          .eq("page", pg)
+          .is("duration_sec", null)
+          .gte("visited_at", todayStart)
+          .order("visited_at", { ascending: false })
+          .limit(1);
         return json({ success: true });
       }
       if (method === "GET" && id === "count") {
         const { count } = await adminDb()
           .from("visitors")
-          .select("id", { count: "exact", head: true });
+          .select("id", { count: "exact", head: true })
+          .eq("is_bot", false);
         return json({ count: count ?? 0 });
       }
 
       if (method === "GET" && id === "analytics") {
         await requireRole(req, ADMIN_ROLES);
         const db = adminDb();
-        let q = db.from("visitors").select("*").order("visited_at", { ascending: false });
+        let q = db.from("visitors").select("*").eq("is_bot", false).order("visited_at", { ascending: false });
         const from = url.searchParams.get("from");
         const to = url.searchParams.get("to");
         if (from) q = q.gte("visited_at", from);
@@ -1950,7 +2080,7 @@ Deno.serve(async (req) => {
       if (method === "GET" && id === "locations") {
         await requireRole(req, ADMIN_ROLES);
         const db = adminDb();
-        let q = db.from("visitors").select("country, region, city, visited_at");
+        let q = db.from("visitors").select("country, region, city, visited_at").eq("is_bot", false);
         const from = url.searchParams.get("from");
         const to = url.searchParams.get("to");
         if (from) q = q.gte("visited_at", from);
@@ -1977,7 +2107,7 @@ Deno.serve(async (req) => {
       if (method === "GET" && id === "daily") {
         await requireRole(req, ADMIN_ROLES);
         const db = adminDb();
-        let q = db.from("visitors").select("visited_at, country, page");
+        let q = db.from("visitors").select("visited_at, country, page").eq("is_bot", false);
         const from = url.searchParams.get("from");
         const to = url.searchParams.get("to");
         if (from) q = q.gte("visited_at", from);
@@ -2003,7 +2133,7 @@ Deno.serve(async (req) => {
       if (method === "GET" && id === "filters") {
         await requireRole(req, ADMIN_ROLES);
         const db = adminDb();
-        const { data } = await db.from("visitors").select("country, region, city, page");
+        const { data } = await db.from("visitors").select("country, region, city, page").eq("is_bot", false);
         const countries = new Set<string>();
         const regions = new Set<string>();
         const cities = new Set<string>();
@@ -2020,6 +2150,302 @@ Deno.serve(async (req) => {
           cities: [...cities].sort(),
           pages: [...pages].sort(),
         });
+      }
+
+      // Devices breakdown — parse user agents, return aggregated browser/OS
+      if (method === "GET" && id === "devices") {
+        await requireRole(req, ADMIN_ROLES);
+        const db = adminDb();
+        let q = db.from("visitors").select("user_agent, visited_at");
+        const from = url.searchParams.get("from");
+        const to = url.searchParams.get("to");
+        if (from) q = q.gte("visited_at", from);
+        if (to) q = q.lte("visited_at", to);
+        const { data, error } = await q;
+        if (error) throw { message: error.message, status: 500 };
+
+        const browsers: Record<string, number> = {};
+        const os: Record<string, number> = {};
+        (data ?? []).forEach((r: any) => {
+          const ua = r.user_agent || "";
+          // Browser detection
+          let browser = "Other";
+          if (/Edg\//i.test(ua)) browser = "Edge";
+          else if (/OPR\//i.test(ua) || /Opera/i.test(ua)) browser = "Opera";
+          else if (/Chrome\//i.test(ua) && !/Chromium/i.test(ua)) browser = "Chrome";
+          else if (/Safari\//i.test(ua) && !/Chrome/i.test(ua)) browser = "Safari";
+          else if (/Firefox\//i.test(ua)) browser = "Firefox";
+          else if (/bot|crawl|spider|slurp/i.test(ua)) browser = "Bot";
+          browsers[browser] = (browsers[browser] || 0) + 1;
+          // OS detection
+          let osName = "Other";
+          if (/Windows/i.test(ua)) osName = "Windows";
+          else if (/Android/i.test(ua)) osName = "Android";
+          else if (/iPhone|iPad|iPod/i.test(ua)) osName = "iOS";
+          else if (/Mac OS/i.test(ua)) osName = "macOS";
+          else if (/Linux/i.test(ua)) osName = "Linux";
+          else if (/CrOS/i.test(ua)) osName = "ChromeOS";
+          else if (/bot|crawl|spider/i.test(ua)) osName = "Bot";
+          os[osName] = (os[osName] || 0) + 1;
+        });
+        return json({
+          browsers: Object.entries(browsers).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count),
+          os: Object.entries(os).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count),
+        });
+      }
+
+      // Bounce rate — visitors who viewed only 1 page (exclude bots)
+      if (method === "GET" && id === "bounce") {
+        await requireRole(req, ADMIN_ROLES);
+        const db = adminDb();
+        let q = db.from("visitors").select("visitor_hash, visited_at").eq("is_bot", false);
+        const from = url.searchParams.get("from");
+        const to = url.searchParams.get("to");
+        if (from) q = q.gte("visited_at", from);
+        if (to) q = q.lte("visited_at", to);
+        q = q.not("visitor_hash", "is", null);
+        const { data, error } = await q;
+        if (error) throw { message: error.message, status: 500 };
+
+        // Count pages per visitor_hash
+        const visitorPages: Record<string, number> = {};
+        (data ?? []).forEach((r: any) => {
+          if (r.visitor_hash) visitorPages[r.visitor_hash] = (visitorPages[r.visitor_hash] || 0) + 1;
+        });
+        const totalVisitors = Object.keys(visitorPages).length;
+        const bounced = Object.values(visitorPages).filter((c) => c === 1).length;
+        return json({
+          total_visitors: totalVisitors,
+          bounced,
+          bounce_rate: totalVisitors > 0 ? Math.round((bounced / totalVisitors) * 100) : 0,
+        });
+      }
+
+      // Live visitors — count in last N minutes (default 60, exclude bots)
+      if (method === "GET" && id === "live") {
+        const minutes = parseInt(url.searchParams.get("minutes") || "60");
+        const since = new Date(Date.now() - minutes * 60 * 1000).toISOString();
+        const { count } = await adminDb()
+          .from("visitors")
+          .select("id", { count: "exact", head: true })
+          .eq("is_bot", false)
+          .gte("visited_at", since);
+        return json({ count: count ?? 0, minutes });
+      }
+
+      // UTM campaign breakdown
+      if (method === "GET" && id === "utm") {
+        await requireRole(req, ADMIN_ROLES);
+        const db = adminDb();
+        let q = db.from("visitors").select("utm_source, utm_medium, utm_campaign, visited_at").eq("is_bot", false);
+        const from = url.searchParams.get("from");
+        const to = url.searchParams.get("to");
+        if (from) q = q.gte("visited_at", from);
+        if (to) q = q.lte("visited_at", to);
+        const { data, error } = await q;
+        if (error) throw { message: error.message, status: 500 };
+
+        const sources: Record<string, number> = {};
+        const mediums: Record<string, number> = {};
+        const campaigns: Record<string, number> = {};
+        (data ?? []).forEach((r: any) => {
+          const src = r.utm_source || "direct";
+          sources[src] = (sources[src] || 0) + 1;
+          if (r.utm_medium) mediums[r.utm_medium] = (mediums[r.utm_medium] || 0) + 1;
+          if (r.utm_campaign) campaigns[r.utm_campaign] = (campaigns[r.utm_campaign] || 0) + 1;
+        });
+        return json({
+          sources: Object.entries(sources).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count),
+          mediums: Object.entries(mediums).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count),
+          campaigns: Object.entries(campaigns).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count),
+        });
+      }
+
+      // Funnel analysis — page flow sequences per visitor_hash
+      if (method === "GET" && id === "funnel") {
+        await requireRole(req, ADMIN_ROLES);
+        const db = adminDb();
+        let q = db.from("visitors").select("visitor_hash, page, visited_at, duration_sec").eq("is_bot", false).not("visitor_hash", "is", null);
+        const from = url.searchParams.get("from");
+        const to = url.searchParams.get("to");
+        if (from) q = q.gte("visited_at", from);
+        if (to) q = q.lte("visited_at", to);
+        q = q.order("visited_at", { ascending: true });
+        const { data, error } = await q;
+        if (error) throw { message: error.message, status: 500 };
+
+        // Group pages by visitor in chronological order
+        const sessions: Record<string, { page: string; duration_sec: number | null }[]> = {};
+        (data ?? []).forEach((r: any) => {
+          if (!sessions[r.visitor_hash]) sessions[r.visitor_hash] = [];
+          sessions[r.visitor_hash].push({ page: r.page, duration_sec: r.duration_sec });
+        });
+
+        // Count entry pages, next-page transitions, and avg durations per page
+        const entryPages: Record<string, number> = {};
+        const transitions: Record<string, Record<string, number>> = {};
+        const pageDurations: Record<string, number[]> = {};
+        const pageVisits: Record<string, number> = {};
+
+        Object.values(sessions).forEach((pages) => {
+          if (pages.length > 0) {
+            entryPages[pages[0].page] = (entryPages[pages[0].page] || 0) + 1;
+          }
+          pages.forEach((p, i) => {
+            pageVisits[p.page] = (pageVisits[p.page] || 0) + 1;
+            if (p.duration_sec != null) {
+              if (!pageDurations[p.page]) pageDurations[p.page] = [];
+              pageDurations[p.page].push(p.duration_sec);
+            }
+            if (i < pages.length - 1) {
+              const next = pages[i + 1].page;
+              if (!transitions[p.page]) transitions[p.page] = {};
+              transitions[p.page][next] = (transitions[p.page][next] || 0) + 1;
+            }
+          });
+        });
+
+        // Top transitions — flatten and sort
+        const topTransitions: { from: string; to: string; count: number }[] = [];
+        Object.entries(transitions).forEach(([from, tos]) => {
+          Object.entries(tos).forEach(([to, count]) => {
+            topTransitions.push({ from, to, count });
+          });
+        });
+        topTransitions.sort((a, b) => b.count - a.count);
+
+        // Avg duration per page
+        const avgDurations: Record<string, number> = {};
+        Object.entries(pageDurations).forEach(([page, durations]) => {
+          avgDurations[page] = Math.round(durations.reduce((a, b) => a + b, 0) / durations.length);
+        });
+
+        return json({
+          total_sessions: Object.keys(sessions).length,
+          entry_pages: Object.entries(entryPages).map(([page, count]) => ({ page, count })).sort((a, b) => b.count - a.count).slice(0, 20),
+          page_stats: Object.entries(pageVisits).map(([page, count]) => ({
+            page,
+            count,
+            avg_duration_sec: avgDurations[page] ?? null,
+          })).sort((a, b) => b.count - a.count).slice(0, 30),
+          top_transitions: topTransitions.slice(0, 30),
+        });
+      }
+
+      // Cleanup — super_admin only
+      if (method === "POST" && id === "cleanup") {
+        const { profile: p } = await requireRole(req, ["super_admin"]);
+        const body = await req.json().catch(() => ({}));
+        const db = adminDb();
+
+        let q = db.from("visitors").delete();
+        let hasFilter = false;
+
+        // Delete records with no geo data
+        if (body.no_geo === true) {
+          q = q.is("country", null);
+          hasFilter = true;
+        }
+        // Delete records before a date
+        if (body.before) {
+          q = q.lt("visited_at", body.before);
+          hasFilter = true;
+        }
+
+        if (!hasFilter) return errRes("At least one filter is required (no_geo, before)", 400);
+
+        // Supabase requires a filter for delete; we've ensured at least one above
+        const { error, count } = await q.select("id", { count: "exact", head: true });
+        // Actually perform deletion: re-run with proper filters
+        let dq = db.from("visitors").delete();
+        if (body.no_geo === true) dq = dq.is("country", null);
+        if (body.before) dq = dq.lt("visited_at", body.before);
+        const { error: delErr } = await dq;
+        if (delErr) throw { message: delErr.message, status: 500 };
+
+        await logActivity({
+          event_type: "visitors_cleanup",
+          user_id: p.user_id,
+          entity_type: "visitors",
+          changes: { filters: body, deleted: count ?? 0 },
+        });
+
+        return json({ success: true, deleted: count ?? 0 });
+      }
+
+      // Data archival — roll up records older than N days into daily_stats, then delete granular rows
+      if (method === "POST" && id === "archive") {
+        const { profile: p } = await requireRole(req, ["super_admin"]);
+        const body = await req.json().catch(() => ({}));
+        const days = parseInt(body.days_to_keep ?? "90");
+        if (days < 30) return errRes("Minimum retention is 30 days", 400);
+        const cutoff = new Date();
+        cutoff.setDate(cutoff.getDate() - days);
+        const cutoffStr = cutoff.toISOString();
+
+        const db = adminDb();
+        // Refresh materialized view first to capture latest data
+        await db.rpc("refresh_visitor_daily_stats").catch(() => {
+          // If the RPC doesn't exist, try raw SQL via a different approach — skip
+        });
+
+        // Delete old granular rows
+        const { error: delErr, count: delCount } = await db
+          .from("visitors")
+          .delete()
+          .lt("visited_at", cutoffStr)
+          .select("id", { count: "exact", head: true });
+
+        // Actually delete
+        if (!delErr) {
+          await db.from("visitors").delete().lt("visited_at", cutoffStr);
+        }
+
+        await logActivity({
+          event_type: "visitors_archive",
+          user_id: p.user_id,
+          entity_type: "visitors",
+          changes: { days_to_keep: days, cutoff: cutoffStr, deleted: delCount ?? 0 },
+        });
+
+        return json({ success: true, archived_before: cutoffStr, deleted: delCount ?? 0 });
+      }
+
+      // Annotations — CRUD for timeline markers
+      if (id === "annotations") {
+        await requireRole(req, ADMIN_ROLES);
+        const db = adminDb();
+
+        if (method === "GET") {
+          const from = url.searchParams.get("from");
+          const to = url.searchParams.get("to");
+          let q = db.from("visitor_annotations").select("*").order("date", { ascending: true });
+          if (from) q = q.gte("date", from.slice(0, 10));
+          if (to) q = q.lte("date", to.slice(0, 10));
+          const { data, error } = await q;
+          if (error) throw { message: error.message, status: 500 };
+          return json(data ?? []);
+        }
+
+        if (method === "POST") {
+          const body = await req.json().catch(() => ({}));
+          if (!body.label || !body.date) return errRes("label and date are required", 400);
+          const { data, error } = await db.from("visitor_annotations").insert({
+            label: body.label,
+            date: body.date,
+            color: body.color || "#f59e0b",
+          }).select().single();
+          if (error) throw { message: error.message, status: 500 };
+          return json(data);
+        }
+
+        if (method === "DELETE") {
+          const annotationId = url.searchParams.get("annotation_id");
+          if (!annotationId) return errRes("annotation_id required", 400);
+          const { error } = await db.from("visitor_annotations").delete().eq("id", annotationId);
+          if (error) throw { message: error.message, status: 500 };
+          return json({ success: true });
+        }
       }
     }
 

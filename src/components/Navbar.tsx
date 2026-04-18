@@ -5,7 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { businessInfo } from "@/data/siteData";
 import ThemeToggle from "@/components/ThemeToggle";
-import logo from "@/assets/logo.png";
+import Logo from "@/assets/Logo";
 
 const navLinks = [
   { to: "/", label: "Home" },
@@ -40,18 +40,8 @@ const Navbar = () => {
       }`}
     >
       <div className="container flex h-16 items-center justify-between">
-        <Link to="/" className="flex items-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary p-0.5">
-            <img src={logo} alt="Shifas Mainland Healthcare" width={64} height={64} className="h-full w-full object-contain" />
-          </div>
-          <div className="flex flex-col leading-tight">
-            <span className="font-display text-sm font-bold uppercase tracking-wide text-foreground">
-              Shifa's Mainland
-            </span>
-            <span className="font-display text-xs font-semibold uppercase tracking-wider text-primary">
-              Healthcare
-            </span>
-          </div>
+        <Link to="/" className="flex items-center">
+          <Logo variant="flat" className="h-14 rounded-lg" />
         </Link>
 
         <nav className="hidden items-center gap-1 md:flex">

@@ -78,7 +78,7 @@ const Index = () => {
   const isMobile = useIsMobile();
   const testsQuery = useTests({ limit: 12 });
   const allTestsQuery = useTests();
-  const doctorsQuery = useDoctors(3);
+  const doctorsQuery = useDoctors();
   const packagesQuery = usePackages();
   const categoriesQuery = useCategories();
   const faqsQuery = useFaqs(true);
@@ -830,9 +830,9 @@ const Index = () => {
                 <div className="container">
                   <SectionHeading title="Our Expert Doctors" subtitle="Meet our team of qualified healthcare professionals" />
                   {doctorsQuery.isLoading ? (
-                    <div className="grid gap-6 sm:grid-cols-3 max-w-3xl mx-auto">
-                      {Array.from({ length: 3 }).map((_, i) => (
-                        <div key={i} className="overflow-hidden rounded-xl border border-border bg-card text-center">
+                    <HorizontalScroll autoScroll>
+                      {Array.from({ length: 4 }).map((_, i) => (
+                        <div key={i} className="w-[260px] flex-shrink-0 snap-start overflow-hidden rounded-xl border border-border bg-card text-center">
                           <Skeleton className="aspect-square w-full" />
                           <div className="p-4 space-y-2">
                             <Skeleton className="h-4 w-32 mx-auto" />
@@ -841,12 +841,12 @@ const Index = () => {
                           </div>
                         </div>
                       ))}
-                    </div>
+                    </HorizontalScroll>
                   ) : (
-                    <div className={`grid gap-6 max-w-3xl mx-auto ${(() => { const docs = (doctorsQuery.data ?? []).filter((d: any) => d.is_active !== false); const len = docs.length; return len >= 3 ? "sm:grid-cols-3" : len === 1 ? "grid-cols-1 place-items-center" : "sm:grid-cols-2 justify-items-center"; })()}`}>
+                    <HorizontalScroll autoScroll>
                       {(doctorsQuery.data ?? []).filter((d: any) => d.is_active !== false).map((d: any, i: number) => (
                         <motion.div key={d.id} initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={i}
-                          className="overflow-hidden rounded-xl border border-border bg-card text-center card-shadow transition-all hover:card-shadow-hover hover:scale-[1.02] w-full max-w-[280px]">
+                          className="w-[260px] flex-shrink-0 snap-start overflow-hidden rounded-xl border border-border bg-card text-center card-shadow transition-all hover:card-shadow-hover hover:scale-[1.02]">
                           {d.profile_image && <img src={d.profile_image} alt={d.name} className="aspect-square w-full object-cover" loading="lazy" />}
                           <div className="p-4">
                             <h3 className="font-display text-base font-semibold text-foreground">{d.name}</h3>
@@ -856,7 +856,7 @@ const Index = () => {
                           </div>
                         </motion.div>
                       ))}
-                    </div>
+                    </HorizontalScroll>
                   )}
                 </div>
               </section>

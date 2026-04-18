@@ -73,7 +73,7 @@ export const organizationSchema = {
   name: businessInfo.name,
   alternateName: "Wellness Andaman",
   url: SITE_URL,
-  logo: `${SITE_URL}/logo.png`,
+  logo: `${SITE_URL}/favicon-96x96.png`,
   contactPoint: {
     "@type": "ContactPoint",
     telephone: businessInfo.phone,

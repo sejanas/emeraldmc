@@ -151,12 +151,21 @@ CREATE TABLE IF NOT EXISTS public.site_settings (
 CREATE TABLE IF NOT EXISTS public.visitors (
   id         uuid        DEFAULT gen_random_uuid() PRIMARY KEY,
   ip_hash    text,
+  visitor_hash text,
   user_agent text,
   page       text        NOT NULL DEFAULT '/',
   referrer   text,
   city       text,
   region     text,
   country    text,
+  is_bot     boolean     NOT NULL DEFAULT false,
+  utm_source text,
+  utm_medium text,
+  utm_campaign text,
+  duration_sec smallint,
+  persistent_id text,
+  screen_width  smallint,
+  screen_height smallint,
   visited_at timestamptz NOT NULL DEFAULT now()
 );
 
@@ -685,6 +694,9 @@ ALTER TABLE public.visitors ADD COLUMN IF NOT EXISTS city text;
 ALTER TABLE public.visitors ADD COLUMN IF NOT EXISTS region text;
 ALTER TABLE public.visitors ADD COLUMN IF NOT EXISTS country text;
 
+-- ── 20260413100000_add_visitor_hash.sql ──────────────────
+ALTER TABLE public.visitors ADD COLUMN IF NOT EXISTS visitor_hash text;
+
 -- ── 20260308071848_994f6354-364f-4b1b-b45b-9fdc7b6816b5.sql ──────────────────
 ALTER TABLE public.user_profiles 
   ADD COLUMN IF NOT EXISTS decline_reason text,
@@ -1015,3 +1027,79 @@ CREATE POLICY "Allow admin delete sub_tests"
   ON sub_tests FOR DELETE
   USING (true);
 
+
+-- ── 20260413200000_visitor_indexes_and_is_bot.sql ──────────────────
+-- Phase 1: Performance indexes for visitors table
+CREATE INDEX IF NOT EXISTS idx_visitors_ip_hash ON public.visitors (ip_hash);
+CREATE INDEX IF NOT EXISTS idx_visitors_visited_at ON public.visitors (visited_at DESC);
+CREATE INDEX IF NOT EXISTS idx_visitors_country ON public.visitors (country);
+CREATE INDEX IF NOT EXISTS idx_visitors_page ON public.visitors (page);
+CREATE INDEX IF NOT EXISTS idx_visitors_visitor_hash ON public.visitors (visitor_hash);
+
+-- Phase 2: Bot tracking column — bots still recorded, filtered at query time
+ALTER TABLE public.visitors ADD COLUMN IF NOT EXISTS is_bot boolean NOT NULL DEFAULT false;
+CREATE INDEX IF NOT EXISTS idx_visitors_is_bot ON public.visitors (is_bot);
+
+
+-- -- 20260413300000_utm_duration_and_daily_stats.sql --------------
+ALTER TABLE public.visitors ADD COLUMN IF NOT EXISTS utm_source text;
+ALTER TABLE public.visitors ADD COLUMN IF NOT EXISTS utm_medium text;
+ALTER TABLE public.visitors ADD COLUMN IF NOT EXISTS utm_campaign text;
+ALTER TABLE public.visitors ADD COLUMN IF NOT EXISTS duration_sec smallint;
+CREATE INDEX IF NOT EXISTS idx_visitors_utm_source ON public.visitors (utm_source) WHERE utm_source IS NOT NULL;
+
+CREATE MATERIALIZED VIEW IF NOT EXISTS public.visitor_daily_stats AS
+SELECT
+  (visited_at AT TIME ZONE 'UTC')::date AS day,
+  country,
+  page,
+  COALESCE(utm_source, 'direct') AS utm_source,
+  count(*) AS visits,
+  count(DISTINCT visitor_hash) AS unique_visitors,
+  round(avg(duration_sec) FILTER (WHERE duration_sec IS NOT NULL))::int AS avg_duration_sec,
+  count(*) FILTER (WHERE is_bot) AS bot_count
+FROM public.visitors
+GROUP BY 1, 2, 3, 4;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_vds_day_country_page_utm
+  ON public.visitor_daily_stats (day, country, page, utm_source);
+CREATE INDEX IF NOT EXISTS idx_vds_day ON public.visitor_daily_stats (day);
+
+
+-- ── 20260413400000_visitor_persistent_screen_annotations_cron.sql ──────────────────
+-- Returning visitor detection
+ALTER TABLE public.visitors ADD COLUMN IF NOT EXISTS persistent_id text;
+CREATE INDEX IF NOT EXISTS idx_visitors_persistent_id ON public.visitors (persistent_id) WHERE persistent_id IS NOT NULL;
+
+-- Screen resolution tracking
+ALTER TABLE public.visitors ADD COLUMN IF NOT EXISTS screen_width smallint;
+ALTER TABLE public.visitors ADD COLUMN IF NOT EXISTS screen_height smallint;
+
+-- Timeline annotations table
+CREATE TABLE IF NOT EXISTS public.visitor_annotations (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  label text NOT NULL,
+  date date NOT NULL,
+  color text NOT NULL DEFAULT '#ef4444',
+  created_by uuid REFERENCES auth.users(id),
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.visitor_annotations ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Admins manage annotations" ON public.visitor_annotations;
+CREATE POLICY "Admins manage annotations" ON public.visitor_annotations
+  FOR ALL USING (has_role(auth.uid(), 'admin'::app_role))
+  WITH CHECK (has_role(auth.uid(), 'admin'::app_role));
+
+-- pg_cron: hourly refresh of materialized view
+-- NOTE: Enable pg_cron extension from Supabase Dashboard > Database > Extensions first
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') THEN
+    PERFORM cron.schedule(
+      'refresh-visitor-daily-stats',
+      '0 * * * *',
+      'REFRESH MATERIALIZED VIEW CONCURRENTLY public.visitor_daily_stats'
+    );
+  END IF;
+END $$;
