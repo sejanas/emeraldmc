@@ -4,7 +4,7 @@ import { Phone, Mail, Clock, MapPin, Facebook, Instagram } from "lucide-react";
 import { businessInfo } from "@/data/siteData";
 import VisitorTracker from "@/components/VisitorTracker";
 import useCategories from "@/hooks/useCategories";
-import logo from "@/assets/logo.png";
+import Logo from "@/assets/Logo";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 16 },
@@ -23,14 +23,8 @@ const Footer = () => {
       <div className="container py-14">
         <div className="grid gap-10 md:grid-cols-4">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={0}>
-            <Link to="/" className="flex items-center gap-3 group">
-              <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-primary p-1 transition-transform group-hover:scale-110">
-                <img src={logo} alt="Shifa's Mainland Healthcare" width={64} height={64} className="h-full w-full object-contain" />
-              </div>
-              <div className="flex flex-col leading-tight">
-                <span className="font-display text-base font-bold uppercase tracking-wide">Shifa's Mainland</span>
-                <span className="font-display text-sm font-semibold uppercase tracking-wider text-primary">Healthcare</span>
-              </div>
+            <Link to="/" className="flex items-center group">
+              <Logo variant="flat" className="h-16 rounded-xl transition-transform group-hover:scale-105" />
             </Link>
             <p className="mt-2 text-xs font-medium text-primary/80 italic">Bringing World Class Care to the Islands</p>
             <p className="mt-0.5 text-xs text-muted-foreground">(A Unit of Emerald Medical Care)</p>

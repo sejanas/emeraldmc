@@ -1,11 +1,31 @@
-const Logo = ({ fg = "blue", bg = "white" }) => {
+/**
+ * Theme-aware SVG logo.
+ *
+ * @param {"filled"|"flat"} variant
+ *   "filled" – primary-coloured background, white foreground (use inside cards / nav)
+ *   "flat"   – transparent background, primary-coloured foreground (use on light surfaces)
+ * @param {string} className  – forwarded to the <svg> element (size via Tailwind, e.g. "h-10 w-10")
+ */
+const Logo = ({ variant = "filled", className = "" }) => {
+  const isFilled = variant === "filled";
+
+  // "filled": bg = primary, text = primary-foreground (white), cutouts = primary
+  // "flat":   bg = transparent, text = primary, cutouts = background
+  const svgFill = isFilled ? "hsl(var(--primary))" : "transparent";
+  const fgColor = isFilled ? "hsl(var(--primary-foreground))" : "hsl(var(--primary))";
+  const bgColor = isFilled ? "hsl(var(--primary))" : "hsl(var(--background))";
+
   return (
-    <svg width="1200" height="457" viewBox="0 0 1200 457" fill="red" xmlns="http://www.w3.org/2000/svg" 
-    style={{
-        color: fg,        // for currentColor
-        "--bg": bg        // for var(--bg)
-      }}>
-<g clip-path="url(#clip0_1_2)">
+    <svg
+      viewBox="0 0 1200 457"
+      fill={svgFill}
+      xmlns="http://www.w3.org/2000/svg"
+      role="img"
+      aria-label="Shifa's Mainland Healthcare"
+      className={className}
+      style={{ color: fgColor, "--bg": bgColor, border: isFilled ? "none" : `1px solid ${fgColor}` }}
+    >
+<g clipPath="url(#clip0_1_2)">
 <path d="M0 0H1200V457H0V0Z"/>
 <path d="M237.54 100.55C242.413 103.29 274.164 134.069 279.869 139.663C288.363 133.13 305.006 116.181 313.372 108.075C349.919 142.063 386.272 177.403 423.165 210.868L409.983 210.906C402.596 204.878 391.405 193.665 384.152 186.828L337.819 143.303C330.696 136.601 320.626 126.689 313.129 120.84C296.254 136.714 279.532 152.75 262.965 168.946C268.341 174.272 273.73 179.73 279.391 184.741C287.78 177.908 305.065 160.808 313.132 152.966C319.818 158.311 328.669 166.94 335.234 172.994C348.923 185.693 362.693 198.305 376.542 210.829C372.159 210.935 367.443 210.839 363.032 210.833C347.879 197.872 328.31 176.755 313.056 165.35C308.215 169.559 304.136 173.701 299.615 178.256C304.645 183.211 311.333 188.744 316.748 193.45L336.201 210.804C331.792 210.903 327.05 210.828 322.614 210.831C313.944 203.308 301.368 191.231 292.633 184.645L279.356 197.316L253.433 172.67C248.582 168.08 241.956 161.497 236.817 157.62C231.295 163.421 223.747 170.265 217.867 175.892L181.495 210.859C177.063 210.941 172.312 210.85 167.854 210.838C190.779 190.209 214.952 166.577 237.059 145.034C243.434 150.707 249.681 156.524 255.796 162.478C260.256 159.725 269.491 150.266 273.739 146.096C264.472 137.297 247.308 120.203 237.63 112.749L137.957 210.891L124.4 210.831C162.608 174.862 199.496 136.665 237.54 100.55Z" fill="currentColor"/>
 <path d="M983.912 182.277C996.645 181.28 1023.02 180.493 1032.62 189.481C1046.16 202.169 1045.96 227.3 1033.91 241.414C1021.42 252.747 1000.27 250.058 983.76 249.722L983.912 182.277Z" fill="currentColor"/>
@@ -91,3 +111,5 @@ const Logo = ({ fg = "blue", bg = "white" }) => {
     </svg>
   );
 };
+
+export default Logo;

@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, CheckCircle } from "lucide-react";
 import { forgotPassword } from "@/lib/auth";
-import loginLogo from "@/assets/logo.png";
+import Logo from "@/assets/Logo";
 
 const AdminForgotPassword = () => {
   const { toast } = useToast();
@@ -50,9 +50,7 @@ const AdminForgotPassword = () => {
     <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
       <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-5 rounded-xl border border-border bg-card p-8 card-shadow">
         <div className="text-center">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary p-0.5">
-            <img src={loginLogo} alt="Admin" width={48} height={48} className="h-full w-full object-contain" />
-          </div>
+          <Logo variant="filled" className="mx-auto mb-3 h-16 rounded-xl" />
           <h1 className="font-display text-2xl font-bold text-foreground">Forgot Password</h1>
           <p className="mt-1 text-sm text-muted-foreground">Enter your email to receive a reset link</p>
         </div>

@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { api } from "@/lib/api";
-import loginLogo from "@/assets/logo.png";
+import Logo from "@/assets/Logo";
 
 const PASSWORD_RULES = [
   { test: (p: string) => p.length >= 8, label: "At least 8 characters" },
@@ -63,9 +63,7 @@ const AdminResetPassword = () => {
     return (
       <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
         <div className="w-full max-w-sm rounded-xl border border-border bg-card p-8 card-shadow text-center space-y-4">
-          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-primary p-0.5">
-            <img src={loginLogo} alt="Admin" width={48} height={48} className="h-full w-full object-contain" />
-          </div>
+          <Logo variant="filled" className="mx-auto h-16 rounded-xl" />
           <h1 className="font-display text-2xl font-bold text-foreground">Reset Password</h1>
           <p className="text-sm text-muted-foreground">Verifying your reset link…</p>
           <div className="mx-auto h-6 w-6 animate-spin rounded-full border-4 border-primary border-t-transparent" />
@@ -84,9 +82,7 @@ const AdminResetPassword = () => {
     <div className="flex min-h-screen items-center justify-center bg-muted/30 p-4">
       <form onSubmit={handleSubmit} className="w-full max-w-sm space-y-5 rounded-xl border border-border bg-card p-8 card-shadow">
         <div className="text-center">
-          <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary p-0.5">
-            <img src={loginLogo} alt="Admin" width={48} height={48} className="h-full w-full object-contain" />
-          </div>
+          <Logo variant="filled" className="mx-auto mb-3 h-12 w-12 rounded-xl" />
           <h1 className="font-display text-2xl font-bold text-foreground">Set New Password</h1>
           <p className="mt-1 text-sm text-muted-foreground">Choose a strong password for your account</p>
         </div>
