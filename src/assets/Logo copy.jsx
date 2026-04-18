@@ -1,6 +1,6 @@
 const Logo = ({ fg = "blue", bg = "white" }) => {
   return (
-    <svg width="1200" height="457" viewBox="0 0 1200 457" fill="red" xmlns="http://www.w3.org/2000/svg" 
+    <svg width="1200" height="457" viewBox="0 0 1200 457" fill={bg} xmlns="http://www.w3.org/2000/svg" 
     style={{
         color: fg,        // for currentColor
         "--bg": bg        // for var(--bg)
