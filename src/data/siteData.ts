@@ -7,7 +7,7 @@ export const businessInfo = {
   shortName: "SMH",
   phone: "+91 7679348684",
   email: "shifasmainlandhealthcare@gmail.com",
-  hours: "Everyday 6:00 AM – 7:00 PM",
+  hours: "Mon–Sat: 6:00 AM – 6:00 PM\nSun: 6:00 AM – 1:00 PM",
   address: "Sri Vijaya Puram, Andaman & Nicobar Islands",
   mapUrl: "https://maps.app.goo.gl/vrTQeqAnwLRzwukD7",
   mapEmbed: "https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3907.123456!2d92.7365!3d11.6234!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2sSri+Vijaya+Puram!5e0!3m2!1sen!2sin!4v1234567890",

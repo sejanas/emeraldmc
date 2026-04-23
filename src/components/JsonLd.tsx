@@ -24,7 +24,7 @@ const defaultSchema = {
     latitude: "11.6234",
     longitude: "92.7365",
   },
-  openingHours: "Mo-Su 06:00-19:00",
+  openingHours: ["Mo-Sa 06:00-18:00", "Su 06:00-13:00"],
   url: SITE_URL,
   medicalSpecialty: ["Pathology", "Clinical Laboratory"],
   priceRange: "₹100 - ₹5000",
