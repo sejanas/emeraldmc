@@ -387,21 +387,26 @@ async function crudCreate(
   req: Request,
   table: string,
   entityType: string,
-  nameField = "name"
+  nameField = "name",
+  hasSlug = true
 ) {
   const { user } = await requireRole(req, ADMIN_ROLES);
   const body = await req.json();
   const { category_ids, ...rest } = body;
-  const slug =
-    rest.slug ||
-    (rest[nameField] || "")
-      .toLowerCase()
-      .replace(/\s+/g, "-")
-      .replace(/[^a-z0-9-]/g, "");
+
+  const insertData: Record<string, any> = { ...rest, created_by: user.id, updated_by: user.id };
+
+  if (hasSlug) {
+    insertData.slug = rest.slug ||
+      (rest[nameField] || "")
+        .toLowerCase()
+        .replace(/\s+/g, "-")
+        .replace(/[^a-z0-9-]/g, "");
+  }
 
   const { data, error } = await adminDb()
     .from(table)
-    .insert({ ...rest, slug, created_by: user.id, updated_by: user.id })
+    .insert(insertData)
     .select()
     .single();
   if (error) throw { message: error.message, status: 500 };
@@ -1793,6 +1798,7 @@ Deno.serve(async (req) => {
         entity: string;
         softDelete: boolean;
         nameField: string;
+        hasSlug?: boolean;
       }
     > = {
       doctors: {
@@ -1818,6 +1824,7 @@ Deno.serve(async (req) => {
         entity: "gallery",
         softDelete: true,
         nameField: "title",
+        hasSlug: false,
       },
       faqs: {
         table: "faqs",
@@ -1836,6 +1843,7 @@ Deno.serve(async (req) => {
         entity: "hero_slide",
         softDelete: true,
         nameField: "heading",
+        hasSlug: false,
       },
     };
 
@@ -1845,7 +1853,7 @@ Deno.serve(async (req) => {
         return await crudList(cfg.table, url, cfg.softDelete);
       if (method === "GET" && id) return await crudGet(cfg.table, id);
       if (method === "POST")
-        return await crudCreate(req, cfg.table, cfg.entity, cfg.nameField);
+        return await crudCreate(req, cfg.table, cfg.entity, cfg.nameField, cfg.hasSlug ?? true);
       if (method === "PUT" && id)
         return await crudUpdate(
           req,
