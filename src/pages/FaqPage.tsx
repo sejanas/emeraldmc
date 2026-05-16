@@ -23,7 +23,7 @@ const FaqPage = () => {
       <Breadcrumbs items={[{ label: "FAQs" }]} />
       <SectionHeading title="Frequently Asked Questions" subtitle="Find answers to common questions about our services" />
 
-      {error && <ErrorBox title="Failed to load FAQs" message={String(error)} onRetry={refetch} />}
+      {error && <ErrorBox title="Failed to load FAQs" message={error} onRetry={refetch} />}
 
       {isLoading && (
         <div className="max-w-2xl mx-auto space-y-3">
