@@ -1,5 +1,8 @@
 // API Edge Function — v3
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { z } from "https://esm.sh/zod@3.23.8";
+// HTML sanitization is implemented inline below (no npm DOM libs). isomorphic-dompurify /
+// JSDOM crash the Edge worker with "Cannot read properties of undefined (reading 'bind')".
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -26,6 +29,24 @@ function json(data: unknown, status = 200) {
 
 function errRes(message: string, status = 400) {
   return json({ error: message }, status);
+}
+
+/** Map low-level runtime errors to messages safe to show admins. */
+function humanizeApiError(message: string): string {
+  const lower = message.toLowerCase();
+  if (lower.includes("reading 'bind'") || lower.includes("jsdom")) {
+    return "Could not process announcement body HTML on the server. Save again; if it persists, redeploy the API edge function.";
+  }
+  return message;
+}
+
+function formatZodIssues(error: z.ZodError): string {
+  return error.errors
+    .map((e) => {
+      const path = e.path.length ? e.path.join(".") : "payload";
+      return `${path}: ${e.message}`;
+    })
+    .join("; ");
 }
 
 async function getAuthUser(req: Request) {
@@ -1561,6 +1582,737 @@ async function handleBlogsList(req: Request, url: URL) {
   return json(data);
 }
 
+// ── ANNOUNCEMENTS ──
+// Generalized, customizable announcement system. Replaces the hardcoded
+// VisitingDoctorModal. See src/lib/announcements/* for the client mirror.
+
+const ANN_PLACEMENTS = ["top_bar", "popup", "home_section", "corner_toast", "inline"] as const;
+const ANN_SEVERITIES = ["info", "notice", "warning", "critical"] as const;
+const ANN_DEVICES = ["mobile", "tablet", "desktop"] as const;
+const ANN_AUDIENCES = ["all", "new", "returning", "authenticated", "guest"] as const;
+const ANN_FREQ_STRATEGIES = ["always", "once_ever", "once_per_session", "once_per_day", "cooldown", "max_impressions"] as const;
+const ANN_TRIGGER_TYPES = ["on_load", "delay", "scroll_percent", "idle", "exit_intent", "route_match"] as const;
+const ANN_EVENT_TYPES = ["impression", "engagement", "click", "cta_primary", "cta_secondary", "dismiss", "auto_hide"] as const;
+
+const ANN_PLACEMENT_VARIANTS: Record<string, readonly string[]> = {
+  top_bar: ["slim_strip", "ticker"],
+  popup: ["center_modal"],
+  home_section: ["card"],
+  corner_toast: ["bottom_right", "bottom_left"],
+  inline: ["card"],
+};
+
+const annSafeUrlSchema = z
+  .string()
+  .refine((val) => {
+    if (!val) return true;
+    const lower = val.trim().toLowerCase();
+    if (lower.startsWith("javascript:") || lower.startsWith("data:") || lower.startsWith("vbscript:")) return false;
+    return val.startsWith("/") || val.startsWith("#") ||
+      lower.startsWith("https://") || lower.startsWith("http://") ||
+      lower.startsWith("mailto:") || lower.startsWith("tel:");
+  }, { message: "URL must be relative, https, http, mailto, or tel" })
+  .nullable()
+  .optional();
+
+const annTriggerSchema = z.object({
+  type: z.enum(ANN_TRIGGER_TYPES),
+  value: z.number().optional(),
+});
+
+const annPresentationSchema = z.record(z.string(), z.object({
+  variant: z.string().optional(),
+  layout: z.string().optional(),
+  size: z.string().optional(),
+  trigger: annTriggerSchema.optional(),
+  pages: z.array(z.string()).optional(),
+}));
+
+const annFrequencySchema = z.object({
+  strategy: z.enum(ANN_FREQ_STRATEGIES),
+  cooldown_hours: z.number().int().min(1).max(8760).optional(),
+  max_impressions: z.number().int().min(1).max(1000).optional(),
+});
+
+const annPageRulesSchema = z.object({
+  include: z.array(z.string()).optional(),
+  exclude: z.array(z.string()).optional(),
+});
+
+const annTimeWindowSchema = z.object({
+  start_time: z.string().regex(/^\d{2}:\d{2}$/),
+  end_time: z.string().regex(/^\d{2}:\d{2}$/),
+  timezone: z.string().min(1),
+  days_of_week: z.array(z.number().int().min(0).max(6)).optional(),
+}).nullable();
+
+const annThemeSchema = z.record(z.string(), z.any());
+
+const annWriteSchema = z.object({
+  type: z.string().min(1).max(50),
+  title: z.string().min(1).max(200),
+  body: z.string().max(5000).optional().default(""),
+  image_url: annSafeUrlSchema,
+  icon: z.string().max(50).nullable().optional(),
+  placements: z.array(z.enum(ANN_PLACEMENTS)).min(1),
+  presentation: annPresentationSchema.optional().default({}),
+  severity: z.enum(ANN_SEVERITIES).optional().default("info"),
+  priority: z.number().int().min(-1000).max(1000).optional().default(0),
+  exclusive: z.boolean().optional().default(false),
+  frequency: annFrequencySchema.optional().default({ strategy: "always" }),
+  trigger: annTriggerSchema.optional().default({ type: "on_load" }),
+  page_rules: annPageRulesSchema.optional().default({}),
+  devices: z.array(z.enum(ANN_DEVICES)).optional().default([...ANN_DEVICES]),
+  audience: z.array(z.enum(ANN_AUDIENCES)).optional().default(["all"]),
+  start_at: z.string().nullable().optional(),
+  end_at: z.string().nullable().optional(),
+  time_window: annTimeWindowSchema.optional(),
+  theme: annThemeSchema.optional().default({}),
+  primary_cta_label: z.string().max(100).nullable().optional(),
+  primary_cta_url: annSafeUrlSchema,
+  secondary_cta_label: z.string().max(100).nullable().optional(),
+  secondary_cta_url: annSafeUrlSchema,
+  metadata: z.record(z.string(), z.any()).optional().default({}),
+  dismissible: z.boolean().optional().default(true),
+  is_active: z.boolean().optional().default(true),
+  variant_group: z.string().max(50).nullable().optional(),
+});
+
+function validateAnnCrossFields(data: any): string | null {
+  if (data.start_at && data.end_at && new Date(data.start_at) >= new Date(data.end_at))
+    return "start_at must be before end_at";
+  for (const placement of data.placements ?? []) {
+    const variant = data.presentation?.[placement]?.variant;
+    if (variant && !ANN_PLACEMENT_VARIANTS[placement].includes(variant))
+      return `Invalid variant '${variant}' for placement '${placement}'`;
+  }
+  if (data.frequency?.strategy === "cooldown" && !data.frequency.cooldown_hours)
+    return "frequency.cooldown_hours required for 'cooldown'";
+  if (data.frequency?.strategy === "max_impressions" && !data.frequency.max_impressions)
+    return "frequency.max_impressions required for 'max_impressions'";
+  if (data.trigger?.type === "delay" && (data.trigger.value == null || data.trigger.value < 0))
+    return "trigger.value (ms) required for 'delay'";
+  if (data.trigger?.type === "scroll_percent") {
+    const v = data.trigger.value;
+    if (v == null || v < 5 || v > 95) return "trigger.value 5–95 required for 'scroll_percent'";
+  }
+  if (data.trigger?.type === "idle" && (data.trigger.value == null || data.trigger.value < 1))
+    return "trigger.value (s) required for 'idle'";
+  if (data.time_window) {
+    const [sh, sm] = data.time_window.start_time.split(":").map(Number);
+    const [eh, em] = data.time_window.end_time.split(":").map(Number);
+    if (sh * 60 + sm >= eh * 60 + em) return "time_window.start_time must be before end_time";
+  }
+  return null;
+}
+
+/** Deep-merge a DB row with a PATCH body so cross-field validation runs on the final shape. */
+function mergeAnnouncementRowForValidation(existing: Record<string, any>, patch: Record<string, any>): Record<string, any> {
+  const merged: Record<string, any> = { ...existing, ...patch };
+  merged.presentation = { ...(existing.presentation ?? {}), ...(patch.presentation ?? {}) };
+  merged.frequency = { ...(existing.frequency ?? {}), ...(patch.frequency ?? {}) };
+  merged.trigger = { ...(existing.trigger ?? {}), ...(patch.trigger ?? {}) };
+  merged.page_rules = { ...(existing.page_rules ?? {}), ...(patch.page_rules ?? {}) };
+  merged.theme = { ...(existing.theme ?? {}), ...(patch.theme ?? {}) };
+  merged.metadata = { ...(existing.metadata ?? {}), ...(patch.metadata ?? {}) };
+  if (patch.time_window !== undefined) merged.time_window = patch.time_window;
+  return merged;
+}
+
+const ANN_SANITIZE_ALLOWED_TAGS = new Set([
+  "p", "br", "strong", "b", "em", "i", "u", "s", "ul", "ol", "li", "a", "span",
+  "h2", "h3", "h4", "blockquote",
+]);
+const ANN_DANGEROUS_HREF = /^\s*(javascript|data|vbscript):/i;
+
+function annHrefAllowed(href: string): boolean {
+  const v = href.trim();
+  if (!v || ANN_DANGEROUS_HREF.test(v)) return false;
+  const lower = v.toLowerCase();
+  return (
+    v.startsWith("/") ||
+    v.startsWith("#") ||
+    lower.startsWith("https://") ||
+    lower.startsWith("http://") ||
+    lower.startsWith("mailto:") ||
+    lower.startsWith("tel:")
+  );
+}
+
+/** Deno Edge–safe HTML sanitizer (no JSDOM / no npm DOM dependencies). */
+function sanitizeAnnHtml(html: string): string {
+  if (!html || typeof html !== "string") return "";
+  let out = html.replace(/<!--[\s\S]*?-->/g, "");
+  out = out.replace(
+    /<\s*(script|style|iframe|object|embed|form|input|button|link|meta)\b[^>]*>[\s\S]*?<\/\s*\1\s*>/gi,
+    "",
+  );
+  out = out.replace(
+    /<\s*(script|style|iframe|object|embed|form|input|button|link|meta)\b[^>]*\/?\s*>/gi,
+    "",
+  );
+  out = out.replace(/<\/?([a-z][a-z0-9]*)\b([^>]*)\/?>/gi, (full, rawTag: string, rawAttrs: string) => {
+    const tag = rawTag.toLowerCase();
+    if (!ANN_SANITIZE_ALLOWED_TAGS.has(tag)) return "";
+    if (full.startsWith("</")) return `</${tag}>`;
+    if (tag === "br") return "<br>";
+    if (tag === "a") {
+      const hrefMatch = /href\s*=\s*("([^"]*)"|'([^']*)'|([^\s>]+))/i.exec(rawAttrs);
+      const href = (hrefMatch?.[2] ?? hrefMatch?.[3] ?? hrefMatch?.[4] ?? "").trim();
+      if (!annHrefAllowed(href)) return "";
+      const safeHref = href.replace(/"/g, "&quot;");
+      return `<a href="${safeHref}" rel="noopener noreferrer">`;
+    }
+    if (tag === "span") {
+      const classMatch = /class\s*=\s*"([^"]*)"/i.exec(rawAttrs);
+      if (classMatch) {
+        const safeClass = classMatch[1].replace(/[^a-zA-Z0-9_\-\s]/g, "");
+        return `<span class="${safeClass}">`;
+      }
+    }
+    return `<${tag}>`;
+  });
+  return out;
+}
+
+async function handleAnnouncementsList(req: Request, url: URL): Promise<Response> {
+  const db = adminDb();
+  const all = url.searchParams.get("all") === "1";
+  const includeArchived = url.searchParams.get("include_archived") === "1";
+  const statusParam = url.searchParams.get("status"); // draft|scheduled|live|paused|expired|archived|all
+  // Any admin-only view (?all=1, archived, or status filter) requires auth.
+  if (all || includeArchived || statusParam) await requireRole(req, ADMIN_ROLES);
+
+  const nowIso = new Date().toISOString();
+  let q = db.from("announcements").select("*");
+
+  if (statusParam) {
+    switch (statusParam) {
+      case "draft":
+        q = q
+          .is("deleted_at", null)
+          .is("published_at", null);
+        break;
+      case "scheduled":
+        q = q
+          .is("deleted_at", null)
+          .eq("is_active", true)
+          .not("published_at", "is", null)
+          .gt("start_at", nowIso);
+        break;
+      case "live":
+        q = q
+          .is("deleted_at", null)
+          .eq("is_active", true)
+          .not("published_at", "is", null)
+          .or(`start_at.is.null,start_at.lte.${nowIso}`)
+          .or(`end_at.is.null,end_at.gte.${nowIso}`);
+        break;
+      case "paused":
+        q = q
+          .is("deleted_at", null)
+          .eq("is_active", false)
+          .not("published_at", "is", null)
+          .or(`end_at.is.null,end_at.gte.${nowIso}`);
+        break;
+      case "expired":
+        q = q
+          .is("deleted_at", null)
+          .not("end_at", "is", null)
+          .lt("end_at", nowIso);
+        break;
+      case "archived":
+        q = q.not("deleted_at", "is", null);
+        break;
+      case "all":
+      default:
+        // "all" still excludes archived; admin uses ?include_archived=1 to see them.
+        q = q.is("deleted_at", null);
+        break;
+    }
+  } else if (all) {
+    if (!includeArchived) q = q.is("deleted_at", null);
+    // else: no filter on deleted_at → returns everything including archived.
+  } else {
+    q = q
+      .is("deleted_at", null)
+      .eq("is_active", true)
+      .or(`start_at.is.null,start_at.lte.${nowIso}`)
+      .or(`end_at.is.null,end_at.gte.${nowIso}`);
+  }
+
+  q = q.order("priority", { ascending: false }).order("created_at", { ascending: false });
+
+  const { data, error } = await q;
+  if (error) throw { message: error.message, status: 500 };
+  return json(data ?? []);
+}
+
+async function handleAnnouncementsVersion(): Promise<Response> {
+  const db = adminDb();
+  const { data, error } = await db
+    .from("announcements")
+    .select("updated_at")
+    .is("deleted_at", null)
+    .order("updated_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  if (error) throw { message: error.message, status: 500 };
+  return json({ version: data?.updated_at ?? null });
+}
+
+async function handleAnnouncementGet(req: Request, id: string): Promise<Response> {
+  const { data, error } = await adminDb()
+    .from("announcements")
+    .select("*")
+    .eq("id", id)
+    .is("deleted_at", null)
+    .single();
+  if (error || !data) throw { message: "Not found", status: 404 };
+
+  const now = Date.now();
+  const active = data.is_active === true;
+  const startOk = !data.start_at || new Date(data.start_at as string).getTime() <= now;
+  const endOk = !data.end_at || new Date(data.end_at as string).getTime() >= now;
+  const publiclyListable = active && startOk && endOk;
+  if (!publiclyListable) {
+    await requireRole(req, ADMIN_ROLES);
+  }
+
+  return json(data);
+}
+
+async function handleAnnouncementCreate(req: Request): Promise<Response> {
+  const { user } = await requireRole(req, ADMIN_ROLES);
+  const raw = await req.json();
+  const parsed = annWriteSchema.safeParse(raw);
+  if (!parsed.success) throw { message: formatZodIssues(parsed.error), status: 400 };
+  const cross = validateAnnCrossFields(parsed.data);
+  if (cross) throw { message: cross, status: 400 };
+
+  let sanitizedBody: string;
+  try {
+    sanitizedBody = sanitizeAnnHtml(parsed.data.body ?? "");
+  } catch {
+    throw { message: "Could not sanitize announcement body HTML", status: 400 };
+  }
+
+  const insertData = {
+    ...parsed.data,
+    body: sanitizedBody,
+    created_by: user.id,
+    updated_by: user.id,
+  };
+
+  const { data, error } = await adminDb()
+    .from("announcements")
+    .insert(insertData)
+    .select()
+    .single();
+  if (error) throw { message: error.message, status: 500 };
+
+  await logActivity({
+    event_type: "announcement.created",
+    user_id: user.id,
+    entity_type: "announcement",
+    entity_id: data.id,
+    entity_name: data.title,
+  });
+  return json(data, 201);
+}
+
+async function handleAnnouncementUpdate(req: Request, id: string): Promise<Response> {
+  const { user } = await requireRole(req, ADMIN_ROLES);
+  const raw = await req.json();
+  const parsed = annWriteSchema.partial().safeParse(raw);
+  if (!parsed.success) throw { message: formatZodIssues(parsed.error), status: 400 };
+
+  const { data: existing, error: loadErr } = await adminDb()
+    .from("announcements")
+    .select("*")
+    .eq("id", id)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (loadErr) throw { message: loadErr.message, status: 500 };
+  if (!existing) throw { message: "Not found", status: 404 };
+
+  const mergedForCheck = mergeAnnouncementRowForValidation(existing as Record<string, any>, parsed.data);
+  const cross = validateAnnCrossFields(mergedForCheck);
+  if (cross) throw { message: cross, status: 400 };
+
+  const updateData: Record<string, any> = {
+    ...parsed.data,
+    updated_by: user.id,
+  };
+  if (typeof parsed.data.body === "string") {
+    try {
+      updateData.body = sanitizeAnnHtml(parsed.data.body);
+    } catch {
+      throw { message: "Could not sanitize announcement body HTML", status: 400 };
+    }
+  }
+
+  // Lifecycle markers: keep status derivation consistent if the admin toggled
+  // `is_active` directly via the form instead of the lifecycle endpoints.
+  if (typeof parsed.data.is_active === "boolean") {
+    if (parsed.data.is_active === true && !(existing as Record<string, any>).published_at) {
+      updateData.published_at = new Date().toISOString();
+    }
+    if (parsed.data.is_active === false && (existing as Record<string, any>).is_active === true) {
+      updateData.paused_at = new Date().toISOString();
+    }
+  }
+
+  const { data, error } = await adminDb()
+    .from("announcements")
+    .update(updateData)
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw { message: error.message, status: 500 };
+
+  await logActivity({
+    event_type: "announcement.updated",
+    user_id: user.id,
+    entity_type: "announcement",
+    entity_id: id,
+    entity_name: data.title,
+  });
+  return json(data);
+}
+
+async function handleAnnouncementDelete(req: Request, id: string): Promise<Response> {
+  // Soft-archive: never hard-deletes. Sets deleted_at + is_active=false so the
+  // row drops out of public reads but can still be restored.
+  const { user } = await requireRole(req, ADMIN_ROLES);
+  const db = adminDb();
+  const { data: old } = await db.from("announcements").select("title").eq("id", id).single();
+  const { error } = await db
+    .from("announcements")
+    .update({ deleted_at: new Date().toISOString(), is_active: false, updated_by: user.id })
+    .eq("id", id);
+  if (error) throw { message: error.message, status: 500 };
+  await logActivity({
+    event_type: "announcement.archived",
+    user_id: user.id,
+    entity_type: "announcement",
+    entity_id: id,
+    entity_name: (old as any)?.title,
+  });
+  return json({ success: true });
+}
+
+// ── Lifecycle verbs ──────────────────────────────────────────────────────────
+// Status is derived (no enum column); these endpoints just flip the relevant
+// markers (`is_active`, `published_at`, `paused_at`, `deleted_at`).
+
+const ANN_LIFECYCLE_FIELDS = [
+  "type", "title", "body", "image_url", "icon",
+  "placements", "presentation",
+  "severity", "priority", "exclusive",
+  "frequency", "trigger",
+  "page_rules", "devices", "audience",
+  "start_at", "end_at", "time_window",
+  "theme",
+  "primary_cta_label", "primary_cta_url",
+  "secondary_cta_label", "secondary_cta_url",
+  "metadata", "dismissible", "variant_group",
+] as const;
+
+async function handleAnnouncementClone(req: Request, id: string): Promise<Response> {
+  const { user } = await requireRole(req, ADMIN_ROLES);
+  const db = adminDb();
+  const { data: existing, error: loadErr } = await db
+    .from("announcements")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  if (loadErr) throw { message: loadErr.message, status: 500 };
+  if (!existing) throw { message: "Not found", status: 404 };
+
+  const copy: Record<string, unknown> = {};
+  for (const field of ANN_LIFECYCLE_FIELDS) {
+    copy[field] = (existing as Record<string, unknown>)[field];
+  }
+  const baseTitle = String(existing.title ?? "Untitled");
+  copy.title = `Copy of ${baseTitle}`.slice(0, 200);
+  copy.is_active = false;
+  copy.published_at = null;
+  copy.paused_at = null;
+  copy.start_at = null;
+  copy.end_at = null;
+  copy.deleted_at = null;
+  copy.created_by = user.id;
+  copy.updated_by = user.id;
+
+  const { data, error } = await db
+    .from("announcements")
+    .insert(copy)
+    .select()
+    .single();
+  if (error) throw { message: error.message, status: 500 };
+
+  await logActivity({
+    event_type: "announcement.cloned",
+    user_id: user.id,
+    entity_type: "announcement",
+    entity_id: data.id,
+    entity_name: data.title,
+  });
+  return json(data, 201);
+}
+
+async function handleAnnouncementPause(req: Request, id: string): Promise<Response> {
+  const { user } = await requireRole(req, ADMIN_ROLES);
+  const db = adminDb();
+  const { data, error } = await db
+    .from("announcements")
+    .update({
+      is_active: false,
+      paused_at: new Date().toISOString(),
+      updated_by: user.id,
+    })
+    .eq("id", id)
+    .is("deleted_at", null)
+    .select()
+    .single();
+  if (error) throw { message: error.message, status: 500 };
+  if (!data) throw { message: "Not found", status: 404 };
+
+  await logActivity({
+    event_type: "announcement.paused",
+    user_id: user.id,
+    entity_type: "announcement",
+    entity_id: id,
+    entity_name: data.title,
+  });
+  return json(data);
+}
+
+function announcementRowToWriteShape(row: Record<string, unknown>) {
+  return {
+    type: row.type,
+    title: row.title,
+    body: row.body,
+    image_url: row.image_url,
+    icon: row.icon,
+    placements: row.placements,
+    presentation: row.presentation,
+    severity: row.severity,
+    priority: row.priority,
+    exclusive: row.exclusive,
+    frequency: row.frequency,
+    trigger: row.trigger,
+    page_rules: row.page_rules,
+    devices: row.devices,
+    audience: row.audience,
+    start_at: row.start_at,
+    end_at: row.end_at,
+    time_window: row.time_window,
+    theme: row.theme,
+    primary_cta_label: row.primary_cta_label,
+    primary_cta_url: row.primary_cta_url,
+    secondary_cta_label: row.secondary_cta_label,
+    secondary_cta_url: row.secondary_cta_url,
+    metadata: row.metadata,
+    dismissible: row.dismissible,
+    is_active: row.is_active,
+    variant_group: row.variant_group,
+  };
+}
+
+async function handleAnnouncementPublish(req: Request, id: string): Promise<Response> {
+  const { user } = await requireRole(req, ADMIN_ROLES);
+  const db = adminDb();
+  const { data: existing, error: loadErr } = await db
+    .from("announcements")
+    .select("*")
+    .eq("id", id)
+    .is("deleted_at", null)
+    .maybeSingle();
+  if (loadErr) throw { message: loadErr.message, status: 500 };
+  if (!existing) throw { message: "Not found", status: 404 };
+
+  const writeShape = announcementRowToWriteShape(existing as Record<string, unknown>);
+  const parsed = annWriteSchema.safeParse(writeShape);
+  if (!parsed.success) throw { message: `Cannot publish: ${formatZodIssues(parsed.error)}`, status: 400 };
+  const cross = validateAnnCrossFields(parsed.data);
+  if (cross) throw { message: `Cannot publish: ${cross}`, status: 400 };
+  if (!String(parsed.data.title ?? "").trim()) {
+    throw { message: "Cannot publish: title is required", status: 400 };
+  }
+  if (!parsed.data.placements?.length) {
+    throw { message: "Cannot publish: at least one placement is required", status: 400 };
+  }
+
+  const nowIso = new Date().toISOString();
+  const { data, error } = await db
+    .from("announcements")
+    .update({
+      is_active: true,
+      published_at: existing.published_at ?? nowIso,
+      paused_at: null,
+      updated_by: user.id,
+    })
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw { message: error.message, status: 500 };
+
+  await logActivity({
+    event_type: "announcement.published",
+    user_id: user.id,
+    entity_type: "announcement",
+    entity_id: id,
+    entity_name: data.title,
+  });
+  return json(data);
+}
+
+async function handleAnnouncementRestore(req: Request, id: string): Promise<Response> {
+  const { user } = await requireRole(req, ADMIN_ROLES);
+  const db = adminDb();
+  // Restore puts the row back into Draft (is_active=false) so the admin
+  // explicitly chooses when to republish. Original published_at/paused_at
+  // markers are preserved for audit.
+  const { data, error } = await db
+    .from("announcements")
+    .update({
+      deleted_at: null,
+      is_active: false,
+      updated_by: user.id,
+    })
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw { message: error.message, status: 500 };
+  if (!data) throw { message: "Not found", status: 404 };
+
+  await logActivity({
+    event_type: "announcement.restored",
+    user_id: user.id,
+    entity_type: "announcement",
+    entity_id: id,
+    entity_name: data.title,
+  });
+  return json(data);
+}
+
+const ANN_BULK_ACTIONS = ["pause", "publish", "archive", "restore"] as const;
+type AnnBulkAction = typeof ANN_BULK_ACTIONS[number];
+
+const annBulkSchema = z.object({
+  ids: z.array(z.string().uuid()).min(1).max(200),
+  action: z.enum(ANN_BULK_ACTIONS),
+});
+
+async function handleAnnouncementBulk(req: Request): Promise<Response> {
+  const { user } = await requireRole(req, ADMIN_ROLES);
+  const raw = await req.json().catch(() => null);
+  const parsed = annBulkSchema.safeParse(raw);
+  if (!parsed.success) throw { message: parsed.error.errors[0]?.message ?? "Invalid payload", status: 400 };
+
+  const { ids, action } = parsed.data;
+  const nowIso = new Date().toISOString();
+  const db = adminDb();
+
+  let patch: Record<string, unknown> = { updated_by: user.id };
+  let scope: "any" | "live" | "archived" = "any";
+
+  switch (action as AnnBulkAction) {
+    case "pause":
+      patch = { ...patch, is_active: false, paused_at: nowIso };
+      scope = "live";
+      break;
+    case "publish":
+      // For bulk publish we set published_at unconditionally to avoid a per-row
+      // round-trip; rows that were already published keep their original via
+      // COALESCE-style update through a follow-up step.
+      patch = { ...patch, is_active: true, paused_at: null };
+      scope = "live";
+      break;
+    case "archive":
+      patch = { ...patch, is_active: false, deleted_at: nowIso };
+      scope = "live";
+      break;
+    case "restore":
+      patch = { ...patch, deleted_at: null, is_active: false };
+      scope = "archived";
+      break;
+  }
+
+  let q = db.from("announcements").update(patch).in("id", ids);
+  if (scope === "live") q = q.is("deleted_at", null);
+  if (scope === "archived") q = q.not("deleted_at", "is", null);
+  const { data, error } = await q.select("id, title, published_at");
+  if (error) throw { message: error.message, status: 500 };
+
+  // Backfill published_at for any newly-published rows that didn't have it set.
+  if (action === "publish" && Array.isArray(data)) {
+    const needsPublishedAt = data.filter((r) => !r.published_at).map((r) => r.id);
+    if (needsPublishedAt.length > 0) {
+      await db
+        .from("announcements")
+        .update({ published_at: nowIso })
+        .in("id", needsPublishedAt);
+    }
+  }
+
+  await logActivity({
+    event_type: `announcement.bulk_${action}`,
+    user_id: user.id,
+    entity_type: "announcement",
+    entity_id: ids[0],
+    entity_name: `${ids.length} announcements`,
+  });
+
+  return json({ success: true, affected: data?.length ?? 0 });
+}
+
+// In-memory rate limit for analytics events. Simple and good enough at v1
+// (single function instance handles modest traffic; resets on cold start).
+const annEventBuckets = new Map<string, { count: number; resetAt: number }>();
+function annRateLimitOk(key: string, limit = 60, windowMs = 60_000): boolean {
+  const now = Date.now();
+  const b = annEventBuckets.get(key);
+  if (!b || b.resetAt < now) {
+    annEventBuckets.set(key, { count: 1, resetAt: now + windowMs });
+    return true;
+  }
+  if (b.count >= limit) return false;
+  b.count++;
+  return true;
+}
+
+const annEventSchema = z.object({
+  announcement_id: z.string().uuid(),
+  announcement_version: z.number().int(),
+  variant_group: z.string().nullable().optional(),
+  event_type: z.enum(ANN_EVENT_TYPES),
+  placement: z.enum(ANN_PLACEMENTS),
+  session_id: z.string().max(100).nullable().optional(),
+  user_id: z.string().uuid().nullable().optional(),
+  page_path: z.string().max(500).nullable().optional(),
+  device: z.enum(ANN_DEVICES).nullable().optional(),
+});
+
+async function handleAnnouncementEvent(req: Request): Promise<Response> {
+  // Rate limit by IP + session
+  const ip = req.headers.get("cf-connecting-ip") ?? req.headers.get("x-forwarded-for") ?? "anon";
+  const raw = await req.json().catch(() => null);
+  const parsed = annEventSchema.safeParse(raw);
+  if (!parsed.success) return errRes("Invalid event payload", 400);
+
+  const key = `${ip}:${parsed.data.session_id ?? "none"}`;
+  if (!annRateLimitOk(key)) return errRes("Rate limited", 429);
+
+  const { error } = await adminDb()
+    .from("announcement_events")
+    .insert(parsed.data);
+  if (error) return errRes(error.message, 500);
+  return json({ success: true }, 201);
+}
+
 // ── SETTINGS ──
 
 async function handleSettingsGet(url: URL) {
@@ -1789,6 +2541,23 @@ Deno.serve(async (req) => {
         throw { message: `Reorder not supported for table: ${body.table}`, status: 400 };
       return await handleReorder(req, body.table);
     }
+
+    // Announcements
+    if (resource === "announcements") {
+      if (method === "POST" && id === "bulk") return await handleAnnouncementBulk(req);
+      if (method === "GET" && id === "version") return await handleAnnouncementsVersion();
+      if (method === "GET" && !id) return await handleAnnouncementsList(req, url);
+      if (method === "POST" && id && sub === "clone") return await handleAnnouncementClone(req, id);
+      if (method === "POST" && id && sub === "pause") return await handleAnnouncementPause(req, id);
+      if (method === "POST" && id && sub === "publish") return await handleAnnouncementPublish(req, id);
+      if (method === "POST" && id && sub === "restore") return await handleAnnouncementRestore(req, id);
+      if (method === "GET" && id) return await handleAnnouncementGet(req, id);
+      if (method === "POST" && !id) return await handleAnnouncementCreate(req);
+      if (method === "PUT" && id) return await handleAnnouncementUpdate(req, id);
+      if (method === "DELETE" && id) return await handleAnnouncementDelete(req, id);
+    }
+    if (resource === "announcement-events" && method === "POST")
+      return await handleAnnouncementEvent(req);
 
     // Generic CRUD
     const crudConfig: Record<
@@ -2548,6 +3317,7 @@ ${urls.join("\n")}
 
     return errRes("Not found", 404);
   } catch (e: any) {
-    return json({ error: e.message ?? "Internal error" }, e.status ?? 500);
+    const raw = e?.message ?? "Internal error";
+    return json({ error: humanizeApiError(String(raw)) }, e?.status ?? 500);
   }
 });

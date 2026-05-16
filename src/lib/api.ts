@@ -30,14 +30,64 @@ async function request<T = any>(
   };
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const res = await fetch(`${BASE_URL}${path}`, {
-    method: options?.method ?? "GET",
-    headers,
-    body: options?.body ? JSON.stringify(options.body) : undefined,
-  });
+  const method = options?.method ?? "GET";
+  let res: Response;
+  try {
+    res = await fetch(`${BASE_URL}${path}`, {
+      method,
+      headers,
+      body: options?.body ? JSON.stringify(options.body) : undefined,
+    });
+  } catch (cause) {
+    const message = cause instanceof Error ? cause.message : "Failed to fetch";
+    const err = new Error(`Network error during ${method} ${path}: ${message}`) as Error & {
+      status?: number;
+      safeMessage?: string;
+      details?: string;
+      path?: string;
+      method?: string;
+      data?: unknown;
+      cause?: unknown;
+    };
+    err.status = 0;
+    err.safeMessage = "Unable to connect right now. Please check your internet connection and try again.";
+    err.path = path;
+    err.method = method;
+    err.details = "Could not reach edge function";
+    err.cause = cause;
+    throw err;
+  }
 
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || res.statusText);
+  if (!res.ok) {
+    const message =
+      (typeof data?.error === "string" && data.error) ||
+      (typeof data?.message === "string" && data.message) ||
+      res.statusText ||
+      "Request failed";
+    const err = new Error(message) as Error & {
+      status?: number;
+      safeMessage?: string;
+      details?: string;
+      path?: string;
+      data?: unknown;
+    };
+    err.status = res.status;
+    err.safeMessage =
+      res.status === 401 || res.status === 403
+        ? "You are not authorized to perform this action."
+        : res.status === 404
+          ? "The requested resource was not found."
+          : res.status === 429
+            ? "Too many requests. Please wait a moment and try again."
+            : res.status >= 500
+              ? "Server error. Please try again shortly."
+              : "We couldn't process your request right now. Please try again.";
+    err.path = path;
+    err.data = data;
+    if (typeof data?.details === "string") err.details = data.details;
+    throw err;
+  }
   return data as T;
 }
 

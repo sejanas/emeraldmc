@@ -25,6 +25,7 @@ const DEFAULT_SECTIONS: HomepageSection[] = [
   { key: "doctors", label: "Our Doctors", visible: true },
   { key: "testimonials", label: "Testimonials", visible: true },
   { key: "service_areas", label: "Service Areas", visible: true },
+  { key: "announcements", label: "Announcements", visible: true },
   { key: "faqs", label: "FAQs", visible: true },
   { key: "cta", label: "Call to Action", visible: true },
 ];

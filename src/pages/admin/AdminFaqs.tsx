@@ -68,7 +68,7 @@ const AdminFaqs = () => {
         {search && <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>}
       </div>
 
-      {error && <ErrorBox title="Failed to load FAQs" message={String(error)} onRetry={refetch} />}
+      {error && <ErrorBox title="Failed to load FAQs" message={error} onRetry={refetch} />}
 
       {isLoading ? (
         <div className="space-y-3">{Array.from({ length: 3 }).map((_, i) => <div key={i} className="h-12 bg-muted animate-pulse rounded" />)}</div>
