@@ -137,6 +137,43 @@ const METADATA_OPTIONS: Record<string, string[]> = {
   specialties: ["IVF & ICSI, PCOD / PCOS, Endometriosis, Recurrent IVF Failures, Fertility Preservation, Laparoscopic Surgery"],
 };
 
+function metadataSuggestionLabel(opt: string, fieldKey: string): string {
+  if (fieldKey === "specialties") return "Apply suggested specialty list";
+  if (fieldKey === "free_offer_message") return "Apply suggested message";
+  if (opt.length > 52) return `${opt.slice(0, 49)}…`;
+  return opt;
+}
+
+function MetadataSuggestionChips({
+  fieldKey,
+  options,
+  onSelect,
+}: {
+  fieldKey: string;
+  options: string[];
+  onSelect: (value: string) => void;
+}) {
+  if (options.length === 0) return null;
+  return (
+    <div className="rounded-md border border-dashed border-muted-foreground/25 bg-muted/30 px-2.5 py-2 space-y-1.5">
+      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Quick fill</p>
+      <div className="flex flex-wrap gap-1.5">
+        {options.map((opt) => (
+          <button
+            key={opt}
+            type="button"
+            title={opt}
+            onClick={() => onSelect(opt)}
+            className="inline-flex max-w-full items-center rounded-md bg-background/80 px-2 py-1 text-left text-xs font-medium text-primary shadow-sm ring-1 ring-primary/20 transition-colors hover:bg-primary/10 hover:ring-primary/40"
+          >
+            {metadataSuggestionLabel(opt, fieldKey)}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 const LOOK_PRESETS = [
   {
     key: "clinical_clean",
@@ -184,6 +221,126 @@ const LOOK_PRESETS = [
       accent_color: "#16a34a",
       background_color: "#f0fdf4",
       text_color: "#14532d",
+    },
+  },
+  {
+    key: "emerald_brand",
+    label: "Emerald Brand",
+    description: "Signature green aligned with Emerald Medical Centre",
+    theme: {
+      badge_style: "soft",
+      layout_density: "comfortable",
+      accent_color: "#10b981",
+      background_color: "#ecfdf5",
+      text_color: "#064e3b",
+    },
+  },
+  {
+    key: "ocean_calm",
+    label: "Ocean Calm",
+    description: "Cool teal tones for reassuring, clinical messaging",
+    theme: {
+      badge_style: "outline",
+      layout_density: "comfortable",
+      accent_color: "#0d9488",
+      background_color: "#f0fdfa",
+      text_color: "#134e4a",
+    },
+  },
+  {
+    key: "warm_amber",
+    label: "Warm Amber",
+    description: "Friendly promotional warmth for camps and limited offers",
+    theme: {
+      badge_style: "solid",
+      layout_density: "comfortable",
+      accent_color: "#d97706",
+      background_color: "#fffbeb",
+      text_color: "#78350f",
+    },
+  },
+  {
+    key: "navy_professional",
+    label: "Navy Professional",
+    description: "Deep navy for authoritative, hospital-grade trust",
+    theme: {
+      badge_style: "outline",
+      layout_density: "comfortable",
+      accent_color: "#1e3a8a",
+      background_color: "#eff6ff",
+      text_color: "#1e293b",
+    },
+  },
+  {
+    key: "rose_womens_health",
+    label: "Rose Care",
+    description: "Soft rose palette for fertility and women's health",
+    theme: {
+      badge_style: "soft",
+      layout_density: "comfortable",
+      accent_color: "#db2777",
+      background_color: "#fdf2f8",
+      text_color: "#831843",
+    },
+  },
+  {
+    key: "indigo_trust",
+    label: "Indigo Trust",
+    description: "Balanced indigo for specialist visits and credibility",
+    theme: {
+      badge_style: "soft",
+      layout_density: "comfortable",
+      accent_color: "#4f46e5",
+      background_color: "#eef2ff",
+      text_color: "#312e81",
+    },
+  },
+  {
+    key: "slate_modern",
+    label: "Slate Modern",
+    description: "Neutral slate for minimal, modern announcements",
+    theme: {
+      badge_style: "outline",
+      layout_density: "compact",
+      accent_color: "#475569",
+      background_color: "#f8fafc",
+      text_color: "#0f172a",
+    },
+  },
+  {
+    key: "sunset_coral",
+    label: "Sunset Coral",
+    description: "Vibrant coral for high-energy campaigns and events",
+    theme: {
+      badge_style: "solid",
+      layout_density: "comfortable",
+      accent_color: "#ea580c",
+      background_color: "#fff7ed",
+      text_color: "#7c2d12",
+    },
+  },
+  {
+    key: "midnight_focus",
+    label: "Midnight Focus",
+    description: "Dark accent on light ground for bold contrast",
+    theme: {
+      badge_style: "solid",
+      layout_density: "compact",
+      accent_color: "#0f172a",
+      background_color: "#f1f5f9",
+      text_color: "#020617",
+    },
+  },
+  {
+    key: "lavender_gentle",
+    label: "Lavender Gentle",
+    description: "Soft lavender for calm, supportive patient communication",
+    theme: {
+      badge_style: "soft",
+      layout_density: "comfortable",
+      accent_color: "#7c3aed",
+      background_color: "#f5f3ff",
+      text_color: "#4c1d95",
     },
   },
 ] as const;
@@ -1627,65 +1784,54 @@ const AdminAnnouncements = () => {
               </TabsContent>
 
               <TabsContent value="theme" className="space-y-4 mt-0">
-                <div className="space-y-2 rounded-lg border p-3">
-                  <Label>Current data preview across selected placements</Label>
-                  <p className="text-xs text-muted-foreground">This shows how the same content adapts per placement with your selected Look.</p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {form.placements.map((p) => {
-                      const variant = form.presentation[p]?.variant ?? PLACEMENT_VARIANTS[p][0];
-                      return (
-                        <div key={`look-preview-${p}`} className="rounded-md border p-3 space-y-2">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] font-semibold uppercase text-muted-foreground">{p}</span>
-                            <span className="text-[10px] text-muted-foreground">{variant}</span>
-                          </div>
-                          <AnnouncementAdminPreview
-                            type={form.type}
-                            title={form.title}
-                            body={form.body}
-                            imageUrl={form.image_url}
-                            icon={form.icon}
-                            severity={form.severity}
-                            metadata={metadataObject}
-                            primaryCtaLabel={form.primary_cta_label}
-                            primaryCtaUrl={form.primary_cta_url}
-                            secondaryCtaLabel={form.secondary_cta_label}
-                            secondaryCtaUrl={form.secondary_cta_url}
-                            placement={p}
-                            variant={variant}
-                            theme={previewTheme}
-                            startAt={form.start_at ? new Date(form.start_at).toISOString() : undefined}
-                            endAt={form.end_at ? new Date(form.end_at).toISOString() : undefined}
-                          />
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
                 <div className="space-y-2">
                   <Label>Pick a Look</Label>
-                  <p className="text-xs text-muted-foreground">Choose a preset style. Each option includes a live sample using your current title/body/CTAs. Fine-grained color controls are available in Advanced.</p>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <p className="text-xs text-muted-foreground">Choose a color preset, then review stacked placement previews below. Fine-tune colors in Advanced.</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                     {LOOK_PRESETS.map((preset) => {
                       const selected =
                         form.theme.badge_style === preset.theme.badge_style &&
                         form.theme.layout_density === preset.theme.layout_density &&
-                        form.theme.accent_color === preset.theme.accent_color;
+                        form.theme.accent_color === preset.theme.accent_color &&
+                        form.theme.background_color === preset.theme.background_color;
                       return (
                         <button
                           key={preset.key}
                           type="button"
                           onClick={() => setForm((f) => ({ ...f, theme: { ...f.theme, ...preset.theme } }))}
-                          className={`rounded-lg border p-3 text-left transition-colors ${selected ? "border-primary bg-primary/5" : "hover:bg-muted/30"}`}
+                          className={`rounded-lg border p-3 text-left transition-colors ${selected ? "border-primary bg-primary/5 ring-1 ring-primary/30" : "hover:bg-muted/30"}`}
                         >
-                          <div className="font-medium text-sm">{preset.label}</div>
-                          <p className="text-xs text-muted-foreground mt-1">{preset.description}</p>
-                          <div className="mt-2 flex items-center gap-2">
-                            <span className="h-3 w-3 rounded-full border" style={{ backgroundColor: preset.theme.accent_color }} />
-                            <span className="text-[11px] text-muted-foreground">{preset.theme.badge_style} • {preset.theme.layout_density}</span>
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="font-medium text-sm">{preset.label}</div>
+                            <div className="flex shrink-0 -space-x-1" title="Accent, background, text">
+                              <span className="h-4 w-4 rounded-full border-2 border-background shadow-sm" style={{ backgroundColor: preset.theme.accent_color }} />
+                              <span className="h-4 w-4 rounded-full border-2 border-background shadow-sm" style={{ backgroundColor: preset.theme.background_color }} />
+                              <span className="h-4 w-4 rounded-full border-2 border-background shadow-sm" style={{ backgroundColor: preset.theme.text_color }} />
+                            </div>
                           </div>
-                          <div className="mt-3">
+                          <p className="text-xs text-muted-foreground mt-1">{preset.description}</p>
+                          <div className="mt-2">
+                            <span className="text-[11px] text-muted-foreground capitalize">{preset.theme.badge_style} badge · {preset.theme.layout_density}</span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {form.placements.length > 0 && (
+                  <div className="space-y-3 rounded-lg border p-3">
+                    <Label>Placement previews</Label>
+                    <p className="text-xs text-muted-foreground">Each selected placement with your current content and look.</p>
+                    <div className="flex flex-col gap-4">
+                      {form.placements.map((p) => {
+                        const variant = form.presentation[p]?.variant ?? PLACEMENT_VARIANTS[p][0];
+                        return (
+                          <div key={`look-preview-${p}`} className="rounded-md border p-3 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-semibold uppercase text-muted-foreground">{p.replace(/_/g, " ")}</span>
+                              <span className="text-[10px] text-muted-foreground">{variant}</span>
+                            </div>
                             <AnnouncementAdminPreview
                               type={form.type}
                               title={form.title}
@@ -1698,24 +1844,18 @@ const AdminAnnouncements = () => {
                               primaryCtaUrl={form.primary_cta_url}
                               secondaryCtaLabel={form.secondary_cta_label}
                               secondaryCtaUrl={form.secondary_cta_url}
-                              placement={form.placements[0] ?? "top_bar"}
-                              theme={{
-                                accent: preset.theme.accent_color,
-                                background: preset.theme.background_color,
-                                text: preset.theme.text_color,
-                                badgeStyle: preset.theme.badge_style,
-                                density: preset.theme.layout_density === "compact" ? "compact" : "comfortable",
-                              }}
+                              placement={p}
+                              variant={variant}
+                              theme={previewTheme}
                               startAt={form.start_at ? new Date(form.start_at).toISOString() : undefined}
                               endAt={form.end_at ? new Date(form.end_at).toISOString() : undefined}
-                              compact
                             />
                           </div>
-                        </button>
-                      );
-                    })}
+                        );
+                      })}
+                    </div>
                   </div>
-                </div>
+                )}
               </TabsContent>
 
               <TabsContent value="schedule" className="space-y-4 mt-0">
@@ -1952,15 +2092,11 @@ const AdminAnnouncements = () => {
                               onChange={(e) => setMetadataField(field.key, "text", e.target.value)}
                               placeholder={field.placeholder}
                             />
-                            {options.length > 0 && (
-                              <div className="flex flex-wrap gap-2">
-                                {options.map((opt) => (
-                                  <Button key={opt} type="button" size="sm" variant="outline" onClick={() => setMetadataField(field.key, "text", opt)}>
-                                    Use suggested text
-                                  </Button>
-                                ))}
-                              </div>
-                            )}
+                            <MetadataSuggestionChips
+                              fieldKey={field.key}
+                              options={options}
+                              onSelect={(opt) => setMetadataField(field.key, "text", opt)}
+                            />
                           </div>
                         );
                       }
@@ -1974,15 +2110,11 @@ const AdminAnnouncements = () => {
                               onChange={(e) => setMetadataField(field.key, field.type, e.target.value)}
                               placeholder={field.placeholder}
                             />
-                            {options.length > 0 && (
-                              <div className="flex flex-wrap gap-2">
-                                {options.map((opt) => (
-                                  <Button key={opt} type="button" size="sm" variant="outline" onClick={() => setMetadataField(field.key, field.type, opt)}>
-                                    Use suggested list
-                                  </Button>
-                                ))}
-                              </div>
-                            )}
+                            <MetadataSuggestionChips
+                              fieldKey={field.key}
+                              options={options}
+                              onSelect={(opt) => setMetadataField(field.key, field.type, opt)}
+                            />
                           </div>
                         );
                       }
@@ -1996,55 +2128,63 @@ const AdminAnnouncements = () => {
                             onChange={(e) => setMetadataField(field.key, field.type, e.target.value)}
                             placeholder={field.placeholder}
                           />
-                          {options.length > 0 && (
-                            <div className="flex flex-wrap gap-2">
-                              {options.map((opt) => (
-                                <Button key={opt} type="button" size="sm" variant="outline" onClick={() => setMetadataField(field.key, field.type, opt)}>
-                                  {opt}
-                                </Button>
-                              ))}
-                            </div>
-                          )}
+                          <MetadataSuggestionChips
+                            fieldKey={field.key}
+                            options={options}
+                            onSelect={(opt) => setMetadataField(field.key, field.type, opt)}
+                          />
                         </div>
                       );
                     })}
                   </div>
                 )}
 
-                <div className="space-y-2">
-                  <div className="flex items-center gap-1.5"><Label>Metadata JSON (advanced)</Label><InfoDot text="Raw metadata object. Structured fields above update this automatically." /></div>
-                  <Textarea
-                    rows={10}
-                    className="font-mono text-xs"
-                    value={form.metadataJson}
-                    onChange={(e) => setForm({ ...form, metadataJson: e.target.value })}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <Label>Generated Full Announcement JSON</Label>
-                      <InfoDot text="Complete payload generated from all steps. Copy and paste this to quickly re-create or test." />
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={async () => {
-                        try {
-                          await navigator.clipboard.writeText(generatedPayloadText);
-                          toast({ title: "Copied", description: "Generated payload copied to clipboard." });
-                        } catch {
-                          toast({ title: "Copy failed", description: "Clipboard permission blocked.", variant: "destructive" });
-                        }
-                      }}
-                    >
-                      <Copy className="mr-1.5 h-3.5 w-3.5" /> Copy JSON
-                    </Button>
-                  </div>
-                  <Textarea rows={14} className="font-mono text-xs" value={generatedPayloadText} readOnly />
-                </div>
+                <Accordion type="multiple" className="rounded-lg border px-3">
+                  <AccordionItem value="metadata-json" className="border-b last:border-b-0">
+                    <AccordionTrigger className="py-3 text-sm font-semibold hover:no-underline">
+                      <span className="flex items-center gap-1.5">
+                        Metadata JSON
+                        <InfoDot text="Raw metadata object. Structured fields above update this automatically." />
+                      </span>
+                    </AccordionTrigger>
+                    <AccordionContent className="space-y-2 pb-4">
+                      <Textarea
+                        rows={10}
+                        className="font-mono text-xs"
+                        value={form.metadataJson}
+                        onChange={(e) => setForm({ ...form, metadataJson: e.target.value })}
+                      />
+                    </AccordionContent>
+                  </AccordionItem>
+                  <AccordionItem value="generated-json" className="border-b-0">
+                    <AccordionTrigger className="py-3 text-sm font-semibold hover:no-underline">
+                      <span className="flex items-center gap-1.5">
+                        Generated full announcement JSON
+                        <InfoDot text="Complete payload generated from all steps. Copy and paste this to quickly re-create or test." />
+                      </span>
+                    </AccordionTrigger>
+                    <AccordionContent className="space-y-2 pb-4">
+                      <div className="flex justify-end">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={async () => {
+                            try {
+                              await navigator.clipboard.writeText(generatedPayloadText);
+                              toast({ title: "Copied", description: "Generated payload copied to clipboard." });
+                            } catch {
+                              toast({ title: "Copy failed", description: "Clipboard permission blocked.", variant: "destructive" });
+                            }
+                          }}
+                        >
+                          <Copy className="mr-1.5 h-3.5 w-3.5" /> Copy JSON
+                        </Button>
+                      </div>
+                      <Textarea rows={14} className="font-mono text-xs" value={generatedPayloadText} readOnly />
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
               </TabsContent>
             </div>
           </Tabs>
