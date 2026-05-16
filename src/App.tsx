@@ -60,6 +60,7 @@ const AdminReports = lazy(() => import("./pages/admin/AdminReports"));
 const AdminFeatures = lazy(() => import("./pages/admin/AdminFeatures"));
 const AdminAccessControl = lazy(() => import("./pages/admin/AdminAccessControl"));
 const AdminHeroSlides = lazy(() => import("./pages/admin/AdminHeroSlides"));
+const AdminAnnouncements = lazy(() => import("./pages/admin/AdminAnnouncements"));
 const PreviewHome = lazy(() => import("./pages/PreviewHome"));
 
 const PageLoader = () => (
@@ -124,6 +125,7 @@ const App = () => (
                   <Route path="features" element={<AdminFeatures />} />
                   <Route path="access-control" element={<AdminAccessControl />} />
                   <Route path="hero-slides" element={<AdminHeroSlides />} />
+                  <Route path="announcements" element={<AdminAnnouncements />} />
                 </Route>
                 <Route path="*" element={<NotFound />} />
               </Routes>

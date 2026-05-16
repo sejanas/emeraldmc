@@ -15,8 +15,7 @@ import HorizontalScroll from "@/components/HorizontalScroll";
 import CertificatePreview from "@/components/CertificatePreview";
 import PackageDetailDialog from "@/components/PackageDetailDialog";
 import TestDetailDialog from "@/components/TestDetailDialog";
-import VisitingDoctorModal from "@/components/VisitingDoctorModal";
-import { VISITING_DOCTOR_EVENT, isVisitActive } from "@/data/visitingDoctorEvent";
+import AnnouncementHomeSection from "@/components/announcements/placements/AnnouncementHomeSection";
 
 import useTests from "@/hooks/useTests";
 import useDoctors from "@/hooks/useDoctors";
@@ -126,6 +125,7 @@ const Index = () => {
     { key: "doctors", visible: true },
     { key: "testimonials", visible: true },
     { key: "service_areas", visible: true },
+    { key: "announcements", visible: true },
     { key: "faqs", visible: true },
     { key: "cta", visible: true },
   ];
@@ -211,7 +211,6 @@ const Index = () => {
 
   return (
     <>
-      <VisitingDoctorModal />
       <PageMeta
         title="Shifa's Mainland Healthcare – ISO Certified Diagnostic Lab in Sri Vijaya Puram"
         description="ISO certified diagnostic laboratory in Sri Vijaya Puram, Port Blair. 50+ health tests, affordable packages, expert doctors, and free home sample collection."
@@ -354,118 +353,6 @@ const Index = () => {
       </section>
       )}
 
-      {/* Visiting Doctor Camp Section */}
-      {isVisitActive() && (() => {
-        const now = new Date();
-        const start = new Date(VISITING_DOCTOR_EVENT.visitStart + "T00:00:00");
-        const end = new Date(VISITING_DOCTOR_EVENT.visitEnd + "T23:59:59");
-        const daysUntil = Math.ceil((start.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
-        const isLive = now >= start && now <= end;
-        const urgencyText = isLive ? "Happening now!" : daysUntil === 1 ? "Starts tomorrow!" : `Starts in ${daysUntil} days`;
-
-        return (
-          <section className="container py-16">
-            {/* Section eyebrow */}
-            <div className="flex items-center gap-2 mb-5">
-              <span className="h-px flex-1 bg-border max-w-[40px]" />
-              <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Limited Slots · Special Event</span>
-              <span className="h-px flex-1 bg-border" />
-            </div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 24 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.55 }}
-              className="overflow-hidden rounded-2xl border border-border bg-card card-shadow border-l-4 border-l-green-500"
-            >
-              <div className="flex flex-col md:flex-row">
-                {/* Doctor photo with overlaid badges */}
-                <div className="relative md:w-64 shrink-0">
-                  <img
-                    src={VISITING_DOCTOR_EVENT.imageUrl}
-                    alt={VISITING_DOCTOR_EVENT.name}
-                    className="h-64 w-full object-cover object-top md:h-full"
-                    loading="lazy"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent md:bg-gradient-to-r" />
-                  {/* Overlaid badges on photo */}
-                  <div className="absolute bottom-3 left-3 flex flex-col gap-1.5">
-                    <span className="inline-flex w-fit items-center gap-1 rounded-full bg-green-500 text-white px-3 py-1 text-xs font-bold shadow animate-pulse">
-                      FREE CAMP
-                    </span>
-                    <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-black/60 text-white border border-white/20 px-2.5 py-1 text-xs font-semibold backdrop-blur-sm">
-                      {VISITING_DOCTOR_EVENT.visitLabel}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Content */}
-                <div className="flex-1 p-6 md:p-8">
-                  {/* Top row: VISITING SPECIALIST badge + urgency countdown */}
-                  <div className="flex flex-wrap items-center gap-2 mb-4">
-                    <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 text-primary border border-primary/20 px-3 py-1 text-xs font-semibold">
-                      VISITING SPECIALIST
-                    </span>
-                    <span className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold ${isLive ? "bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/30 animate-pulse" : "bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/30"}`}>
-                      <Clock className="h-3 w-3" />
-                      {urgencyText}
-                    </span>
-                  </div>
-
-                  <h2 className="font-display text-2xl font-bold text-foreground">{VISITING_DOCTOR_EVENT.name}</h2>
-                  <p className="text-sm font-bold text-foreground mt-1">{VISITING_DOCTOR_EVENT.role}</p>
-                  <p className="text-sm text-primary font-semibold mt-0.5">{VISITING_DOCTOR_EVENT.credentials}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <div className="bg-white rounded-md px-2 py-0.5 shrink-0">
-                      <img src={VISITING_DOCTOR_EVENT.brandLogoUrl} alt="The Hive Fertility" className="h-5 w-auto" />
-                    </div>
-                    <p className="text-xs text-muted-foreground">{VISITING_DOCTOR_EVENT.organisation}</p>
-                  </div>
-
-                  {/* Trust stat pills */}
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <span className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-foreground">
-                      <Clock className="h-3.5 w-3.5 text-primary" /> {VISITING_DOCTOR_EVENT.experience} Experience
-                    </span>
-                    <span className="inline-flex items-center gap-1.5 rounded-lg bg-accent px-3 py-1.5 text-xs font-medium text-foreground">
-                      <Users className="h-3.5 w-3.5 text-primary" /> 1000+ Couples Helped
-                    </span>
-                  </div>
-
-                  <p className="mt-3 text-sm text-muted-foreground leading-relaxed max-w-xl">{VISITING_DOCTOR_EVENT.bio}</p>
-
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    {VISITING_DOCTOR_EVENT.specialties.map((s) => (
-                      <span key={s} className="rounded-full border border-border bg-accent px-2.5 py-0.5 text-xs font-medium text-foreground">{s}</span>
-                    ))}
-                  </div>
-
-                  <div className="mt-4 flex flex-wrap items-center gap-3">
-                    <span className="text-sm font-semibold text-foreground">
-                      Visiting: <span className="text-primary">{VISITING_DOCTOR_EVENT.visitLabel}</span>
-                    </span>
-                    <span className="text-green-600 dark:text-green-400 text-sm font-bold">Registration &amp; Consultation FREE</span>
-                  </div>
-                  <p className="mt-1 text-xs text-muted-foreground">Limited free consultation slots — book early to secure yours.</p>
-
-                  <div className="mt-5 flex flex-wrap gap-3">
-                    <Button asChild>
-                      <Link to="/book?from=fertility-camp">Book Free Appointment <ArrowRight className="ml-2 h-4 w-4" /></Link>
-                    </Button>
-                    <Button asChild variant="outline">
-                      <a href={VISITING_DOCTOR_EVENT.sourceUrl} target="_blank" rel="noopener noreferrer">
-                        About the Doctor <ExternalLink className="ml-2 h-4 w-4" />
-                      </a>
-                    </Button>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-          </section>
-        );
-      })()}
-
       {/* Dynamic Sections - ordered via admin settings */}
       {sectionOrder.map((key: string) => {
         if (!isSectionVisible(key)) return null;
@@ -573,7 +460,7 @@ const Index = () => {
                   <SectionHeading title="Popular Tests" subtitle="Browse our most frequently requested diagnostic tests" />
                   {testsQuery.error && (
                     <div className="max-w-md mx-auto mb-6">
-                      <ErrorBox title="Failed to load tests" message={String(testsQuery.error)} onRetry={() => testsQuery.refetch()} />
+                      <ErrorBox title="Failed to load tests" message={testsQuery.error} onRetry={() => testsQuery.refetch()} />
                     </div>
                   )}
                   {testsQuery.isLoading ? (
@@ -660,7 +547,7 @@ const Index = () => {
                 <SectionHeading title="Health Packages" subtitle="Comprehensive health checkup packages at affordable prices" />
                 {packagesQuery.error && (
                   <div className="max-w-md mx-auto mb-6">
-                    <ErrorBox title="Failed to load packages" message={String(packagesQuery.error)} onRetry={() => packagesQuery.refetch()} />
+                    <ErrorBox title="Failed to load packages" message={packagesQuery.error} onRetry={() => packagesQuery.refetch()} />
                   </div>
                 )}
                 {packagesQuery.isLoading ? (
@@ -864,6 +751,9 @@ const Index = () => {
 
           case "testimonials":
             return <Testimonials key="testimonials" />;
+
+          case "announcements":
+            return <AnnouncementHomeSection key="announcements" />;
 
           case "service_areas":
             return (

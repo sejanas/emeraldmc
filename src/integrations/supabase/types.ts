@@ -14,6 +14,162 @@ export type Database = {
   }
   public: {
     Tables: {
+      announcement_events: {
+        Row: {
+          announcement_id: string
+          announcement_version: number
+          created_at: string
+          device: string | null
+          event_type: string
+          id: string
+          page_path: string | null
+          placement: string
+          session_id: string | null
+          user_id: string | null
+          variant_group: string | null
+        }
+        Insert: {
+          announcement_id: string
+          announcement_version?: number
+          created_at?: string
+          device?: string | null
+          event_type: string
+          id?: string
+          page_path?: string | null
+          placement: string
+          session_id?: string | null
+          user_id?: string | null
+          variant_group?: string | null
+        }
+        Update: {
+          announcement_id?: string
+          announcement_version?: number
+          created_at?: string
+          device?: string | null
+          event_type?: string
+          id?: string
+          page_path?: string | null
+          placement?: string
+          session_id?: string | null
+          user_id?: string | null
+          variant_group?: string | null
+        }
+        Relationships: []
+      }
+      announcements: {
+        Row: {
+          audience: string[]
+          body: string
+          created_at: string
+          created_by: string | null
+          deleted_at: string | null
+          devices: string[]
+          dismissible: boolean
+          end_at: string | null
+          exclusive: boolean
+          frequency: Json
+          icon: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          metadata: Json
+          page_rules: Json
+          placements: string[]
+          presentation: Json
+          primary_cta_label: string | null
+          primary_cta_url: string | null
+          priority: number
+          schema_version: number
+          secondary_cta_label: string | null
+          secondary_cta_url: string | null
+          severity: string
+          start_at: string | null
+          theme: Json
+          time_window: Json | null
+          title: string
+          trigger: Json
+          type: string
+          updated_at: string
+          updated_by: string | null
+          variant_group: string | null
+          version: number
+        }
+        Insert: {
+          audience?: string[]
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          devices?: string[]
+          dismissible?: boolean
+          end_at?: string | null
+          exclusive?: boolean
+          frequency?: Json
+          icon?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          metadata?: Json
+          page_rules?: Json
+          placements?: string[]
+          presentation?: Json
+          primary_cta_label?: string | null
+          primary_cta_url?: string | null
+          priority?: number
+          schema_version?: number
+          secondary_cta_label?: string | null
+          secondary_cta_url?: string | null
+          severity?: string
+          start_at?: string | null
+          theme?: Json
+          time_window?: Json | null
+          title: string
+          trigger?: Json
+          type: string
+          updated_at?: string
+          updated_by?: string | null
+          variant_group?: string | null
+          version?: number
+        }
+        Update: {
+          audience?: string[]
+          body?: string
+          created_at?: string
+          created_by?: string | null
+          deleted_at?: string | null
+          devices?: string[]
+          dismissible?: boolean
+          end_at?: string | null
+          exclusive?: boolean
+          frequency?: Json
+          icon?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          metadata?: Json
+          page_rules?: Json
+          placements?: string[]
+          presentation?: Json
+          primary_cta_label?: string | null
+          primary_cta_url?: string | null
+          priority?: number
+          schema_version?: number
+          secondary_cta_label?: string | null
+          secondary_cta_url?: string | null
+          severity?: string
+          start_at?: string | null
+          theme?: Json
+          time_window?: Json | null
+          title?: string
+          trigger?: Json
+          type?: string
+          updated_at?: string
+          updated_by?: string | null
+          variant_group?: string | null
+          version?: number
+        }
+        Relationships: []
+      }
       activity_logs: {
         Row: {
           action_source: string | null
